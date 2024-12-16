@@ -1,0 +1,788 @@
+---
+title: "Function Building"
+author: "Constantin Yves Plessen"
+date: "2024-12-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Data
+```{r}
+library(tidyverse)
+digDep_data_multiverse <- read_csv("~/Documents/GitHub/multiverse-meta-analysis-depression/data/tidy/digDep_multiverse_data.csv")
+```
+## Helper Functions
+
+```{r}
+calculate_puni_star <- function(dat) {
+  mod <- tryCatch({
+    mod.puni <- puniform::puni_star(
+      yi = dat$yi, 
+      vi = dat$vi, 
+      side = "right"
+    )
+    
+    # Return a standardized list format
+    list(
+      b = mod.puni$est, 
+      pval = mod.puni$pval.0, 
+      ci.lb = mod.puni$ci.lb, 
+      ci.ub = mod.puni$ci.ub
+    )
+  }, error = function(e) {
+    # Gracefully handle errors
+    list(
+      b = NA, 
+      pval = NA, 
+      ci.lb = NA, 
+      ci.ub = NA
+    )
+  })
+  
+  return(mod)
+}
+```
+
+```{r}
+# # Function to calculate PET-PEESE
+# calculate_pet.peese <- function(data) {
+#   mod <- list()
+#   fit_PET <- lm(yi ~ sqrt(vi), 
+#                 weights = 1/vi, 
+#                 data = data)
+#   
+#   pet_p <- coef(summary(fit_PET))["(Intercept)", "Pr(>|t|)"] # pet p-value < .10 -> peese
+#   
+#   if(pet_p >= .1) {
+#     mod$b <- coef(summary(fit_PET))["(Intercept)", "Estimate"] # pet estimate
+#     mod$ci.lb <- confint(fit_PET)["(Intercept)", "2.5 %"] 
+#     mod$ci.ub<- confint(fit_PET)["(Intercept)", "97.5 %"] 
+#     mod$pval <- pet_p
+#     mod$type <- "PET"
+#     
+#   }else{
+#     
+#     fit_PEESE <- lm(yi ~ vi, 
+#                     weights = 1/vi, 
+#                     data = data)
+#     
+#     mod$pval <- coef(summary(fit_PEESE))["(Intercept)", "Pr(>|t|)"] # pet p-value < .10 -> peese
+#     mod$b  <- coef(summary(fit_PEESE))["(Intercept)", "Estimate"] # peese estimate
+#     mod$ci.lb <- confint(fit_PEESE)["(Intercept)", "2.5 %"] 
+#     mod$ci.ub <- confint(fit_PEESE)["(Intercept)", "97.5 %"] 
+#     mod$type <- "PEESE"
+#     
+#   }
+#   return(mod)
+# }
+
+calculate_pet.peese <- function(data) {
+  mod <- list()
+  
+  # Try PET estimation
+  pet_fit <- tryCatch({
+    lm(yi ~ sqrt(vi), weights = 1 / vi, data = data)
+  }, error = function(e) return(NULL))
+  
+  if (is.null(pet_fit)) {
+    # PET estimation failed
+    return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA, type = "PET (failed)"))
+  }
+  
+  # Extract PET p-value
+  pet_p <- tryCatch({
+    coef(summary(pet_fit))["(Intercept)", "Pr(>|t|)"]
+  }, error = function(e) return(NA))
+  
+  if (is.na(pet_p) || pet_p >= 0.1) {
+    # PET is valid or PEESE is not triggered
+    mod <- tryCatch({
+      list(
+        b = coef(summary(pet_fit))["(Intercept)", "Estimate"],
+        ci.lb = confint(pet_fit)["(Intercept)", "2.5 %"],
+        ci.ub = confint(pet_fit)["(Intercept)", "97.5 %"],
+        pval = pet_p,
+        type = "PET"
+      )
+    }, error = function(e) {
+      list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA, type = "PET (failed)")
+    })
+  } else {
+    # PEESE estimation
+    peese_fit <- tryCatch({
+      lm(yi ~ vi, weights = 1 / vi, data = data)
+    }, error = function(e) return(NULL))
+    
+    if (is.null(peese_fit)) {
+      # PEESE estimation failed
+      return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA, type = "PEESE (failed)"))
+    }
+    
+    # Extract PEESE estimates
+    mod <- tryCatch({
+      list(
+        b = coef(summary(peese_fit))["(Intercept)", "Estimate"],
+        ci.lb = confint(peese_fit)["(Intercept)", "2.5 %"],
+        ci.ub = confint(peese_fit)["(Intercept)", "97.5 %"],
+        pval = coef(summary(peese_fit))["(Intercept)", "Pr(>|t|)"],
+        type = "PEESE"
+      )
+    }, error = function(e) {
+      list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA, type = "PEESE (failed)")
+    })
+  }
+  
+  return(mod)
+}
+```
+
+
+```{r}
+# Function to calculate UWLS
+calculate_uwls  <- function(dat) {
+  mod <- list()
+  d = dat$yi
+  sed = sqrt(dat$vi) 
+  t = d/sed
+  Precision=1/sed
+  reg_uwls = lm(t ~ 0 + Precision)
+  mod$pval <- coef(summary(reg_uwls))["Precision", "Pr(>|t|)"] # pet p-value < .10 -> peese
+  mod$b  <- coef(summary(reg_uwls))["Precision", "Estimate"] # peese estimate
+  mod$ci.lb <- confint(reg_uwls)["Precision", "2.5 %"] 
+  mod$ci.ub <- confint(reg_uwls)["Precision", "97.5 %"] 
+  
+  return(mod)
+}
+```
+
+
+```{r}
+# Function to calculate WAAP
+calculate_waap <- function(dat) {
+  mod <- list()
+  d = dat$yi
+  sed = sqrt(dat$vi) 
+  k = length(d) #number of studies
+  t = d/sed
+  Precision=1/sed
+  reg_uwls = lm(t ~ 0 + Precision)
+  UWLS <- as.numeric(reg_uwls$coefficients)
+  powered<-sed<abs(UWLS)/2.8
+  if(sum(powered)<2) {
+    mod$pval  <- NA
+    mod$b     <- NA
+    mod$ci.lb <- NA
+    mod$ci.ub <- NA
+  } else{
+    reg_waap=lm(t[powered]~ 0 + Precision[powered])
+    mod$pval  <- coef(summary(reg_waap))["Precision[powered]", "Pr(>|t|)"] # pet p-value < .10 -> peese
+    mod$b     <- coef(summary(reg_waap))["Precision[powered]", "Estimate"] # peese estimate
+    mod$ci.lb <- confint(reg_waap)["Precision[powered]", "2.5 %"] 
+    mod$ci.ub <- confint(reg_waap)["Precision[powered]", "97.5 %"] 
+  }
+  return(mod)
+}
+
+```
+
+## Select required variables and create example data set
+```{r}
+digDep_data_multiverse %>% head
+
+data <- digDep_data_multiverse %>% 
+  select(study,
+         es_id,
+         yi,
+         vi,
+         sei,
+         wf_1:wf_8,
+         condition_arm1,
+         condition_arm2
+  ) %>% 
+  head(20) 
+
+data %>% dput()
+```
+
+# Data validator
+
+### `check_data_multiverse`
+```{r}
+check_data_multiverse <- function(data) {
+  # Required columns
+  required_columns <- c(
+    "study", "es_id", "yi", "vi", "sei",
+    "condition_arm1", "condition_arm2"
+  )
+  
+  # Dynamically detect wf columns (e.g., wf_1, wf_2, ...)
+  wf_columns <- grep("^wf_", colnames(data), value = TRUE)
+  
+  # Combine required and dynamically detected wf columns
+  all_required_columns <- c(required_columns, wf_columns)
+  
+  # Check if all required columns are present
+  missing_columns <- setdiff(all_required_columns, colnames(data))
+  if (length(missing_columns) > 0) {
+    stop(paste("Missing required columns:", paste(missing_columns, collapse = ", ")))
+  }
+  
+  # Check data types
+  expected_types <- list(
+    study = "character",
+    es_id = "numeric",
+    yi = "numeric",
+    vi = "numeric",
+    sei = "numeric",
+    condition_arm1 = "character",
+    condition_arm2 = "character"
+  )
+  
+  type_mismatches <- purrr::map_lgl(names(expected_types), function(col) {
+    if (!inherits(data[[col]], expected_types[[col]])) {
+      message(sprintf("Column '%s' has incorrect type. Expected: %s", col, expected_types[[col]]))
+      return(TRUE)
+    }
+    FALSE
+  })
+  
+  if (any(type_mismatches)) {
+    stop("One or more columns have incorrect data types. See messages above.")
+  }
+  
+  # Check for missing values
+  missing_values <- colSums(is.na(data[all_required_columns]))
+  if (any(missing_values > 0)) {
+    warning("Some required columns contain missing values:\n", 
+            paste(names(missing_values[missing_values > 0]), 
+                  missing_values[missing_values > 0], 
+                  sep = ": ", collapse = "\n"))
+  }
+  
+  # Check unique es_id
+  if (anyDuplicated(data$es_id)) {
+    stop("Duplicate values found in 'es_id'. Each effect size must have a unique identifier.")
+  }
+  
+  # Dynamic validation for wf variables (e.g., categorical levels)
+  wf_checks <- purrr::map(wf_columns, function(wf_col) {
+    if (!is.character(data[[wf_col]])) {
+      message(sprintf("Column '%s' should be a character variable.", wf_col))
+      return(FALSE)
+    }
+    TRUE
+  })
+  
+  if (!all(unlist(wf_checks))) {
+    stop("One or more 'wf_' columns have incorrect data types.")
+  }
+  
+  # Success message if all checks pass
+  message("Data check passed. Dataset is valid.")
+  return(TRUE)
+}
+```
+
+
+## Inspect data 
+
+```{r}
+glimpse(data)
+```
+
+```{r}
+check_data_multiverse(data)
+```
+
+
+# Create specificaitions
+
+### `create_multiverse_specifications`
+```{r}
+# Load necessary library
+library(dplyr)
+
+# Function to create specifications for multiverse meta-analysis
+create_multiverse_specifications <- function(data, wf_vars, ma_methods, dependencies) {
+  # Input validation
+  if (!is.data.frame(data)) stop("`data` must be a data frame.")
+  if (!all(wf_vars %in% colnames(data))) stop("Not all `wf_vars` are present in the dataset.")
+  
+  # Create "Which factors"
+  wf_factors <- lapply(wf_vars, function(wf) {
+    unique_values <- unique(data[[wf]])
+    c(unique_values, paste0("total_", wf))
+  })
+  
+  names(wf_factors) <- wf_vars
+  
+  # Validate "How factors"
+  if (length(ma_methods) == 0) stop("`ma_methods` must include at least one method.")
+  if (length(dependencies) == 0) stop("`dependencies` must include at least one dependency.")
+  
+  # Dynamically build the expand.grid call
+  grid_args <- c(wf_factors, list(dependency = dependencies, ma_method = ma_methods))
+  
+  # Generate the specifications grid
+  specifications_grid <- do.call(expand.grid, grid_args)
+  
+  
+  # Prune impossible paths
+  specifications_grid <- specifications_grid %>%
+    filter((dependency == "modeled" & 
+              ma_method %in% c("3-level", "rve")) | 
+             (dependency == "aggregate" & 
+                ma_method %in% c("reml", "fe", "p-uniform", "pet-peese", "uwls", "waap")) | 
+             (dependency == "ignore" & 
+                ma_method %in% c("reml", "fe"))) %>% 
+    mutate(row_id = row_number())
+  
+  # Return final specifications grid
+  specifications <- data.frame(specifications_grid)
+  number_specs <- nrow(specifications)
+  
+  list(
+    specifications = specifications,
+    number_specs = number_specs
+  )
+}
+```
+
+
+```{r}
+# Example dataset
+data_multiverse <- data  # Replace with your actual dataset
+
+# Define "Which factors"
+wf_vars <- paste0("wf_", 1:8)
+
+# Define "How factors"
+ma_methods <- c("reml", "fe", "p-uniform", "pet-peese", "uwls", "waap", "3-level", "rve")
+dependencies <- c("ignore", "aggregate", "modeled")
+
+# Generate specifications
+results <- create_multiverse_specifications(data_multiverse, wf_vars, ma_methods, dependencies)
+
+specifications <- results$specifications
+```
+
+
+# Run Multiverse
+
+```{r}
+specifications %>% 
+  filter(dependency == "aggregate" & 
+           wf_1 == "total_wf_1" & 
+           wf_2 == "total_wf_2" & 
+           wf_3 == "total_wf_3"& 
+           wf_4 == "total_wf_4" & 
+           wf_5 == "total_wf_5" & 
+           wf_6 == "total_wf_6" & 
+           wf_7 == "total_wf_7" & 
+           wf_8 == "total_wf_8")
+
+i = 23328
+```
+
+## `general_multiverse`
+```{r}
+general_multiverse <- function(i, data_multiverse, specifications, how_methods) {
+  # Prepare output
+  out <- list()
+  dat <- as.data.frame(data_multiverse)
+  
+  # Apply "Which" factors dynamically
+  for (wf in names(specifications)[grepl("^wf_", names(specifications))]) {
+    filter_value <- specifications[[wf]][i]
+    if (!grepl("^total_", filter_value)) {
+      dat <- dat[dat[[wf]] == filter_value, ]
+    }
+  }
+  
+  # Remove rows with missing `yi` or `vi` values
+  dat <- tidyr::drop_na(dat, dplyr::any_of(c("yi", "vi")))
+  set <- paste(dat$es_id, collapse = ",")
+  
+  # Only compute if at least 2 unique studies
+  if (length(unique(dat$study)) < 2) {
+    return(NULL)
+  }
+  
+  # Handle "How" factors dynamically
+  dependency <- specifications$dependency[i]
+  ma_method <- specifications$ma_method[i]
+  
+  # Ignoring dependency
+  if (dependency == "ignore") {
+    mod <- run_ignore_dependency(dat, ma_method, how_methods)
+  }
+  
+  # Aggregating dependency
+  else if (dependency == "aggregate") {
+    mod <- run_aggregate_dependency(dat, ma_method, how_methods)
+  }
+  
+  # Modeling dependency
+  else if (dependency == "modeled") {
+    mod <- run_modeled_dependency(dat, ma_method, how_methods)
+  }
+  
+  # Return results
+  out <- data.frame(
+    specifications[i, ],
+    b = mod$b[[1]],
+    ci.lb = mod$ci.lb[[1]],
+    ci.ub = mod$ci.ub[[1]],
+    pval = mod$pval[[1]],
+    k = nrow(dat),
+    set
+  )
+  
+  return(out)
+}
+```
+
+
+### `run_aggregate_dependency`
+```{r}
+run_aggregate_dependency <- function(dat, ma_method, how_methods) {
+  # Calculate effect sizes
+  dat <- metafor::escalc(yi = yi, vi = vi, data = dat)
+  
+  # Aggregate data by cluster (study)
+  dat <- metafor::aggregate.escalc(
+    dat, 
+    cluster = study, 
+    struct = "CS",  # Compound symmetric structure
+    rho = 0.5
+  )
+  
+  # Run models based on method
+  if (ma_method == "fe" & "fe" %in% how_methods) {
+    return(metafor::rma(yi = dat$yi, vi = dat$vi, method = "FE"))
+  } else if (ma_method == "reml" & "reml" %in% how_methods) {
+    return(metafor::rma(yi = dat$yi, vi = dat$vi, method = "REML", control = list(stepadj = 0.5, maxiter = 2000)))
+  } else if (ma_method == "uwls" & "uwls" %in% how_methods) {
+    return(calculate_uwls(dat))
+  } else if (ma_method == "waap" & "waap" %in% how_methods) {
+    return(calculate_waap(dat))
+  } else if (ma_method == "pet-peese" & "pet-peese" %in% how_methods) {
+    return(calculate_pet.peese(dat))
+  } else if (ma_method == "p-uniform" & "p-uniform" %in% how_methods) {
+    return(calculate_puni_star(dat))
+  } else {
+    return(list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA))
+  }
+}
+```
+
+### `run_ignore_dependency`
+```{r}
+run_ignore_dependency <- function(dat, ma_method, how_methods) {
+  if (ma_method == "fe" & "fe" %in% how_methods) {
+    return(metafor::rma(yi = dat$yi, vi = dat$vi, method = "FE"))
+  } else if (ma_method == "reml" & "reml" %in% how_methods) {
+    return(metafor::rma(yi = dat$yi, vi = dat$vi, method = "REML", control = list(stepadj = 0.5, maxiter = 2000)))
+  } else {
+    list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)
+  }
+}
+```
+
+### `run_modeled_dependency`
+```{r}
+# Helper function for "Modeled Dependency"
+run_modeled_dependency <- function(dat, ma_method, how_methods) {
+  if (sum(duplicated(dat$study)) > 1) {
+    mod_modeled <- tryCatch({
+      metafor::rma.mv(
+        data = dat, yi = yi, V = vi, method = "REML",
+        random = list(~1 | es_id, ~1 | study), sparse = TRUE
+      )
+    }, error = function(e) list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA))
+    
+    if (ma_method == "3-level" & "3-level" %in% how_methods) {
+      return(mod_modeled)
+    } else if (ma_method == "rve" & "rve" %in% how_methods) {
+      metafor::robust(mod_modeled, cluster = dat$study, clubSandwich = TRUE)
+    } else {
+      list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)
+    }
+  } else {
+    list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)
+  }
+}
+```
+
+## `run_multiverse_analysis`
+```{r}
+run_multiverse_analysis <- function(data_multiverse, specifications, how_methods) {
+  # Run multiverse for each specification
+  results <- lapply(seq_len(nrow(specifications)), function(i) {
+    general_multiverse(i, data_multiverse, specifications, how_methods)
+  })
+  
+  # Combine results into a single data frame
+  final_results <- do.call(rbind, results)
+  
+  # Add full_set indicator
+  final_results$full_set <- as.numeric(final_results$set == paste(1:nrow(data_multiverse), collapse = ","))
+  
+  # Remove missing values
+  final_results <- final_results[complete.cases(final_results), ]
+  
+  # Remove duplicates, keeping first occurrence (more specific which factors)
+  final_results <- final_results[!duplicated(final_results[, c("b", "set", "ma_method")]), ]
+  
+  return(final_results)
+}
+```
+
+
+# Test
+```{r}
+specifications_test_all <- specifications %>% 
+  filter(
+    #dependency == "aggregate" & 
+    wf_1 == "total_wf_1" & 
+      wf_2 == "total_wf_2" & 
+      wf_3 == "total_wf_3"& 
+      wf_4 == "total_wf_4" & 
+      wf_5 == "total_wf_5" & 
+      wf_6 == "total_wf_6" & 
+      wf_7 == "total_wf_7" & 
+      wf_8 == "total_wf_8")
+
+specifications_test_sample <- specifications %>% 
+  sample_n(1000)
+
+specifications_test <- specifications_test_all %>% bind_rows(specifications_test_sample)
+
+res <- run_multiverse_analysis(data_multiverse, 
+                               specifications_test, 
+                               how_methods = ma_methods)
+```
+
+
+# Visualisation
+
+
+## `plot_descriptive_spec_curve`
+
+```{r}
+data <- res
+```
+
+```{r}
+plot_descriptive_spec_curve <- function(data, 
+                                        ylim_lower = NULL, 
+                                        ylim_upper = NULL) {
+  
+  # Dynamically detect WF and How factors
+  wf_cols <- colnames(data)[grep("^wf_", colnames(data))]
+  how_cols <- colnames(data)[colnames(data) %in% c("ma_method")]  # Adjust if more How factors are added
+  
+  # Combine WF and How factors
+  all_factors <- c(wf_cols, how_cols)
+  
+  # Generate x-variable (ranking)
+  x_rank <- rank(data$b, ties.method = "random")
+  
+  # Generate y-variable (all levels, reversed for plotting)
+  factor_levels <- lapply(all_factors, function(col) unique(data[[col]]))
+  names(factor_levels) <- all_factors
+  
+  yvar <- rep(factor(
+    rev(unlist(factor_levels)), 
+    levels = rev(unlist(factor_levels))
+  ), times = nrow(data))
+  
+  # Generate x-variable (repeated for yvar length)
+  xvar <- rep(x_rank, each = length(levels(yvar)))
+  
+  # Select relevant columns for plotting
+  data <- data %>%
+    select(all_of(all_factors), b, ci.lb, ci.ub, pval, k, set)
+  
+  # Create spec matrix
+  spec <- NULL
+  for (i in 1:nrow(data)) {
+    id <- as.numeric(levels(yvar) %in% 
+                       as.character(unlist(data[i, all_factors])))
+    spec <- c(spec, id)
+  }
+  
+  # Prepare plot data
+  plotdata <- data.frame(xvar, yvar, spec)
+  
+  # Add k values and assign fill
+  plotdata$k <- rep(data$k, each = length(levels(yvar)))
+  plotdata$fill<- as.factor(plotdata$k * plotdata$spec)
+  
+  # Dynamically create unique quantile breaks
+  num_levels <- 9  # Start with 9 levels
+  fill_quantiles <- unique(quantile(data$k, probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+  
+  while (length(fill_quantiles) <= num_levels) {
+    num_levels <- num_levels - 1  # Reduce levels
+    fill_quantiles <- unique(quantile(data$k, probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+    if (num_levels < 2) {
+      stop("Insufficient unique values in `k` to create quantile levels.")
+    }
+  }
+  
+  # Assign levels based on quantiles
+  fill_levels <- cut(data$k, breaks = fill_quantiles, include.lowest = TRUE, labels = 1:num_levels)
+  
+  # Add `fill_manual` to data
+  data <- data %>%
+    mutate(fill_manual = as.factor(fill_levels))
+  
+  # Apply the same to plotdata
+  plotdata <- plotdata %>%
+    left_join(data %>% select(k, fill_manual) %>% distinct(), by = "k") 
+  
+  plotdata <- plotdata %>%
+    mutate(fill_manual = ifelse(spec == 1, fill_manual, 0),
+           fill_manual = as.factor(fill_manual))
+    
+  
+  # Define color palette
+  cols <- RColorBrewer::brewer.pal(num_levels, "Spectral")
+  
+  
+  
+  # Tile plot
+  tile_plot <- ggplot(data = plotdata, 
+                      aes(x = xvar, y = as.factor(yvar), fill = fill_manual)) +
+    geom_raster() +
+    scale_x_continuous(position = "bottom") +
+    scale_y_discrete(labels = levels(yvar)) +
+    scale_fill_manual(values = c("white", cols)) +
+    labs(x = "Specification Number", y = "Which/How Factors") +
+    theme_bw() +
+    theme(legend.position = "none",
+          axis.text.y = element_text(colour = "black", size = 8),
+          axis.text.x = element_text(colour = "black"))
+  
+  # Forest plot
+  yrng <- range(c(0, data$ci.lb, data$ci.ub))
+  
+  # Use user-specified limits if provided
+  if (!is.null(ylim_lower)) {
+    yrng[1] <- ylim_lower
+  }
+  if (!is.null(ylim_upper)) {
+    yrng[2] <- ylim_upper
+  }
+  
+  
+  spec_curve_plot <- data %>%
+    ggplot(aes(x = x_rank, y = b)) +
+    geom_line(col = "black", size = .2) +
+    geom_errorbar(aes(ymin = ci.lb, ymax = ci.ub, col = as.factor(fill_manual)), width = 0.1, size = 0.6) +
+    geom_point(size = 1) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    labs(y = "Summary Effect", x = "") +
+    scale_color_manual(values = cols) +
+    coord_cartesian(ylim = yrng) +
+    theme_bw() +
+    theme(legend.position = "none",
+          axis.text.x = element_blank(), 
+          axis.ticks.x = element_blank())
+  
+  # Combine plots
+  cowplot::plot_grid(spec_curve_plot, tile_plot, ncol = 1, align = "v", rel_heights = c(4, 5))
+}
+```
+
+
+
+## Test
+```{r}
+# Generate plot
+plot_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2)
+```
+
+```{r}
+data %>% arrange(b)
+```
+
+## 
+
+```{r}
+plot_VoE <- function(
+  data,
+  x = "b",  # Default x-axis variable
+  y = "pvalue",     # Default y-axis variable
+  cutoff,
+  x_breaks = seq(-0.5, 2, by = 0.25),  # Default x-axis breaks
+  y_breaks = c(0.0000000001, 0.000000001, 0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1),  # Default y-axis breaks
+  x_limits = c(-0.7, 2.1),  # Default x-axis limits
+  y_limits = c(0.0000000001, 1),  # Default y-axis limits
+  vertical_lines = c(0.1, 0.9),  # Quantiles for vertical red lines
+  hline_value = 0.05,  # Horizontal dashed line
+  title_template = "{k} meta-analyses with at least {cutoff} studies."  # Title template
+) {
+  # Replace extremely small p-values with a lower bound
+  data <- data %>%
+    mutate(!!y := ifelse(!!sym(y) < 1e-11, 1e-11, !!sym(y))) %>% 
+    filter(k >= cutoff)
+  
+  # Add density coloring
+  data$density <- densCols(
+    x = data[[x]],
+    y = data[[y]],
+    colramp = colorRampPalette(rev(rainbow(10, end = 4/6)))
+  )
+  
+  # Number of rows in the dataset
+  k <- nrow(data)
+  
+  # Create ggplot object
+  p <- ggplot(data, aes_string(x = x, y = y)) +
+    geom_jitter(aes(colour = density), size = 1, width = 0.001) +
+    scale_color_identity() +
+    theme_bw() +
+    geom_hline(yintercept = hline_value, linetype = 2, color = "black") +
+    geom_vline(xintercept = quantile(data[[x]], vertical_lines, na.rm = TRUE), color = "red", linetype = 2) +
+    scale_y_continuous(
+      trans = "log",
+      breaks = y_breaks,
+      labels = scales::label_scientific()(y_breaks),
+      limits = y_limits
+    ) +
+    scale_x_continuous(
+      breaks = x_breaks,
+      limits = x_limits
+    ) +
+    theme(
+      panel.border = element_blank(),
+      plot.title = element_text(size = 10)
+    ) +
+    ggtitle(glue::glue(title_template, k = k, cutoff = cutoff))
+  
+  return(p)
+}
+```
+
+```{r}
+plot_VoE(
+  data = res,
+  x = "b",
+  y = "pval",
+  cutoff = 2,
+  x_breaks = seq(-1, 2, 0.5),
+  y_limits = c(1e-10, 1),
+  vertical_lines = c(0.05, 0.95),
+  hline_value = 0.1,
+  title_template = "Vibration of Effects: {k} analyses with cutoff = {cutoff}"
+)
+```
+
+
+
+
