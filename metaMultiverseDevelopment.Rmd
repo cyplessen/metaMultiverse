@@ -569,6 +569,34 @@ res <- run_multiverse_analysis(data_multiverse,
 
 # Visualisation
 
+## Helper Functions
+
+```{r}
+# Function to assign quantile-based levels
+assign_quantile_levels <- function(data, k_column, num_levels = 9) {
+  # Ensure k is numeric
+  if (!is.numeric(data[[k_column]])) stop("`k_column` must be numeric.")
+  
+  # Dynamically adjust breaks for unique quantiles
+  fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+  
+  while (length(fill_quantiles) <= num_levels) {
+    num_levels <- num_levels - 1
+    fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+    if (num_levels < 2) stop("Insufficient unique values in `k` to create quantile levels.")
+  }
+  
+  # Assign quantile levels
+  data$fill_levels <- cut(
+    data[[k_column]],
+    breaks = fill_quantiles,
+    include.lowest = TRUE,
+    labels = 1:num_levels
+  )
+  
+  return(data)
+}
+```
 
 ## `plot_descriptive_spec_curve`
 
@@ -579,7 +607,8 @@ data <- res
 ```{r}
 plot_descriptive_spec_curve <- function(data, 
                                         ylim_lower = NULL, 
-                                        ylim_upper = NULL) {
+                                        ylim_upper = NULL,
+                                        colorblind_friendly = TRUE) {
   
   # Dynamically detect WF and How factors
   wf_cols <- colnames(data)[grep("^wf_", colnames(data))]
@@ -622,20 +651,30 @@ plot_descriptive_spec_curve <- function(data,
   plotdata$k <- rep(data$k, each = length(levels(yvar)))
   plotdata$fill<- as.factor(plotdata$k * plotdata$spec)
   
-  # Dynamically create unique quantile breaks
-  num_levels <- 9  # Start with 9 levels
-  fill_quantiles <- unique(quantile(data$k, probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+  # # Dynamically create unique quantile breaks
+  # num_levels <- 9  # Start with 9 levels
+  # fill_quantiles <- unique(quantile(data$k, probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+  # 
+  # while (length(fill_quantiles) <= num_levels) {
+  #   num_levels <- num_levels - 1  # Reduce levels
+  #   fill_quantiles <- unique(quantile(data$k, probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+  #   if (num_levels < 2) {
+  #     stop("Insufficient unique values in `k` to create quantile levels.")
+  #   }
+  # }
+  # 
+  # # Assign levels based on quantiles
+  # fill_levels <- cut(data$k, breaks = fill_quantiles, include.lowest = TRUE, labels = 1:num_levels)
   
-  while (length(fill_quantiles) <= num_levels) {
-    num_levels <- num_levels - 1  # Reduce levels
-    fill_quantiles <- unique(quantile(data$k, probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
-    if (num_levels < 2) {
-      stop("Insufficient unique values in `k` to create quantile levels.")
-    }
+    # Step 1: Assign quantile levels using the helper function
+  data <- assign_quantile_levels(data, k_column = "k", num_levels = 9)
+  
+  # Step 2: Choose color palette based on argument
+  if (colorblind_friendly) {
+    palette_colors <- viridis(length(levels(data$fill_levels)), option = "C")
+  } else {
+    palette_colors <- rev(RColorBrewer::brewer.pal(length(levels(data$fill_levels)), "Spectral"))
   }
-  
-  # Assign levels based on quantiles
-  fill_levels <- cut(data$k, breaks = fill_quantiles, include.lowest = TRUE, labels = 1:num_levels)
   
   # Add `fill_manual` to data
   data <- data %>%
@@ -648,25 +687,51 @@ plot_descriptive_spec_curve <- function(data,
   plotdata <- plotdata %>%
     mutate(fill_manual = ifelse(spec == 1, fill_manual, 0),
            fill_manual = as.factor(fill_manual))
-    
-  
-  # Define color palette
-  cols <- RColorBrewer::brewer.pal(num_levels, "Spectral")
   
   
-  
+  # # Define color palette
+  # cols <- RColorBrewer::brewer.pal(num_levels, "Spectral")
+  # 
   # Tile plot
-  tile_plot <- ggplot(data = plotdata, 
-                      aes(x = xvar, y = as.factor(yvar), fill = fill_manual)) +
+  tile_plot <- ggplot(data = plotdata,
+                      aes(x = xvar, 
+                          y = as.factor(yvar), 
+                          fill = fill_manual)) +
     geom_raster() +
     scale_x_continuous(position = "bottom") +
     scale_y_discrete(labels = levels(yvar)) +
-    scale_fill_manual(values = c("white", cols)) +
-    labs(x = "Specification Number", y = "Which/How Factors") +
-    theme_bw() +
+    scale_fill_manual(values = c("white", palette_colors)) +
+    labs(x = "Specification Number", 
+         y = "Which/How Factors") +
+    theme_classic() +
+    # theme(legend.position = "none",
+    #       axis.text.y = element_text(colour = "black", 
+    #                                  size = 8),
+    #       axis.text.x = element_text(colour = "black"))
     theme(legend.position = "none",
           axis.text.y = element_text(colour = "black", size = 8),
-          axis.text.x = element_text(colour = "black"))
+          axis.text.x = element_text(colour = "black"),
+          axis.ticks = element_line(colour = "black"),
+          plot.margin = margin(t = 5.5, 
+                               r = 5.5, 
+                               b = 5.5, 
+                               l = 5.5, 
+                               unit = "pt")) +
+    coord_cartesian(
+      expand = F, 
+      xlim = c(0, nrow(data)))
+  
+  # tile_plot <- ggplot(data = plotdata, 
+  #                   aes(x = xvar, y = as.factor(yvar), fill = fill_manual)) +
+  # geom_raster() +
+  # scale_x_continuous(position = "bottom") +
+  # scale_y_discrete(labels = levels(yvar)) +
+  # scale_fill_viridis_d(option = "D", name = "Number of Studies", na.value = "white") +
+  # labs(x = "Specification Number", y = "Which/How Factors") +
+  # theme_bw() +
+  # theme(legend.position = "none",
+  #       axis.text.y = element_text(colour = "black", size = 8),
+  #       axis.text.x = element_text(colour = "black"))
   
   # Forest plot
   yrng <- range(c(0, data$ci.lb, data$ci.ub))
@@ -684,11 +749,13 @@ plot_descriptive_spec_curve <- function(data,
     ggplot(aes(x = x_rank, y = b)) +
     geom_line(col = "black", size = .2) +
     geom_errorbar(aes(ymin = ci.lb, ymax = ci.ub, col = as.factor(fill_manual)), width = 0.1, size = 0.6) +
-    geom_point(size = 1) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    geom_point(size = .2) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
     labs(y = "Summary Effect", x = "") +
-    scale_color_manual(values = cols) +
-    coord_cartesian(ylim = yrng) +
+    scale_color_manual(values = palette_colors) +
+    coord_cartesian(ylim = yrng,
+                    xlim = c(0, nrow(data)), 
+                    expand = FALSE) +
     theme_bw() +
     theme(legend.position = "none",
           axis.text.x = element_blank(), 
@@ -711,33 +778,84 @@ plot_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2)
 data %>% arrange(b)
 ```
 
-## 
+## `plot_VoE`
+
+```{r}
+library(viridis)
+
+# Step 1: Dynamically create quantile breaks
+assign_quantile_levels <- function(data, k_column, num_levels = 9) {
+  # Ensure k is numeric
+  if (!is.numeric(data[[k_column]])) stop("`k_column` must be numeric.")
+
+  # Dynamically adjust breaks for unique quantiles
+  fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+  
+  while (length(fill_quantiles) <= num_levels) {
+    num_levels <- num_levels - 1
+    fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+    if (num_levels < 2) stop("Insufficient unique values in `k` to create quantile levels.")
+  }
+
+  # Step 2: Assign quantile levels
+  data$fill_levels <- cut(
+    data[[k_column]],
+    breaks = fill_quantiles,
+    include.lowest = TRUE,
+    labels = 1:num_levels
+  )
+
+  return(data)
+}
+
+# Example usage
+data <- assign_quantile_levels(data, "k", num_levels = 9)
+
+# Step 3: Integrate Viridis Colors
+viridis_palette <- viridis(n = length(unique(data$fill_levels)), option = "C")  # Adjust option for aesthetics
+
+# Step 4: Plot
+tile_plot <- ggplot(data, aes(x = xvar, y = as.factor(yvar), fill = fill_levels)) +
+  geom_raster() +
+  scale_fill_manual(
+    values = viridis_palette,
+    name = "Number of Studies"
+  ) +
+  labs(x = "Specification Number", y = "Which/How Factors") +
+  theme_bw() +
+  theme(
+    legend.position = "right",
+    axis.text.y = element_text(size = 8)
+  )
+```
+
 
 ```{r}
 plot_VoE <- function(
-  data,
-  x = "b",  # Default x-axis variable
-  y = "pvalue",     # Default y-axis variable
-  cutoff,
-  x_breaks = seq(-0.5, 2, by = 0.25),  # Default x-axis breaks
-  y_breaks = c(0.0000000001, 0.000000001, 0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1),  # Default y-axis breaks
-  x_limits = c(-0.7, 2.1),  # Default x-axis limits
-  y_limits = c(0.0000000001, 1),  # Default y-axis limits
-  vertical_lines = c(0.1, 0.9),  # Quantiles for vertical red lines
-  hline_value = 0.05,  # Horizontal dashed line
-  title_template = "{k} meta-analyses with at least {cutoff} studies."  # Title template
+    data,
+    x = "b",  # Default x-axis variable
+    y = "pvalue",     # Default y-axis variable
+    cutoff,
+    x_breaks = seq(-0.5, 2, by = 0.25),  # Default x-axis breaks
+    y_breaks = c(0.0000000001, 0.000000001, 0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1),  # Default y-axis breaks
+    x_limits = c(-0.7, 2.1),  # Default x-axis limits
+    y_limits = c(0.0000000001, 1),  # Default y-axis limits
+    vertical_lines = c(0.1, 0.9),  # Quantiles for vertical red lines
+    hline_value = 0.05,  # Horizontal dashed line
+    title_template = "{k} meta-analyses with at least {cutoff} studies."  # Title template
 ) {
   # Replace extremely small p-values with a lower bound
   data <- data %>%
     mutate(!!y := ifelse(!!sym(y) < 1e-11, 1e-11, !!sym(y))) %>% 
     filter(k >= cutoff)
   
-  # Add density coloring
-  data$density <- densCols(
+  # Add density coloring using Viridis
+  dens_values <- densCols(
     x = data[[x]],
     y = data[[y]],
-    colramp = colorRampPalette(rev(rainbow(10, end = 4/6)))
+    colramp = colorRampPalette(viridisLite::viridis(256))
   )
+  data$density <- dens_values
   
   # Number of rows in the dataset
   k <- nrow(data)
