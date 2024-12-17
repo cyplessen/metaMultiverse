@@ -7,14 +7,17 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(viridis)
 ```
 
 # Load Data
 ```{r}
-library(tidyverse)
 digDep_data_multiverse <- read_csv("~/Documents/GitHub/multiverse-meta-analysis-depression/data/tidy/digDep_multiverse_data.csv")
 ```
 ## Helper Functions
+
+### `calculate_puni_star`
 
 ```{r}
 calculate_puni_star <- function(dat) {
@@ -46,39 +49,8 @@ calculate_puni_star <- function(dat) {
 }
 ```
 
+### `calculate_pet.peese`
 ```{r}
-# # Function to calculate PET-PEESE
-# calculate_pet.peese <- function(data) {
-#   mod <- list()
-#   fit_PET <- lm(yi ~ sqrt(vi), 
-#                 weights = 1/vi, 
-#                 data = data)
-#   
-#   pet_p <- coef(summary(fit_PET))["(Intercept)", "Pr(>|t|)"] # pet p-value < .10 -> peese
-#   
-#   if(pet_p >= .1) {
-#     mod$b <- coef(summary(fit_PET))["(Intercept)", "Estimate"] # pet estimate
-#     mod$ci.lb <- confint(fit_PET)["(Intercept)", "2.5 %"] 
-#     mod$ci.ub<- confint(fit_PET)["(Intercept)", "97.5 %"] 
-#     mod$pval <- pet_p
-#     mod$type <- "PET"
-#     
-#   }else{
-#     
-#     fit_PEESE <- lm(yi ~ vi, 
-#                     weights = 1/vi, 
-#                     data = data)
-#     
-#     mod$pval <- coef(summary(fit_PEESE))["(Intercept)", "Pr(>|t|)"] # pet p-value < .10 -> peese
-#     mod$b  <- coef(summary(fit_PEESE))["(Intercept)", "Estimate"] # peese estimate
-#     mod$ci.lb <- confint(fit_PEESE)["(Intercept)", "2.5 %"] 
-#     mod$ci.ub <- confint(fit_PEESE)["(Intercept)", "97.5 %"] 
-#     mod$type <- "PEESE"
-#     
-#   }
-#   return(mod)
-# }
-
 calculate_pet.peese <- function(data) {
   mod <- list()
   
@@ -140,6 +112,7 @@ calculate_pet.peese <- function(data) {
 ```
 
 
+### `calculate_uwls`
 ```{r}
 # Function to calculate UWLS
 calculate_uwls  <- function(dat) {
@@ -159,6 +132,7 @@ calculate_uwls  <- function(dat) {
 ```
 
 
+### `calculate_waap`
 ```{r}
 # Function to calculate WAAP
 calculate_waap <- function(dat) {
@@ -190,8 +164,6 @@ calculate_waap <- function(dat) {
 
 ## Select required variables and create example data set
 ```{r}
-digDep_data_multiverse %>% head
-
 data <- digDep_data_multiverse %>% 
   select(study,
          es_id,
@@ -203,8 +175,6 @@ data <- digDep_data_multiverse %>%
          condition_arm2
   ) %>% 
   head(20) 
-
-data %>% dput()
 ```
 
 # Data validator
@@ -286,7 +256,6 @@ check_data_multiverse <- function(data) {
 }
 ```
 
-
 ## Inspect data 
 
 ```{r}
@@ -298,13 +267,10 @@ check_data_multiverse(data)
 ```
 
 
-# Create specificaitions
+# Create specifications
 
 ### `create_multiverse_specifications`
 ```{r}
-# Load necessary library
-library(dplyr)
-
 # Function to create specifications for multiverse meta-analysis
 create_multiverse_specifications <- function(data, wf_vars, ma_methods, dependencies) {
   # Input validation
@@ -351,7 +317,7 @@ create_multiverse_specifications <- function(data, wf_vars, ma_methods, dependen
 }
 ```
 
-
+### Setup
 ```{r}
 # Example dataset
 data_multiverse <- data  # Replace with your actual dataset
@@ -371,21 +337,6 @@ specifications <- results$specifications
 
 
 # Run Multiverse
-
-```{r}
-specifications %>% 
-  filter(dependency == "aggregate" & 
-           wf_1 == "total_wf_1" & 
-           wf_2 == "total_wf_2" & 
-           wf_3 == "total_wf_3"& 
-           wf_4 == "total_wf_4" & 
-           wf_5 == "total_wf_5" & 
-           wf_6 == "total_wf_6" & 
-           wf_7 == "total_wf_7" & 
-           wf_8 == "total_wf_8")
-
-i = 23328
-```
 
 ## `general_multiverse`
 ```{r}
@@ -444,7 +395,6 @@ general_multiverse <- function(i, data_multiverse, specifications, how_methods) 
   return(out)
 }
 ```
-
 
 ### `run_aggregate_dependency`
 ```{r}
@@ -542,7 +492,9 @@ run_multiverse_analysis <- function(data_multiverse, specifications, how_methods
 ```
 
 
-# Test
+# Test `run_multiverse_analysis`
+
+## Select Data Set
 ```{r}
 specifications_test_all <- specifications %>% 
   filter(
@@ -560,7 +512,10 @@ specifications_test_sample <- specifications %>%
   sample_n(1000)
 
 specifications_test <- specifications_test_all %>% bind_rows(specifications_test_sample)
+```
 
+## Run
+```{r}
 res <- run_multiverse_analysis(data_multiverse, 
                                specifications_test, 
                                how_methods = ma_methods)
@@ -571,6 +526,7 @@ res <- run_multiverse_analysis(data_multiverse,
 
 ## Helper Functions
 
+### `assign_quantile_levels`
 ```{r}
 # Function to assign quantile-based levels
 assign_quantile_levels <- function(data, k_column, num_levels = 9) {
@@ -599,10 +555,6 @@ assign_quantile_levels <- function(data, k_column, num_levels = 9) {
 ```
 
 ## `plot_descriptive_spec_curve`
-
-```{r}
-data <- res
-```
 
 ```{r}
 plot_descriptive_spec_curve <- function(data, 
@@ -651,25 +603,10 @@ plot_descriptive_spec_curve <- function(data,
   plotdata$k <- rep(data$k, each = length(levels(yvar)))
   plotdata$fill<- as.factor(plotdata$k * plotdata$spec)
   
-  # # Dynamically create unique quantile breaks
-  # num_levels <- 9  # Start with 9 levels
-  # fill_quantiles <- unique(quantile(data$k, probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
-  # 
-  # while (length(fill_quantiles) <= num_levels) {
-  #   num_levels <- num_levels - 1  # Reduce levels
-  #   fill_quantiles <- unique(quantile(data$k, probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
-  #   if (num_levels < 2) {
-  #     stop("Insufficient unique values in `k` to create quantile levels.")
-  #   }
-  # }
-  # 
-  # # Assign levels based on quantiles
-  # fill_levels <- cut(data$k, breaks = fill_quantiles, include.lowest = TRUE, labels = 1:num_levels)
-  
-    # Step 1: Assign quantile levels using the helper function
+  # Coloring Step 1: Assign quantile levels using the helper function
   data <- assign_quantile_levels(data, k_column = "k", num_levels = 9)
   
-  # Step 2: Choose color palette based on argument
+  # Coloring Step 2: Choose color palette based on argument
   if (colorblind_friendly) {
     palette_colors <- viridis(length(levels(data$fill_levels)), option = "C")
   } else {
@@ -680,7 +617,7 @@ plot_descriptive_spec_curve <- function(data,
   data <- data %>%
     mutate(fill_manual = as.factor(fill_levels))
   
-  # Apply the same to plotdata
+  # Apply the same colors to plotdata
   plotdata <- plotdata %>%
     left_join(data %>% select(k, fill_manual) %>% distinct(), by = "k") 
   
@@ -688,11 +625,7 @@ plot_descriptive_spec_curve <- function(data,
     mutate(fill_manual = ifelse(spec == 1, fill_manual, 0),
            fill_manual = as.factor(fill_manual))
   
-  
-  # # Define color palette
-  # cols <- RColorBrewer::brewer.pal(num_levels, "Spectral")
-  # 
-  # Tile plot
+  # Create Tile plot
   tile_plot <- ggplot(data = plotdata,
                       aes(x = xvar, 
                           y = as.factor(yvar), 
@@ -704,10 +637,6 @@ plot_descriptive_spec_curve <- function(data,
     labs(x = "Specification Number", 
          y = "Which/How Factors") +
     theme_classic() +
-    # theme(legend.position = "none",
-    #       axis.text.y = element_text(colour = "black", 
-    #                                  size = 8),
-    #       axis.text.x = element_text(colour = "black"))
     theme(legend.position = "none",
           axis.text.y = element_text(colour = "black", size = 8),
           axis.text.x = element_text(colour = "black"),
@@ -721,29 +650,18 @@ plot_descriptive_spec_curve <- function(data,
       expand = F, 
       xlim = c(0, nrow(data)))
   
-  # tile_plot <- ggplot(data = plotdata, 
-  #                   aes(x = xvar, y = as.factor(yvar), fill = fill_manual)) +
-  # geom_raster() +
-  # scale_x_continuous(position = "bottom") +
-  # scale_y_discrete(labels = levels(yvar)) +
-  # scale_fill_viridis_d(option = "D", name = "Number of Studies", na.value = "white") +
-  # labs(x = "Specification Number", y = "Which/How Factors") +
-  # theme_bw() +
-  # theme(legend.position = "none",
-  #       axis.text.y = element_text(colour = "black", size = 8),
-  #       axis.text.x = element_text(colour = "black"))
+  # Create Forest plot
   
-  # Forest plot
+  ## Create Limits
   yrng <- range(c(0, data$ci.lb, data$ci.ub))
   
-  # Use user-specified limits if provided
+  ## Use user-specified limits if provided
   if (!is.null(ylim_lower)) {
     yrng[1] <- ylim_lower
   }
   if (!is.null(ylim_upper)) {
     yrng[2] <- ylim_upper
   }
-  
   
   spec_curve_plot <- data %>%
     ggplot(aes(x = x_rank, y = b)) +
@@ -766,75 +684,48 @@ plot_descriptive_spec_curve <- function(data,
 }
 ```
 
-
-
-## Test
+## Test `plot_descriptive_spec_curve`
 ```{r}
 # Generate plot
-plot_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2)
+plot_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
 ```
 
+# Vibrations of Effects
+
+## `compute_density_colors`
+
 ```{r}
-data %>% arrange(b)
+# Helper function to compute density-based coloring
+compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
+  # Choose the palette based on colorblind_friendly
+  if (colorblind_friendly) {
+    palette <- viridis(256, option = "C")  # Viridis for colorblind-friendly
+  } else {
+    palette <- rev(colorRampPalette(RColorBrewer::brewer.pal(11, "Spectral"))(256))  # Spectral
+  }
+  
+  # Compute density-based colors
+  dens_values <- densCols(
+    x = data[[x]], 
+    y = data[[y]],
+    colramp = colorRampPalette(palette)
+  )
+
+  # Add density column
+  data$density <- dens_values
+  return(data)
+} 
 ```
+
 
 ## `plot_VoE`
-
-```{r}
-library(viridis)
-
-# Step 1: Dynamically create quantile breaks
-assign_quantile_levels <- function(data, k_column, num_levels = 9) {
-  # Ensure k is numeric
-  if (!is.numeric(data[[k_column]])) stop("`k_column` must be numeric.")
-
-  # Dynamically adjust breaks for unique quantiles
-  fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
-  
-  while (length(fill_quantiles) <= num_levels) {
-    num_levels <- num_levels - 1
-    fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
-    if (num_levels < 2) stop("Insufficient unique values in `k` to create quantile levels.")
-  }
-
-  # Step 2: Assign quantile levels
-  data$fill_levels <- cut(
-    data[[k_column]],
-    breaks = fill_quantiles,
-    include.lowest = TRUE,
-    labels = 1:num_levels
-  )
-
-  return(data)
-}
-
-# Example usage
-data <- assign_quantile_levels(data, "k", num_levels = 9)
-
-# Step 3: Integrate Viridis Colors
-viridis_palette <- viridis(n = length(unique(data$fill_levels)), option = "C")  # Adjust option for aesthetics
-
-# Step 4: Plot
-tile_plot <- ggplot(data, aes(x = xvar, y = as.factor(yvar), fill = fill_levels)) +
-  geom_raster() +
-  scale_fill_manual(
-    values = viridis_palette,
-    name = "Number of Studies"
-  ) +
-  labs(x = "Specification Number", y = "Which/How Factors") +
-  theme_bw() +
-  theme(
-    legend.position = "right",
-    axis.text.y = element_text(size = 8)
-  )
-```
-
 
 ```{r}
 plot_VoE <- function(
     data,
     x = "b",  # Default x-axis variable
     y = "pvalue",     # Default y-axis variable
+    colorblind_friendly = TRUE,
     cutoff,
     x_breaks = seq(-0.5, 2, by = 0.25),  # Default x-axis breaks
     y_breaks = c(0.0000000001, 0.000000001, 0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1),  # Default y-axis breaks
@@ -844,23 +735,17 @@ plot_VoE <- function(
     hline_value = 0.05,  # Horizontal dashed line
     title_template = "{k} meta-analyses with at least {cutoff} studies."  # Title template
 ) {
-  # Replace extremely small p-values with a lower bound
+  
+  # Step 1: Replace extreme p-values to avoid log-scale errors
   data <- data %>%
     mutate(!!y := ifelse(!!sym(y) < 1e-11, 1e-11, !!sym(y))) %>% 
     filter(k >= cutoff)
   
-  # Add density coloring using Viridis
-  dens_values <- densCols(
-    x = data[[x]],
-    y = data[[y]],
-    colramp = colorRampPalette(viridisLite::viridis(256))
-  )
-  data$density <- dens_values
-  
-  # Number of rows in the dataset
+  # Step 2: Compute density-based colors
+  data <- compute_density_colors(data, x = "b", y = "pvalue", colorblind_friendly = colorblind_friendly)
+    
+  # Step 3: Plot with jitter and density-based coloring
   k <- nrow(data)
-  
-  # Create ggplot object
   p <- ggplot(data, aes_string(x = x, y = y)) +
     geom_jitter(aes(colour = density), size = 1, width = 0.001) +
     scale_color_identity() +
@@ -884,12 +769,14 @@ plot_VoE <- function(
     ggtitle(glue::glue(title_template, k = k, cutoff = cutoff))
   
   return(p)
-}
+} 
 ```
 
+## Test `plot_VoE`
 ```{r}
 plot_VoE(
   data = res,
+  colorblind_friendly = T,
   x = "b",
   y = "pval",
   cutoff = 2,
