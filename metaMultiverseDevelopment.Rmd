@@ -1,8 +1,25 @@
 ---
 title: "Function Building"
 author: "Constantin Yves Plessen"
-date: "2024-12-16"
-output: html_document
+version: "1.0.0"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: show
+    number_sections: true
+    theme: united
+    highlight: zenburn
+    df_print: paged
+editor_options: 
+  chunk_output_type: console
+params:
+  colorblind_friendly: TRUE
+  ylim_lower: -0.5
+  ylim_upper: 2.0
+license: "MIT"
+github-repo: "cyplessen/metaMultiverse"
 ---
 
 ```{r setup, include=FALSE}
@@ -108,6 +125,26 @@ calculate_pet.peese <- function(data) {
   }
   
   return(mod)
+}
+```
+
+### `add_pet_peese_corrected`
+```{r}
+# Step 1: Duplicate and correct PET-PEESE rows
+add_pet_peese_corrected <- function(data) {
+  # Identify and correct PET-PEESE results
+  pet_peese_corrected <- data %>%
+    filter(ma_method == "pet-peese") %>%
+    mutate(b = ifelse(b < 0, 0, b),  # Correct negative effect size estimates
+           ma_method = "pet-peese (corrected)")  # Update method label
+  
+  # Combine the corrected results with the original data
+  data_combined <- bind_rows(data, pet_peese_corrected)
+  
+  # Reset factor levels to ensure no duplicates
+  data_combined$ma_method <- factor(data_combined$ma_method, levels = unique(data_combined$ma_method))
+  
+  return(data_combined)
 }
 ```
 
@@ -326,7 +363,16 @@ data_multiverse <- data  # Replace with your actual dataset
 wf_vars <- paste0("wf_", 1:8)
 
 # Define "How factors"
-ma_methods <- c("reml", "fe", "p-uniform", "pet-peese", "uwls", "waap", "3-level", "rve")
+ma_methods <- c("reml", 
+                "fe", 
+                "p-uniform", 
+                "pet-peese", 
+                "pet-peese (corrected)", 
+                "uwls", 
+                "waap", 
+                "3-level", 
+                "rve")
+
 dependencies <- c("ignore", "aggregate", "modeled")
 
 # Generate specifications
@@ -487,6 +533,9 @@ run_multiverse_analysis <- function(data_multiverse, specifications, how_methods
   # Remove duplicates, keeping first occurrence (more specific which factors)
   final_results <- final_results[!duplicated(final_results[, c("b", "set", "ma_method")]), ]
   
+  if ("pet-peese (corrected)" %in% how_methods) {
+    final_results <- add_pet_peese_corrected(final_results)
+  }
   return(final_results)
 }
 ```
@@ -514,7 +563,7 @@ specifications_test_sample <- specifications %>%
 specifications_test <- specifications_test_all %>% bind_rows(specifications_test_sample)
 ```
 
-## Run
+## Run `run_multiverse_analysis`
 ```{r}
 res <- run_multiverse_analysis(data_multiverse, 
                                specifications_test, 
@@ -665,7 +714,7 @@ plot_descriptive_spec_curve <- function(data,
   
   spec_curve_plot <- data %>%
     ggplot(aes(x = x_rank, y = b)) +
-    geom_line(col = "black", size = .2) +
+    geom_line(col = "black", linewidth = .2) +
     geom_errorbar(aes(ymin = ci.lb, ymax = ci.ub, col = as.factor(fill_manual)), width = 0.1, size = 0.6) +
     geom_point(size = .2) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
@@ -687,7 +736,9 @@ plot_descriptive_spec_curve <- function(data,
 ## Test `plot_descriptive_spec_curve`
 ```{r}
 # Generate plot
-plot_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
+plot_descriptive_spec_curve(res, 
+                            ylim_upper = 2, 
+                            ylim_lower = -2, colorblind_friendly = FALSE)
 ```
 # plotly version
 
@@ -697,31 +748,37 @@ generate_tooltip <- function(data) {
   # Select all columns starting with "wf_"
   wf_columns <- grep("^wf_", colnames(data), value = TRUE)
   
+  # Helper function to split long 'set' strings into multiple lines
+  split_set_values <- function(set_string, chunk_size = 10) {
+    set_values <- unlist(strsplit(set_string, ","))  # Split by commas
+    chunks <- split(set_values, ceiling(seq_along(set_values) / chunk_size))  # Split into groups of 10
+    formatted_set <- paste(sapply(chunks, paste, collapse = ","), collapse = "<br>")
+    return(formatted_set)
+  }
+  
   # Dynamically create tooltip text
   data$tooltip <- apply(data, 1, function(row) {
     wf_text <- paste(sapply(wf_columns, function(col) paste0(col, ": ", row[col])), collapse = "<br>")
+    set_formatted <- split_set_values(as.character(row["set"]))
     paste0(
       wf_text,
       "<br><b>Mean:</b> ", round(as.numeric(row["b"]), 3),
       "<br><b>CI:</b> [", round(as.numeric(row["ci.lb"]), 3), ", ", round(as.numeric(row["ci.ub"]), 3), "]",
-      "<br><b>Studies (k):</b> ", row["k"]
+      "<br><b>Studies (k):</b> ", row["k"],
+      "<br><b>Study set (ID):</b> ", set_formatted
     )
   })
   
   return(data)
 }
-
 ```
 
+### `plot_descriptive_spec_curve_plotly`
 ```{r}
-data <- res
-```
-
-```{r}
-plot_descriptive_spec_curve <- function(data, 
-                                        ylim_lower = NULL, 
-                                        ylim_upper = NULL,
-                                        colorblind_friendly = TRUE) {
+plot_descriptive_spec_curve_plotly <- function(data, 
+                                               ylim_lower = NULL, 
+                                               ylim_upper = NULL,
+                                               colorblind_friendly = TRUE) {
   
   # Dynamically detect WF and How factors
   wf_cols <- colnames(data)[grep("^wf_", colnames(data))]
@@ -787,7 +844,7 @@ plot_descriptive_spec_curve <- function(data,
     mutate(fill_manual = ifelse(spec == 1, fill_manual, 0),
            fill_manual = as.factor(fill_manual))
   
-   ## === TILE PLOT === ##
+  ## === TILE PLOT === ##
   tile_plot <- ggplot(data = plotdata,
                       aes(x = xvar, 
                           y = as.factor(yvar), 
@@ -831,7 +888,7 @@ plot_descriptive_spec_curve <- function(data,
   spec_curve_plot <- data %>%
     ggplot(aes(x = x_rank, y = b,
                text = tooltip)) +
-    geom_line(col = "black", size = .2) +
+    geom_line(col = "black", linewidth = .2) +
     geom_errorbar(aes(ymin = ci.lb, ymax = ci.ub, col = as.factor(fill_manual)), width = 0.1, size = 0.6) +
     geom_point(size = .2) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
@@ -856,19 +913,16 @@ plot_descriptive_spec_curve <- function(data,
 }
 ```
 
-```{r}
-plotdata %>% arrange(xvar)
-```
 
+## Test `plot_descriptive_spec_curve_plotly`
 ```{r}
 # Generate plot
-plot_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
+plot_descriptive_spec_curve_plotly(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
 ```
 
 # CGPT
 
-
-```{r}
+```{r eval=F}
 # Example function to create the tile plot with row-level hover
 tile_plot_with_row_hover <- function(data, colorblind_friendly = TRUE) {
   # Detect WF and How factors
@@ -904,7 +958,7 @@ tile_plot_with_row_hover <- function(data, colorblind_friendly = TRUE) {
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           legend.position = "none")
-
+  
   # Convert to interactive plot with ggplotly
   interactive_plot <- ggplotly(tile_plot, tooltip = "text")
   
@@ -927,10 +981,7 @@ example_data <- data.frame(
 # Run the function
 tile_plot_with_row_hover(example_data, colorblind_friendly = TRUE)
 
-```
 
-
-```{r}
 library(ggplot2)
 library(plotly)
 library(viridis)
@@ -984,24 +1035,24 @@ plot_descriptive_spec_curve <- function(data,
   wf_cols <- grep("^wf_", colnames(data), value = TRUE)
   how_cols <- c("ma_method")
   all_factors <- c(wf_cols, how_cols)
-
+  
   # Prepare rank for x-axis
   data$x_rank <- rank(data$b, ties.method = "random")
   
   # Assign quantile-based fill levels
   data <- assign_quantile_levels(data, k_column = "k", num_levels = 9)
   palette_colors <- if (colorblind_friendly) viridis(9, option = "C") else rev(RColorBrewer::brewer.pal(9, "Spectral"))
-
+  
   # Generate tooltips
   data <- generate_tooltip(data)
-
+  
   ## === TILE PLOT === ##
   # Prepare plot data
   plotdata <- data %>%
     select(all_of(all_factors), x_rank, k, fill_levels) %>%
     pivot_longer(cols = all_of(all_factors), names_to = "factor", values_to = "value") %>%
     mutate(fill_manual = as.factor(fill_levels))
-
+  
   # Tile plot
   tile_plot <- ggplot(plotdata, aes(x = x_rank, y = factor, fill = fill_manual, text = paste("Value:", value))) +
     geom_tile() +
@@ -1012,12 +1063,12 @@ plot_descriptive_spec_curve <- function(data,
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           legend.position = "none")
-
+  
   ## === FOREST PLOT === ##
   yrng <- range(c(data$ci.lb, data$ci.ub), na.rm = TRUE)
   if (!is.null(ylim_lower)) yrng[1] <- ylim_lower
   if (!is.null(ylim_upper)) yrng[2] <- ylim_upper
-
+  
   spec_curve_plot <- ggplot(data, aes(x = x_rank, y = b, text = tooltip)) +
     geom_line(color = "black", size = 0.5) +
     geom_errorbar(aes(ymin = ci.lb, ymax = ci.ub, color = fill_levels), width = 0.1) +
@@ -1030,7 +1081,7 @@ plot_descriptive_spec_curve <- function(data,
     theme(legend.position = "none",
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank())
-
+  
   ## === MAKE PLOTS INTERACTIVE === ##
   spec_curve_plotly <- ggplotly(spec_curve_plot, tooltip = "text")
   tile_plot_plotly <- ggplotly(tile_plot, tooltip = "text")
@@ -1039,8 +1090,7 @@ plot_descriptive_spec_curve <- function(data,
   p <- subplot(spec_curve_plotly, tile_plot_plotly, nrows = 2, shareX = TRUE, titleY = TRUE)
   p
 }
-```
-```{r}
+
 plot_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
 ```
 
