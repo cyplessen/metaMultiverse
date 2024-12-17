@@ -759,7 +759,9 @@ generate_tooltip <- function(data) {
   # Dynamically create tooltip text
   data$tooltip <- apply(data, 1, function(row) {
     wf_text <- paste(sapply(wf_columns, function(col) paste0(col, ": ", row[col])), collapse = "<br>")
+    
     set_formatted <- split_set_values(as.character(row["set"]))
+    
     paste0(
       wf_text,
       "<br><b>Mean:</b> ", round(as.numeric(row["b"]), 3),
@@ -775,7 +777,7 @@ generate_tooltip <- function(data) {
 
 ### `plot_descriptive_spec_curve_plotly`
 ```{r}
-plot_descriptive_spec_curve_plotly <- function(data, 
+plotly_descriptive_spec_curve <- function(data, 
                                                ylim_lower = NULL, 
                                                ylim_upper = NULL,
                                                colorblind_friendly = TRUE) {
@@ -914,10 +916,10 @@ plot_descriptive_spec_curve_plotly <- function(data,
 ```
 
 
-## Test `plot_descriptive_spec_curve_plotly`
+## Test `plotly_descriptive_spec_curve`
 ```{r}
 # Generate plot
-plot_descriptive_spec_curve_plotly(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
+plotly_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
 ```
 
 # CGPT
@@ -1177,9 +1179,103 @@ plot_VoE <- function(
 } 
 ```
 
-## Test `plot_VoE`
+## plotly Version
+
 ```{r}
-plot_VoE(
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(glue)
+
+# Function to compute density-based coloring
+compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
+  dens_values <- densCols(
+    x = data[[x]],
+    y = data[[y]],
+    colramp = if (colorblind_friendly) colorRampPalette(viridis::viridis(256)) else colorRampPalette(rev(rainbow(10, end = 4/6)))
+  )
+  data$density <- dens_values
+  return(data)
+}
+
+# Function to generate tooltips
+generate_tooltip <- function(data, x, y, k_col = "k", set_col = "set") {
+  data %>%
+    mutate(
+      tooltip = glue::glue(
+        "<b>Effect Size (b):</b> {round(b, 3)}<br>",
+        "<b>P-value:</b> {scales::scientific(pval, digits = 8)}<br>",
+        "<b>Number of Studies:</b> {get(k_col)}<br>",
+        "<b>Study Set:</b> {stringr::str_wrap(get(set_col), width = 30)}"
+      )
+    )
+}
+
+# Interactive VoE Plotly Function
+plotly_VoE <- function(
+    data,
+    x = "b",  
+    y = "pvalue",  
+    colorblind_friendly = TRUE,
+    cutoff = 10,
+    x_breaks = seq(-0.5, 2, by = 0.25),
+    y_breaks = c(1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 0.001, 0.01, 0.05, 0.1, 0.5, 1),
+    x_limits = c(-0.7, 2.1),
+    y_limits = c(1e-11, 1),
+    vertical_lines = c(0.1, 0.9),
+    hline_value = 0.05,
+    title_template = "{k} meta-analyses with at least {cutoff} studies."
+) {
+  
+  # Replace extreme p-values and filter based on cutoff
+  data <- data %>%
+    mutate(!!y := ifelse(!!sym(y) < 1e-11, 1e-11, !!sym(y))) %>%
+    filter(k >= cutoff)
+  
+  # Compute density-based colors
+  data <- compute_density_colors(data, x, y, colorblind_friendly)
+  
+  # Add tooltips
+  data <- generate_tooltip(data, x, y)
+  
+  # Number of analyses
+  k <- nrow(data)
+  
+  # Base ggplot
+  p <- ggplot(data, aes_string(x = x, y = y, text = "tooltip")) +
+    geom_jitter(aes(colour = density), size = 1, width = 0.001) +
+    scale_color_identity() +
+    theme_bw() +
+    geom_hline(yintercept = hline_value, linetype = 2, color = "black") +
+    geom_vline(xintercept = quantile(data[[x]], vertical_lines, na.rm = TRUE), color = "red", linetype = 2) +
+    scale_y_continuous(
+      trans = "log",
+      breaks = y_breaks,
+      labels = scales::label_scientific(),
+      limits = y_limits
+    ) +
+    scale_x_continuous(
+      breaks = x_breaks,
+      limits = x_limits
+    ) +
+    labs(
+      x = "Effect Size (b)",
+      y = "P-value",
+      title = glue(title_template, k = k, cutoff = cutoff)
+    ) +
+    theme(
+      panel.border = element_blank(),
+      plot.title = element_text(size = 10)
+    )
+  
+  # Convert to interactive Plotly plot
+  p_plotly <- ggplotly(p, tooltip = "text") %>%
+    layout(hoverlabel = list(bgcolor = "white", font = list(color = "black")))
+  
+  return(p_plotly)
+}
+
+plotly_VoE(
   data = res,
   colorblind_friendly = T,
   x = "b",
@@ -1192,7 +1288,5 @@ plot_VoE(
   title_template = "Vibration of Effects: {k} analyses with cutoff = {cutoff}"
 )
 ```
-
-
 
 
