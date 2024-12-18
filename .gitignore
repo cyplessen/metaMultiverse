@@ -51,5 +51,7 @@ rsconnect/
 # Mac OS specific
 .DS_Store
 
-# Package Specific
+
+# Package specific
 dev/
+.html
