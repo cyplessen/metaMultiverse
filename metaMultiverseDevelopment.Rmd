@@ -13,7 +13,7 @@ output:
     highlight: zenburn
     df_print: paged
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 params:
   colorblind_friendly: TRUE
   ylim_lower: -0.5
@@ -26,13 +26,280 @@ github-repo: "cyplessen/metaMultiverse"
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(viridis)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(glue)
 ```
 
-# Load Data
+
+# Step 1. Validate Data with Data Validator
+
+## Load Data
 ```{r}
 digDep_data_multiverse <- read_csv("~/Documents/GitHub/multiverse-meta-analysis-depression/data/tidy/digDep_multiverse_data.csv")
+
+## Select required variables and create example data set
+data <- digDep_data_multiverse %>% 
+  select(study,
+         es_id,
+         yi,
+         vi,
+         sei,
+         wf_1:wf_8,
+         condition_arm1,
+         condition_arm2
+  ) # %>% head(20) 
 ```
-## Helper Functions
+
+## `check_data_multiverse`
+```{r}
+check_data_multiverse <- function(data) {
+  # Required columns
+  required_columns <- c(
+    "study", "es_id", "yi", "vi", "sei",
+    "condition_arm1", "condition_arm2"
+  )
+  
+  # Dynamically detect wf columns (e.g., wf_1, wf_2, ...)
+  wf_columns <- grep("^wf_", colnames(data), value = TRUE)
+  
+  # Combine required and dynamically detected wf columns
+  all_required_columns <- c(required_columns, wf_columns)
+  
+  # Check if all required columns are present
+  missing_columns <- setdiff(all_required_columns, colnames(data))
+  if (length(missing_columns) > 0) {
+    stop(paste("Missing required columns:", paste(missing_columns, collapse = ", ")))
+  }
+  
+  # Check data types
+  expected_types <- list(
+    study = "character",
+    es_id = "numeric",
+    yi = "numeric",
+    vi = "numeric",
+    sei = "numeric",
+    condition_arm1 = "character",
+    condition_arm2 = "character"
+  )
+  
+  type_mismatches <- purrr::map_lgl(names(expected_types), function(col) {
+    if (!inherits(data[[col]], expected_types[[col]])) {
+      message(sprintf("Column '%s' has incorrect type. Expected: %s", col, expected_types[[col]]))
+      return(TRUE)
+    }
+    FALSE
+  })
+  
+  if (any(type_mismatches)) {
+    stop("One or more columns have incorrect data types. See messages above.")
+  }
+  
+  # Check for missing values
+  missing_values <- colSums(is.na(data[all_required_columns]))
+  if (any(missing_values > 0)) {
+    warning("Some required columns contain missing values:\n", 
+            paste(names(missing_values[missing_values > 0]), 
+                  missing_values[missing_values > 0], 
+                  sep = ": ", collapse = "\n"))
+  }
+  
+  # Check unique es_id
+  if (anyDuplicated(data$es_id)) {
+    stop("Duplicate values found in 'es_id'. Each effect size must have a unique identifier.")
+  }
+  
+  # Dynamic validation for wf variables (e.g., categorical levels)
+  wf_checks <- purrr::map(wf_columns, function(wf_col) {
+    if (!is.character(data[[wf_col]])) {
+      message(sprintf("Column '%s' should be a character variable.", wf_col))
+      return(FALSE)
+    }
+    TRUE
+  })
+  
+  if (!all(unlist(wf_checks))) {
+    stop("One or more 'wf_' columns have incorrect data types.")
+  }
+  
+  # Success message if all checks pass
+  message("Data check passed. Dataset is valid.")
+  return(TRUE)
+}
+```
+
+## Inspect data 
+
+```{r}
+glimpse(data)
+```
+
+```{r}
+check_data_multiverse(data)
+```
+
+
+# Step 2. Create specifications
+
+### `create_multiverse_specifications`
+```{r}
+# Function to create specifications for multiverse meta-analysis
+create_multiverse_specifications <- function(data, wf_vars, ma_methods, dependencies) {
+  # Input validation
+  if (!is.data.frame(data)) stop("`data` must be a data frame.")
+  if (!all(wf_vars %in% colnames(data))) stop("Not all `wf_vars` are present in the dataset.")
+  
+  # Create "Which factors"
+  wf_factors <- lapply(wf_vars, function(wf) {
+    unique_values <- unique(data[[wf]])
+    c(unique_values, paste0("total_", wf))
+  })
+  
+  names(wf_factors) <- wf_vars
+  
+  # Validate "How factors"
+  if (length(ma_methods) == 0) stop("`ma_methods` must include at least one method.")
+  if (length(dependencies) == 0) stop("`dependencies` must include at least one dependency.")
+  
+  # Dynamically build the expand.grid call
+  grid_args <- c(wf_factors, list(dependency = dependencies, ma_method = ma_methods))
+  
+  # Generate the specifications grid
+  specifications_grid <- do.call(expand.grid, grid_args)
+  
+  
+  # Prune impossible paths
+  specifications_grid <- specifications_grid %>%
+    filter((dependency == "modeled" & 
+              ma_method %in% c("3-level", "rve")) | 
+             (dependency == "aggregate" & 
+                ma_method %in% c("reml", "fe", "p-uniform", "pet-peese", "uwls", "waap")) | 
+             (dependency == "ignore" & 
+                ma_method %in% c("reml", "fe"))) %>% 
+    mutate(row_id = row_number())
+  
+  # Return final specifications grid
+  specifications <- data.frame(specifications_grid)
+  number_specs <- nrow(specifications)
+  
+  list(
+    specifications = specifications,
+    number_specs = number_specs
+  )
+}
+```
+
+### Setup
+```{r}
+# Example dataset
+data_multiverse <- data  # Replace with your actual dataset
+
+# Define "Which factors"
+wf_vars <- paste0("wf_", 1:8)
+
+# Lookup table for WF labels
+wf_label_lookup <- list(
+  wf_1 = "Technology",
+  wf_2 = "Guidance",
+  wf_3 = "Target Group",
+  wf_4 = "Therapy Type",
+  wf_5 = "Control Group",
+  wf_6 = "Diagnosis",
+  wf_7 = "Risk of Bias",
+  wf_8 = "Time Point"
+)
+
+# Define "How factors"
+ma_methods <- c("reml", 
+                "fe", 
+                "p-uniform", 
+                "pet-peese", 
+                "pet-peese (corrected)", 
+                "uwls", 
+                "waap", 
+                "3-level", 
+                "rve")
+
+dependencies <- c("ignore", "aggregate", "modeled")
+```
+
+## Run `create_multiverse_specifications`
+```{r}
+# Generate specifications
+results <- create_multiverse_specifications(
+  data_multiverse, 
+  wf_vars, 
+  ma_methods, 
+  dependencies)
+
+specifications <- results$specifications
+```
+
+
+# Step 3. Run Multiverse
+
+## `general_multiverse`
+
+```{r}
+general_multiverse <- function(i, data_multiverse, specifications, how_methods) {
+  # Prepare output
+  out <- list()
+  dat <- as.data.frame(data_multiverse)
+  
+  # Apply "Which" factors dynamically
+  for (wf in names(specifications)[grepl("^wf_", names(specifications))]) {
+    filter_value <- specifications[[wf]][i]
+    if (!grepl("^total_", filter_value)) {
+      dat <- dat[dat[[wf]] == filter_value, ]
+    }
+  }
+  
+  # Remove rows with missing `yi` or `vi` values
+  dat <- tidyr::drop_na(dat, dplyr::any_of(c("yi", "vi")))
+  set <- paste(dat$es_id, collapse = ",")
+  
+  # Only compute if at least 2 unique studies
+  if (length(unique(dat$study)) < 2) {
+    return(NULL)
+  }
+  
+  # Handle "How" factors dynamically
+  dependency <- specifications$dependency[i]
+  ma_method <- specifications$ma_method[i]
+  
+  # Ignoring dependency
+  if (dependency == "ignore") {
+    mod <- run_ignore_dependency(dat, ma_method, how_methods)
+  }
+  
+  # Aggregating dependency
+  else if (dependency == "aggregate") {
+    mod <- run_aggregate_dependency(dat, ma_method, how_methods)
+  }
+  
+  # Modeling dependency
+  else if (dependency == "modeled") {
+    mod <- run_modeled_dependency(dat, ma_method, how_methods)
+  }
+  
+  # Return results
+  out <- data.frame(
+    specifications[i, ],
+    b = mod$b[[1]],
+    ci.lb = mod$ci.lb[[1]],
+    ci.ub = mod$ci.ub[[1]],
+    pval = mod$pval[[1]],
+    k = nrow(dat),
+    set
+  )
+  
+  return(out)
+}
+```
+
+
+## Meta-Analytical Models
 
 ### `calculate_puni_star`
 
@@ -134,8 +401,8 @@ calculate_pet.peese <- function(data) {
 add_pet_peese_corrected <- function(data) {
   # Identify and correct PET-PEESE results
   pet_peese_corrected <- data %>%
-    filter(ma_method == "pet-peese") %>%
-    mutate(b = ifelse(b < 0, 0, b),  # Correct negative effect size estimates
+    filter(ma_method == "pet-peese" & b < 0) %>%  # Only keep rows where b < 0
+    mutate(b = 0,  # Correct negative effect size estimates
            ma_method = "pet-peese (corrected)")  # Update method label
   
   # Combine the corrected results with the original data
@@ -189,8 +456,8 @@ calculate_waap <- function(dat) {
     mod$ci.ub <- NA
   } else{
     reg_waap=lm(t[powered]~ 0 + Precision[powered])
-    mod$pval  <- coef(summary(reg_waap))["Precision[powered]", "Pr(>|t|)"] # pet p-value < .10 -> peese
-    mod$b     <- coef(summary(reg_waap))["Precision[powered]", "Estimate"] # peese estimate
+    mod$pval  <- coef(summary(reg_waap))["Precision[powered]", "Pr(>|t|)"] 
+    mod$b     <- coef(summary(reg_waap))["Precision[powered]", "Estimate"] 
     mod$ci.lb <- confint(reg_waap)["Precision[powered]", "2.5 %"] 
     mod$ci.ub <- confint(reg_waap)["Precision[powered]", "97.5 %"] 
   }
@@ -199,250 +466,8 @@ calculate_waap <- function(dat) {
 
 ```
 
-## Select required variables and create example data set
-```{r}
-data <- digDep_data_multiverse %>% 
-  select(study,
-         es_id,
-         yi,
-         vi,
-         sei,
-         wf_1:wf_8,
-         condition_arm1,
-         condition_arm2
-  ) %>% 
-  head(20) 
-```
 
-# Data validator
-
-### `check_data_multiverse`
-```{r}
-check_data_multiverse <- function(data) {
-  # Required columns
-  required_columns <- c(
-    "study", "es_id", "yi", "vi", "sei",
-    "condition_arm1", "condition_arm2"
-  )
-  
-  # Dynamically detect wf columns (e.g., wf_1, wf_2, ...)
-  wf_columns <- grep("^wf_", colnames(data), value = TRUE)
-  
-  # Combine required and dynamically detected wf columns
-  all_required_columns <- c(required_columns, wf_columns)
-  
-  # Check if all required columns are present
-  missing_columns <- setdiff(all_required_columns, colnames(data))
-  if (length(missing_columns) > 0) {
-    stop(paste("Missing required columns:", paste(missing_columns, collapse = ", ")))
-  }
-  
-  # Check data types
-  expected_types <- list(
-    study = "character",
-    es_id = "numeric",
-    yi = "numeric",
-    vi = "numeric",
-    sei = "numeric",
-    condition_arm1 = "character",
-    condition_arm2 = "character"
-  )
-  
-  type_mismatches <- purrr::map_lgl(names(expected_types), function(col) {
-    if (!inherits(data[[col]], expected_types[[col]])) {
-      message(sprintf("Column '%s' has incorrect type. Expected: %s", col, expected_types[[col]]))
-      return(TRUE)
-    }
-    FALSE
-  })
-  
-  if (any(type_mismatches)) {
-    stop("One or more columns have incorrect data types. See messages above.")
-  }
-  
-  # Check for missing values
-  missing_values <- colSums(is.na(data[all_required_columns]))
-  if (any(missing_values > 0)) {
-    warning("Some required columns contain missing values:\n", 
-            paste(names(missing_values[missing_values > 0]), 
-                  missing_values[missing_values > 0], 
-                  sep = ": ", collapse = "\n"))
-  }
-  
-  # Check unique es_id
-  if (anyDuplicated(data$es_id)) {
-    stop("Duplicate values found in 'es_id'. Each effect size must have a unique identifier.")
-  }
-  
-  # Dynamic validation for wf variables (e.g., categorical levels)
-  wf_checks <- purrr::map(wf_columns, function(wf_col) {
-    if (!is.character(data[[wf_col]])) {
-      message(sprintf("Column '%s' should be a character variable.", wf_col))
-      return(FALSE)
-    }
-    TRUE
-  })
-  
-  if (!all(unlist(wf_checks))) {
-    stop("One or more 'wf_' columns have incorrect data types.")
-  }
-  
-  # Success message if all checks pass
-  message("Data check passed. Dataset is valid.")
-  return(TRUE)
-}
-```
-
-## Inspect data 
-
-```{r}
-glimpse(data)
-```
-
-```{r}
-check_data_multiverse(data)
-```
-
-
-# Create specifications
-
-### `create_multiverse_specifications`
-```{r}
-# Function to create specifications for multiverse meta-analysis
-create_multiverse_specifications <- function(data, wf_vars, ma_methods, dependencies) {
-  # Input validation
-  if (!is.data.frame(data)) stop("`data` must be a data frame.")
-  if (!all(wf_vars %in% colnames(data))) stop("Not all `wf_vars` are present in the dataset.")
-  
-  # Create "Which factors"
-  wf_factors <- lapply(wf_vars, function(wf) {
-    unique_values <- unique(data[[wf]])
-    c(unique_values, paste0("total_", wf))
-  })
-  
-  names(wf_factors) <- wf_vars
-  
-  # Validate "How factors"
-  if (length(ma_methods) == 0) stop("`ma_methods` must include at least one method.")
-  if (length(dependencies) == 0) stop("`dependencies` must include at least one dependency.")
-  
-  # Dynamically build the expand.grid call
-  grid_args <- c(wf_factors, list(dependency = dependencies, ma_method = ma_methods))
-  
-  # Generate the specifications grid
-  specifications_grid <- do.call(expand.grid, grid_args)
-  
-  
-  # Prune impossible paths
-  specifications_grid <- specifications_grid %>%
-    filter((dependency == "modeled" & 
-              ma_method %in% c("3-level", "rve")) | 
-             (dependency == "aggregate" & 
-                ma_method %in% c("reml", "fe", "p-uniform", "pet-peese", "uwls", "waap")) | 
-             (dependency == "ignore" & 
-                ma_method %in% c("reml", "fe"))) %>% 
-    mutate(row_id = row_number())
-  
-  # Return final specifications grid
-  specifications <- data.frame(specifications_grid)
-  number_specs <- nrow(specifications)
-  
-  list(
-    specifications = specifications,
-    number_specs = number_specs
-  )
-}
-```
-
-### Setup
-```{r}
-# Example dataset
-data_multiverse <- data  # Replace with your actual dataset
-
-# Define "Which factors"
-wf_vars <- paste0("wf_", 1:8)
-
-# Define "How factors"
-ma_methods <- c("reml", 
-                "fe", 
-                "p-uniform", 
-                "pet-peese", 
-                "pet-peese (corrected)", 
-                "uwls", 
-                "waap", 
-                "3-level", 
-                "rve")
-
-dependencies <- c("ignore", "aggregate", "modeled")
-
-# Generate specifications
-results <- create_multiverse_specifications(data_multiverse, wf_vars, ma_methods, dependencies)
-
-specifications <- results$specifications
-```
-
-
-# Run Multiverse
-
-## `general_multiverse`
-```{r}
-general_multiverse <- function(i, data_multiverse, specifications, how_methods) {
-  # Prepare output
-  out <- list()
-  dat <- as.data.frame(data_multiverse)
-  
-  # Apply "Which" factors dynamically
-  for (wf in names(specifications)[grepl("^wf_", names(specifications))]) {
-    filter_value <- specifications[[wf]][i]
-    if (!grepl("^total_", filter_value)) {
-      dat <- dat[dat[[wf]] == filter_value, ]
-    }
-  }
-  
-  # Remove rows with missing `yi` or `vi` values
-  dat <- tidyr::drop_na(dat, dplyr::any_of(c("yi", "vi")))
-  set <- paste(dat$es_id, collapse = ",")
-  
-  # Only compute if at least 2 unique studies
-  if (length(unique(dat$study)) < 2) {
-    return(NULL)
-  }
-  
-  # Handle "How" factors dynamically
-  dependency <- specifications$dependency[i]
-  ma_method <- specifications$ma_method[i]
-  
-  # Ignoring dependency
-  if (dependency == "ignore") {
-    mod <- run_ignore_dependency(dat, ma_method, how_methods)
-  }
-  
-  # Aggregating dependency
-  else if (dependency == "aggregate") {
-    mod <- run_aggregate_dependency(dat, ma_method, how_methods)
-  }
-  
-  # Modeling dependency
-  else if (dependency == "modeled") {
-    mod <- run_modeled_dependency(dat, ma_method, how_methods)
-  }
-  
-  # Return results
-  out <- data.frame(
-    specifications[i, ],
-    b = mod$b[[1]],
-    ci.lb = mod$ci.lb[[1]],
-    ci.ub = mod$ci.ub[[1]],
-    pval = mod$pval[[1]],
-    k = nrow(dat),
-    set
-  )
-  
-  return(out)
-}
-```
-
-### `run_aggregate_dependency`
+## `run_aggregate_dependency`
 ```{r}
 run_aggregate_dependency <- function(dat, ma_method, how_methods) {
   # Calculate effect sizes
@@ -475,7 +500,7 @@ run_aggregate_dependency <- function(dat, ma_method, how_methods) {
 }
 ```
 
-### `run_ignore_dependency`
+## `run_ignore_dependency`
 ```{r}
 run_ignore_dependency <- function(dat, ma_method, how_methods) {
   if (ma_method == "fe" & "fe" %in% how_methods) {
@@ -488,28 +513,35 @@ run_ignore_dependency <- function(dat, ma_method, how_methods) {
 }
 ```
 
-### `run_modeled_dependency`
+## `run_modeled_dependency`
 ```{r}
 # Helper function for "Modeled Dependency"
 run_modeled_dependency <- function(dat, ma_method, how_methods) {
   if (sum(duplicated(dat$study)) > 1) {
+    # Try to fit the model
     mod_modeled <- tryCatch({
       metafor::rma.mv(
         data = dat, yi = yi, V = vi, method = "REML",
         random = list(~1 | es_id, ~1 | study), sparse = TRUE
       )
-    }, error = function(e) list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA))
+    }, error = function(e) list(error = TRUE))  # Add an error indicator
     
-    if (ma_method == "3-level" & "3-level" %in% how_methods) {
-      return(mod_modeled)
-    } else if (ma_method == "rve" & "rve" %in% how_methods) {
-      metafor::robust(mod_modeled, cluster = dat$study, clubSandwich = TRUE)
-    } else {
-      list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)
+    # Check if the model fitting was successful
+    if (!is.list(mod_modeled) || is.null(mod_modeled$error)) {
+      if (ma_method == "3-level" & "3-level" %in% how_methods) {
+        return(mod_modeled)
+      } else if (ma_method == "rve" & "rve" %in% how_methods) {
+        return(tryCatch({
+          metafor::robust(mod_modeled, 
+                          cluster = dat$study, 
+                          clubSandwich = TRUE)
+        }, error = function(e) list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)))
+      }
     }
-  } else {
-    list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)
   }
+  
+  # Default return if no valid model or unsupported method
+  list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)
 }
 ```
 
@@ -541,10 +573,11 @@ run_multiverse_analysis <- function(data_multiverse, specifications, how_methods
 ```
 
 
-# Test `run_multiverse_analysis`
+## Test `run_multiverse_analysis`
 
-## Select Data Set
+### Select Data Set
 ```{r}
+set.seed(42)
 specifications_test_all <- specifications %>% 
   filter(
     #dependency == "aggregate" & 
@@ -558,23 +591,108 @@ specifications_test_all <- specifications %>%
       wf_8 == "total_wf_8")
 
 specifications_test_sample <- specifications %>% 
-  sample_n(1000)
+  sample_n(2000)
 
 specifications_test <- specifications_test_all %>% bind_rows(specifications_test_sample)
+
+# specifications <- specifications_test
 ```
 
-## Run `run_multiverse_analysis`
+### Run `run_multiverse_analysis`
 ```{r}
 res <- run_multiverse_analysis(data_multiverse, 
-                               specifications_test, 
+                               specifications, 
                                how_methods = ma_methods)
+res %>% glimpse()
 ```
 
 
-# Visualisation
+# Step 4. Data Visualisation
 
-## Helper Functions
+## Spec Curve
 
+```{r}
+# Flexible lookup table for WF and How factors
+factor_label_lookup <- list(
+  wf_1 = "Technology",
+  wf_2 = "Guidance",
+  wf_3 = "Target Group",
+  wf_4 = "Therapy Type",
+  wf_5 = "Control Group",
+  wf_6 = "Diagnosis",
+  wf_7 = "Risk of Bias",
+  wf_8 = "Time Point",
+  ma_method = "Meta-Analysis Method"  # Include ma_method explicitly
+)
+```
+
+### `generate_dynamic_labels`
+```{r}
+generate_dynamic_labels <- function(data, lookup_table) {
+  # Detect wf_ columns and include ma_method
+  factor_cols <- c(
+    colnames(data)[grep("^wf_", colnames(data))],
+    "ma_method"
+  )
+  
+  # Map columns to human-readable labels
+  factor_labels <- sapply(factor_cols, function(col) {
+    if (!is.null(lookup_table[[col]])) {
+      lookup_table[[col]]  # Use lookup table if match exists
+    } else {
+      col  # Fallback to original column name
+    }
+  }, USE.NAMES = TRUE)
+  
+  return(factor_labels)
+}
+```
+
+### `generate_tooltip`
+```{r}
+# Helper Function to Dynamically Generate Tooltip Text
+generate_tooltip <- function(data, factor_label_lookup) {
+  # Select all columns starting with "wf_"
+  wf_columns <- grep("^wf_", colnames(data), value = TRUE)
+  
+  # Helper function to split long 'set' strings into multiple lines
+  split_set_values <- function(set_string, chunk_size = 10) {
+    set_values <- unlist(strsplit(set_string, ","))  # Split by commas
+    chunks <- split(set_values, ceiling(seq_along(set_values) / chunk_size))  # Split into groups of 10
+    formatted_set <- paste(sapply(chunks, paste, collapse = ","), collapse = "<br>")
+    return(formatted_set)
+  }
+  
+  # Dynamically create tooltip text
+  data$tooltip <- apply(data, 1, function(row) {
+    wf_text <- paste(sapply(wf_columns, function(col) {
+      value <- as.character(row[col])
+      label <- factor_label_lookup[[col]]
+      
+      # Replace "total_" values with "Combined"
+      if (grepl("total_", value)) {
+        paste0(label, ": Combined")
+      } else {
+        paste0(label, ": ", str_to_sentence(value))
+      }
+    }), collapse = "<br>")
+    
+    # Format the study set
+    set_formatted <- split_set_values(as.character(row["set"]))
+    
+    # Construct the final tooltip text
+    paste0(
+      wf_text,
+      "<br><b>Mean:</b> ", round(as.numeric(row["b"]), 3),
+      "<br><b>CI:</b> [", round(as.numeric(row["ci.lb"]), 3), ", ", round(as.numeric(row["ci.ub"]), 3), "]",
+      "<br><b>Studies (k):</b> ", row["k"],
+      "<br><b>Study set (ID):</b> ", set_formatted
+    )
+  })
+  
+  return(data)
+}
+```
 ### `assign_quantile_levels`
 ```{r}
 # Function to assign quantile-based levels
@@ -603,203 +721,42 @@ assign_quantile_levels <- function(data, k_column, num_levels = 9) {
 }
 ```
 
-## `plot_descriptive_spec_curve`
 
-```{r}
-plot_descriptive_spec_curve <- function(data, 
-                                        ylim_lower = NULL, 
-                                        ylim_upper = NULL,
-                                        colorblind_friendly = TRUE) {
-  
-  # Dynamically detect WF and How factors
-  wf_cols <- colnames(data)[grep("^wf_", colnames(data))]
-  how_cols <- colnames(data)[colnames(data) %in% c("ma_method")]  # Adjust if more How factors are added
-  
-  # Combine WF and How factors
-  all_factors <- c(wf_cols, how_cols)
-  
-  # Generate x-variable (ranking)
-  x_rank <- rank(data$b, ties.method = "random")
-  
-  # Generate y-variable (all levels, reversed for plotting)
-  factor_levels <- lapply(all_factors, function(col) unique(data[[col]]))
-  names(factor_levels) <- all_factors
-  
-  yvar <- rep(factor(
-    rev(unlist(factor_levels)), 
-    levels = rev(unlist(factor_levels))
-  ), times = nrow(data))
-  
-  # Generate x-variable (repeated for yvar length)
-  xvar <- rep(x_rank, each = length(levels(yvar)))
-  
-  # Select relevant columns for plotting
-  data <- data %>%
-    select(all_of(all_factors), b, ci.lb, ci.ub, pval, k, set)
-  
-  # Create spec matrix
-  spec <- NULL
-  for (i in 1:nrow(data)) {
-    id <- as.numeric(levels(yvar) %in% 
-                       as.character(unlist(data[i, all_factors])))
-    spec <- c(spec, id)
-  }
-  
-  # Prepare plot data
-  plotdata <- data.frame(xvar, yvar, spec)
-  
-  # Add k values and assign fill
-  plotdata$k <- rep(data$k, each = length(levels(yvar)))
-  plotdata$fill<- as.factor(plotdata$k * plotdata$spec)
-  
-  # Coloring Step 1: Assign quantile levels using the helper function
-  data <- assign_quantile_levels(data, k_column = "k", num_levels = 9)
-  
-  # Coloring Step 2: Choose color palette based on argument
-  if (colorblind_friendly) {
-    palette_colors <- viridis(length(levels(data$fill_levels)), option = "C")
-  } else {
-    palette_colors <- rev(RColorBrewer::brewer.pal(length(levels(data$fill_levels)), "Spectral"))
-  }
-  
-  # Add `fill_manual` to data
-  data <- data %>%
-    mutate(fill_manual = as.factor(fill_levels))
-  
-  # Apply the same colors to plotdata
-  plotdata <- plotdata %>%
-    left_join(data %>% select(k, fill_manual) %>% distinct(), by = "k") 
-  
-  plotdata <- plotdata %>%
-    mutate(fill_manual = ifelse(spec == 1, fill_manual, 0),
-           fill_manual = as.factor(fill_manual))
-  
-  # Create Tile plot
-  tile_plot <- ggplot(data = plotdata,
-                      aes(x = xvar, 
-                          y = as.factor(yvar), 
-                          fill = fill_manual)) +
-    geom_raster() +
-    scale_x_continuous(position = "bottom") +
-    scale_y_discrete(labels = levels(yvar)) +
-    scale_fill_manual(values = c("white", palette_colors)) +
-    labs(x = "Specification Number", 
-         y = "Which/How Factors") +
-    theme_classic() +
-    theme(legend.position = "none",
-          axis.text.y = element_text(colour = "black", size = 8),
-          axis.text.x = element_text(colour = "black"),
-          axis.ticks = element_line(colour = "black"),
-          plot.margin = margin(t = 5.5, 
-                               r = 5.5, 
-                               b = 5.5, 
-                               l = 5.5, 
-                               unit = "pt")) +
-    coord_cartesian(
-      expand = F, 
-      xlim = c(0, nrow(data)))
-  
-  # Create Forest plot
-  
-  ## Create Limits
-  yrng <- range(c(0, data$ci.lb, data$ci.ub))
-  
-  ## Use user-specified limits if provided
-  if (!is.null(ylim_lower)) {
-    yrng[1] <- ylim_lower
-  }
-  if (!is.null(ylim_upper)) {
-    yrng[2] <- ylim_upper
-  }
-  
-  spec_curve_plot <- data %>%
-    ggplot(aes(x = x_rank, y = b)) +
-    geom_line(col = "black", linewidth = .2) +
-    geom_errorbar(aes(ymin = ci.lb, ymax = ci.ub, col = as.factor(fill_manual)), width = 0.1, size = 0.6) +
-    geom_point(size = .2) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-    labs(y = "Summary Effect", x = "") +
-    scale_color_manual(values = palette_colors) +
-    coord_cartesian(ylim = yrng,
-                    xlim = c(0, nrow(data)), 
-                    expand = FALSE) +
-    theme_bw() +
-    theme(legend.position = "none",
-          axis.text.x = element_blank(), 
-          axis.ticks.x = element_blank())
-  
-  # Combine plots
-  cowplot::plot_grid(spec_curve_plot, tile_plot, ncol = 1, align = "v", rel_heights = c(4, 5))
-}
-```
+### `plotly_descriptive_spec_curve`
 
-## Test `plot_descriptive_spec_curve`
-```{r}
-# Generate plot
-plot_descriptive_spec_curve(res, 
-                            ylim_upper = 2, 
-                            ylim_lower = -2, colorblind_friendly = FALSE)
-```
-# plotly version
-
-```{r}
-# Helper Function to Dynamically Generate Tooltip Text
-generate_tooltip <- function(data) {
-  # Select all columns starting with "wf_"
-  wf_columns <- grep("^wf_", colnames(data), value = TRUE)
-  
-  # Helper function to split long 'set' strings into multiple lines
-  split_set_values <- function(set_string, chunk_size = 10) {
-    set_values <- unlist(strsplit(set_string, ","))  # Split by commas
-    chunks <- split(set_values, ceiling(seq_along(set_values) / chunk_size))  # Split into groups of 10
-    formatted_set <- paste(sapply(chunks, paste, collapse = ","), collapse = "<br>")
-    return(formatted_set)
-  }
-  
-  # Dynamically create tooltip text
-  data$tooltip <- apply(data, 1, function(row) {
-    wf_text <- paste(sapply(wf_columns, function(col) paste0(col, ": ", row[col])), collapse = "<br>")
-    
-    set_formatted <- split_set_values(as.character(row["set"]))
-    
-    paste0(
-      wf_text,
-      "<br><b>Mean:</b> ", round(as.numeric(row["b"]), 3),
-      "<br><b>CI:</b> [", round(as.numeric(row["ci.lb"]), 3), ", ", round(as.numeric(row["ci.ub"]), 3), "]",
-      "<br><b>Studies (k):</b> ", row["k"],
-      "<br><b>Study set (ID):</b> ", set_formatted
-    )
-  })
-  
-  return(data)
-}
-```
-
-### `plot_descriptive_spec_curve_plotly`
 ```{r}
 plotly_descriptive_spec_curve <- function(data, 
-                                               ylim_lower = NULL, 
-                                               ylim_upper = NULL,
-                                               colorblind_friendly = TRUE) {
+                                          ylim_lower = NULL, 
+                                          ylim_upper = NULL,
+                                          colorblind_friendly = TRUE) {
   
-  # Dynamically detect WF and How factors
+  
+  # Step 1: Detect WF and How Factors dynamically
   wf_cols <- colnames(data)[grep("^wf_", colnames(data))]
-  how_cols <- colnames(data)[colnames(data) %in% c("ma_method")]  # Adjust if more How factors are added
-  
-  # Combine WF and How factors
+  how_cols <- colnames(data)[colnames(data) %in% c("ma_method")]
   all_factors <- c(wf_cols, how_cols)
   
-  # Generate x-variable (ranking)
-  x_rank <- rank(data$b, ties.method = "random")
+  # Step 2: Generate human-readable labels
+  factor_labels <- generate_dynamic_labels(data, factor_label_lookup)
   
-  # Generate y-variable (all levels, reversed for plotting)
-  factor_levels <- lapply(all_factors, function(col) unique(data[[col]]))
-  names(factor_levels) <- all_factors
+  # Step 3: Combine human-readable labels with unique column components
+  factor_levels <- lapply(all_factors, function(col) {
+    # Replace 'total_' values with "Combined"
+    unique_values <- unique(data[[col]])
+    replaced_values <- ifelse(grepl("total_", unique_values), 
+                              "Combined", 
+                              str_to_sentence(unique_values))
+    
+    paste0(factor_labels[[col]], ": ", replaced_values)
+  })
   
-  yvar <- rep(factor(
+  # Flatten the list and reverse for plotting
+  yvar <- factor(
     rev(unlist(factor_levels)), 
     levels = rev(unlist(factor_levels))
-  ), times = nrow(data))
+  )
+  
+  x_rank <- rank(data$b, ties.method = "random")
   
   # Generate x-variable = specific meta-analysis (repeated for yvar length)
   xvar <- rep(x_rank, each = length(levels(yvar)))
@@ -808,11 +765,20 @@ plotly_descriptive_spec_curve <- function(data,
   data <- data %>%
     select(all_of(all_factors), b, ci.lb, ci.ub, pval, k, set)
   
-  # Create spec matrix
+  # Generate spec matrix with updated factor levels
   spec <- NULL
   for (i in 1:nrow(data)) {
-    id <- as.numeric(levels(yvar) %in% 
-                       as.character(unlist(data[i, all_factors])))
+    id <- as.numeric(yvar %in% 
+                       unlist(lapply(all_factors, function(col) {
+                         value <- str_to_sentence(data[[col]][i])
+                         
+                         # Replace if 'total_' is in the value
+                         if (grepl("total_", data[[col]][i])) {
+                           paste0(factor_labels[[col]], ": Combined")
+                         } else {
+                           paste0(factor_labels[[col]], ": ", value)
+                         }
+                       })))
     spec <- c(spec, id)
   }
   
@@ -827,10 +793,10 @@ plotly_descriptive_spec_curve <- function(data,
   data <- assign_quantile_levels(data, k_column = "k", num_levels = 9)
   
   # Coloring Step 2: Choose color palette based on argument
-  if (colorblind_friendly) {
-    palette_colors <- viridis(length(levels(data$fill_levels)), option = "C")
-  } else {
-    palette_colors <- rev(RColorBrewer::brewer.pal(length(levels(data$fill_levels)), "Spectral"))
+  if (colorblind_friendly) { 
+    palette_colors <- viridis(length(levels(data$fill_levels)), option = "C", direction = -1) # direction -1 implies darker = more evidence
+  } else { 
+    palette_colors <- RColorBrewer::brewer.pal(length(levels(data$fill_levels)), "Spectral") # warmer = more evidence, rev() can be used to reverse order
   }
   
   # Add `fill_manual` to data
@@ -844,13 +810,14 @@ plotly_descriptive_spec_curve <- function(data,
   # Only if spec occurs a color is allowed, 0 is white
   plotdata <- plotdata %>%
     mutate(fill_manual = ifelse(spec == 1, fill_manual, 0),
-           fill_manual = as.factor(fill_manual))
+           fill_manual = as.factor(fill_manual)) 
   
   ## === TILE PLOT === ##
   tile_plot <- ggplot(data = plotdata,
                       aes(x = xvar, 
                           y = as.factor(yvar), 
-                          fill = fill_manual))+
+                          fill = fill_manual,
+                          text = yvar))+
     geom_raster() +
     scale_x_continuous(position = "bottom") +
     scale_y_discrete(labels = levels(yvar)) +
@@ -885,11 +852,16 @@ plotly_descriptive_spec_curve <- function(data,
   }
   
   # Generate tooltips dynamically
-  data <- generate_tooltip(data)
+  data <- generate_tooltip(data, factor_label_lookup)
+  
+  data <- data%>% # for line type in plotly
+    mutate(group_id = 1)
   
   spec_curve_plot <- data %>%
-    ggplot(aes(x = x_rank, y = b,
-               text = tooltip)) +
+    ggplot(aes(x = x_rank, 
+               y = b,
+               text = tooltip,
+               group = group_id)) +
     geom_line(col = "black", linewidth = .2) +
     geom_errorbar(aes(ymin = ci.lb, ymax = ci.ub, col = as.factor(fill_manual)), width = 0.1, size = 0.6) +
     geom_point(size = .2) +
@@ -905,8 +877,10 @@ plotly_descriptive_spec_curve <- function(data,
           axis.ticks.x = element_blank())
   
   ## === MAKE PLOTS INTERACTIVE === ##
-  spec_curve_plotly <- plotly::ggplotly(spec_curve_plot, tooltip = "text")  %>%
+  spec_curve_plotly <- plotly::ggplotly(spec_curve_plot, 
+                                        tooltip = "text")  %>%
     plotly::style(hoverlabel = list(bgcolor = "white", font = list(color = "black")))
+  
   tile_plot_plotly <- plotly::ggplotly(tile_plot, tooltip = "text")
   
   # Combine using subplot
@@ -915,289 +889,50 @@ plotly_descriptive_spec_curve <- function(data,
 }
 ```
 
+# Here
+inspect res
+```{r}
+problematic_rows <- res %>%
+  filter(ma_method %in% c("uwls", "waap", "fe")) %>%
+  filter(set == "111,231,232" & wf_1 == "mobile")
 
-## Test `plotly_descriptive_spec_curve`
+print(problematic_rows)
+# View problematic rows
+print(res_filtered) 
+#
+
+similar_results <- res %>%
+  group_by(set, wf_1, wf_2, wf_3, wf_4, wf_5, wf_6, wf_7, wf_8) %>%
+  filter(n_distinct(b) != 1) %>%  # Only keep groups with identical results
+  arrange(set)
+  
+```
+
+### Test `plotly_descriptive_spec_curve`
 ```{r}
 # Generate plot
-plotly_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
+plotly_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = F)
 ```
 
-# CGPT
+## Vibrations of Effects
 
-```{r eval=F}
-# Example function to create the tile plot with row-level hover
-tile_plot_with_row_hover <- function(data, colorblind_friendly = TRUE) {
-  # Detect WF and How factors
-  wf_cols <- grep("^wf_", colnames(data), value = TRUE)
-  how_cols <- c("ma_method")
-  all_factors <- c(wf_cols, how_cols)
-  
-  # Combine all levels for y-axis
-  factor_levels <- unlist(lapply(all_factors, function(col) unique(data[[col]])))
-  yvar <- factor(rep(rev(factor_levels), times = nrow(data)), levels = rev(factor_levels))
-  
-  # Rank x-axis values
-  x_rank <- rank(data$b, ties.method = "random")
-  xvar <- rep(x_rank, each = length(levels(yvar)))
-  
-  # Prepare the plot data
-  plotdata <- data %>%
-    select(all_of(all_factors), b, k) %>%
-    mutate(x_rank = x_rank) %>%
-    pivot_longer(cols = all_of(all_factors), names_to = "factor", values_to = "value") %>%
-    mutate(row_hover_text = paste0("Factor: ", factor, "<br>Value: ", value))
-  
-  # Add fill coloring
-  palette_colors <- if (colorblind_friendly) viridis(9, option = "C") else rev(RColorBrewer::brewer.pal(9, "Spectral"))
-  
-  # Tile plot where each row is hoverable
-  tile_plot <- ggplot(plotdata, aes(x = x_rank, y = factor, text = row_hover_text)) +
-    geom_tile(aes(fill = factor), color = "white") +  # Color rows based on factors
-    scale_fill_manual(values = palette_colors) +
-    labs(x = "Specification Rank", y = "Which/How Factors") +
-    theme_classic() +
-    theme(axis.text.y = element_text(size = 8),
-          axis.text.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          legend.position = "none")
-  
-  # Convert to interactive plot with ggplotly
-  interactive_plot <- ggplotly(tile_plot, tooltip = "text")
-  
-  # Highlight rows on hover using hovermode="closest"
-  interactive_plot <- interactive_plot %>%
-    layout(hovermode = "y unified")  # Ensures the entire row is highlighted
-  
-  return(interactive_plot)
-}
-
-# Example data
-example_data <- data.frame(
-  wf_1 = sample(c("website", "mobile", "other"), 50, replace = TRUE),
-  wf_2 = sample(c("guided", "no support"), 50, replace = TRUE),
-  ma_method = sample(c("REML", "FE"), 50, replace = TRUE),
-  b = rnorm(50, 0.2, 0.1),
-  k = sample(5:50, 50, replace = TRUE)
-)
-
-# Run the function
-tile_plot_with_row_hover(example_data, colorblind_friendly = TRUE)
-
-
-library(ggplot2)
-library(plotly)
-library(viridis)
-library(dplyr)
-
-# Helper function to dynamically generate tooltips
-generate_tooltip <- function(data) {
-  wf_columns <- grep("^wf_", colnames(data), value = TRUE)  # Select all WF columns
-  data$tooltip <- apply(data, 1, function(row) {
-    wf_text <- paste(sapply(wf_columns, function(col) paste0(col, ": ", row[[col]])), collapse = "<br>")
-    paste0(
-      wf_text,
-      "<br><b>Mean:</b> ", round(as.numeric(row["b"]), 3),
-      "<br><b>CI:</b> [", round(as.numeric(row["ci.lb"]), 3), ", ", round(as.numeric(row["ci.ub"]), 3), "]",
-      "<br><b>Studies (k):</b> ", row["k"]
-    )
-  })
-  return(data)
-}
-
-# Function to assign quantile levels for coloring
-assign_quantile_levels <- function(data, k_column = "k", num_levels = 9) {
-  # Dynamically create unique quantile breaks
-  fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
-  
-  # Check and adjust the number of levels if duplicates exist
-  while (length(fill_quantiles) - 1 < num_levels) {
-    num_levels <- num_levels - 1
-    fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
-    if (num_levels < 2) {
-      stop("Insufficient unique values in `k` to create quantile levels.")
-    }
-  }
-  
-  # Assign levels based on quantiles
-  fill_levels <- cut(data[[k_column]], 
-                     breaks = fill_quantiles, 
-                     include.lowest = TRUE, 
-                     labels = 1:num_levels)
-  
-  data$fill_levels <- fill_levels
-  return(data)
-}
-
-# Main plotting function
-plot_descriptive_spec_curve <- function(data, 
-                                        ylim_lower = NULL, 
-                                        ylim_upper = NULL,
-                                        colorblind_friendly = TRUE) {
-  # Detect WF and How factors
-  wf_cols <- grep("^wf_", colnames(data), value = TRUE)
-  how_cols <- c("ma_method")
-  all_factors <- c(wf_cols, how_cols)
-  
-  # Prepare rank for x-axis
-  data$x_rank <- rank(data$b, ties.method = "random")
-  
-  # Assign quantile-based fill levels
-  data <- assign_quantile_levels(data, k_column = "k", num_levels = 9)
-  palette_colors <- if (colorblind_friendly) viridis(9, option = "C") else rev(RColorBrewer::brewer.pal(9, "Spectral"))
-  
-  # Generate tooltips
-  data <- generate_tooltip(data)
-  
-  ## === TILE PLOT === ##
-  # Prepare plot data
-  plotdata <- data %>%
-    select(all_of(all_factors), x_rank, k, fill_levels) %>%
-    pivot_longer(cols = all_of(all_factors), names_to = "factor", values_to = "value") %>%
-    mutate(fill_manual = as.factor(fill_levels))
-  
-  # Tile plot
-  tile_plot <- ggplot(plotdata, aes(x = x_rank, y = factor, fill = fill_manual, text = paste("Value:", value))) +
-    geom_tile() +
-    scale_fill_manual(values = c("white", palette_colors)) +
-    labs(x = "Specification Rank", y = "Which/How Factors") +
-    theme_classic() +
-    theme(axis.text.y = element_text(size = 8),
-          axis.text.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          legend.position = "none")
-  
-  ## === FOREST PLOT === ##
-  yrng <- range(c(data$ci.lb, data$ci.ub), na.rm = TRUE)
-  if (!is.null(ylim_lower)) yrng[1] <- ylim_lower
-  if (!is.null(ylim_upper)) yrng[2] <- ylim_upper
-  
-  spec_curve_plot <- ggplot(data, aes(x = x_rank, y = b, text = tooltip)) +
-    geom_line(color = "black", size = 0.5) +
-    geom_errorbar(aes(ymin = ci.lb, ymax = ci.ub, color = fill_levels), width = 0.1) +
-    geom_point(aes(color = fill_levels), size = 2) +
-    scale_color_manual(values = palette_colors) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-    labs(y = "Summary Effect", x = NULL) +
-    coord_cartesian(ylim = yrng) +
-    theme_bw() +
-    theme(legend.position = "none",
-          axis.text.x = element_blank(),
-          axis.ticks.x = element_blank())
-  
-  ## === MAKE PLOTS INTERACTIVE === ##
-  spec_curve_plotly <- ggplotly(spec_curve_plot, tooltip = "text")
-  tile_plot_plotly <- ggplotly(tile_plot, tooltip = "text")
-  
-  # Combine plots
-  p <- subplot(spec_curve_plotly, tile_plot_plotly, nrows = 2, shareX = TRUE, titleY = TRUE)
-  p
-}
-
-plot_descriptive_spec_curve(res, ylim_upper = 2, ylim_lower = -2, colorblind_friendly = FALSE)
-```
-
-
-# Vibrations of Effects
-
-## `compute_density_colors`
-
+### `compute_density_colors`
 ```{r}
-# Helper function to compute density-based coloring
-compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
-  # Choose the palette based on colorblind_friendly
-  if (colorblind_friendly) {
-    palette <- viridis(256, option = "C")  # Viridis for colorblind-friendly
-  } else {
-    palette <- rev(colorRampPalette(RColorBrewer::brewer.pal(11, "Spectral"))(256))  # Spectral
-  }
-  
-  # Compute density-based colors
-  dens_values <- densCols(
-    x = data[[x]], 
-    y = data[[y]],
-    colramp = colorRampPalette(palette)
-  )
-  
-  # Add density column
-  data$density <- dens_values
-  return(data)
-} 
-```
-
-
-## `plot_VoE`
-
-```{r}
-plot_VoE <- function(
-    data,
-    x = "b",  # Default x-axis variable
-    y = "pvalue",     # Default y-axis variable
-    colorblind_friendly = TRUE,
-    cutoff,
-    x_breaks = seq(-0.5, 2, by = 0.25),  # Default x-axis breaks
-    y_breaks = c(0.0000000001, 0.000000001, 0.00000001, 0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1),  # Default y-axis breaks
-    x_limits = c(-0.7, 2.1),  # Default x-axis limits
-    y_limits = c(0.0000000001, 1),  # Default y-axis limits
-    vertical_lines = c(0.1, 0.9),  # Quantiles for vertical red lines
-    hline_value = 0.05,  # Horizontal dashed line
-    title_template = "{k} meta-analyses with at least {cutoff} studies."  # Title template
-) {
-  
-  # Step 1: Replace extreme p-values to avoid log-scale errors
-  data <- data %>%
-    mutate(!!y := ifelse(!!sym(y) < 1e-11, 1e-11, !!sym(y))) %>% 
-    filter(k >= cutoff)
-  
-  # Step 2: Compute density-based colors
-  data <- compute_density_colors(data, x = "b", y = "pvalue", colorblind_friendly = colorblind_friendly)
-  
-  # Step 3: Plot with jitter and density-based coloring
-  k <- nrow(data)
-  p <- ggplot(data, aes_string(x = x, y = y)) +
-    geom_jitter(aes(colour = density), size = 1, width = 0.001) +
-    scale_color_identity() +
-    theme_bw() +
-    geom_hline(yintercept = hline_value, linetype = 2, color = "black") +
-    geom_vline(xintercept = quantile(data[[x]], vertical_lines, na.rm = TRUE), color = "red", linetype = 2) +
-    scale_y_continuous(
-      trans = "log",
-      breaks = y_breaks,
-      labels = scales::label_scientific()(y_breaks),
-      limits = y_limits
-    ) +
-    scale_x_continuous(
-      breaks = x_breaks,
-      limits = x_limits
-    ) +
-    theme(
-      panel.border = element_blank(),
-      plot.title = element_text(size = 10)
-    ) +
-    ggtitle(glue::glue(title_template, k = k, cutoff = cutoff))
-  
-  return(p)
-} 
-```
-
-## plotly Version
-
-```{r}
-library(ggplot2)
-library(plotly)
-library(dplyr)
-library(glue)
-
 # Function to compute density-based coloring
 compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
   dens_values <- densCols(
     x = data[[x]],
     y = data[[y]],
-    colramp = if (colorblind_friendly) colorRampPalette(viridis::viridis(256)) else colorRampPalette(rev(rainbow(10, end = 4/6)))
+    colramp = if (colorblind_friendly) colorRampPalette(viridis::viridis(256, 
+                                                                         direction = -1)) else colorRampPalette(rev(rainbow(10, end = 4/6)))
   )
   data$density <- dens_values
   return(data)
 }
+```
 
+### `generate_tooltip`
+```{r}
 # Function to generate tooltips
 generate_tooltip <- function(data, x, y, k_col = "k", set_col = "set") {
   data %>%
@@ -1210,7 +945,10 @@ generate_tooltip <- function(data, x, y, k_col = "k", set_col = "set") {
       )
     )
 }
+```
 
+### `plotly_VoE`
+```{r}
 # Interactive VoE Plotly Function
 plotly_VoE <- function(
     data,
@@ -1241,13 +979,20 @@ plotly_VoE <- function(
   # Number of analyses
   k <- nrow(data)
   
+  x_quantiles <- quantile(data[[x]], vertical_lines, na.rm = TRUE)  # Compute quantiles
+  
   # Base ggplot
   p <- ggplot(data, aes_string(x = x, y = y, text = "tooltip")) +
-    geom_jitter(aes(colour = density), size = 1, width = 0.001) +
+    geom_jitter(aes(colour = density), size = 1, width = 0.001,
+                show.legend = FALSE) +
     scale_color_identity() +
     theme_bw() +
     geom_hline(yintercept = hline_value, linetype = 2, color = "black") +
-    geom_vline(xintercept = quantile(data[[x]], vertical_lines, na.rm = TRUE), color = "red", linetype = 2) +
+    geom_vline(xintercept = quantile(data[[x]], 
+                                     vertical_lines, 
+                                     na.rm = TRUE), 
+               color = "red", 
+               linetype = 2) +
     scale_y_continuous(
       trans = "log",
       breaks = y_breaks,
@@ -1266,7 +1011,8 @@ plotly_VoE <- function(
     theme(
       panel.border = element_blank(),
       plot.title = element_text(size = 10)
-    )
+    ) +
+    guides(colour = "none")
   
   # Convert to interactive Plotly plot
   p_plotly <- ggplotly(p, tooltip = "text") %>%
@@ -1274,16 +1020,20 @@ plotly_VoE <- function(
   
   return(p_plotly)
 }
+```
 
+### Test `plotly_VoE`
+
+```{r}
 plotly_VoE(
   data = res,
   colorblind_friendly = T,
   x = "b",
   y = "pval",
-  cutoff = 2,
+  cutoff = 50,
   x_breaks = seq(-1, 2, 0.5),
   y_limits = c(1e-10, 1),
-  vertical_lines = c(0.05, 0.95),
+  vertical_lines = c(0.1, 0.9),
   hline_value = 0.1,
   title_template = "Vibration of Effects: {k} analyses with cutoff = {cutoff}"
 )
