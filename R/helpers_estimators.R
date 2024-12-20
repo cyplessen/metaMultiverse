@@ -10,12 +10,15 @@
 #'
 #' @param data A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, `pval`, and `type` (either "PET" or "PEESE").
+#' @importFrom stats lm coef confint
+#'
+#' @export
 calculate_pet.peese <- function(data) {
   mod <- list()
 
   # Try PET estimation
   pet_fit <- tryCatch({
-    lm(yi ~ sqrt(vi), weights = 1 / vi, data = data)
+    stats::lm(yi ~ sqrt(vi), weights = 1 / vi, data = data)
   }, error = function(e) return(NULL))
 
   if (is.null(pet_fit)) {
@@ -23,21 +26,21 @@ calculate_pet.peese <- function(data) {
   }
 
   # Extract PET p-value
-  pet_p <- coef(summary(pet_fit))["(Intercept)", "Pr(>|t|)"]
+  pet_p <- stats::coef(stats::summary(pet_fit))["(Intercept)", "Pr(>|t|)"]
 
   if (is.na(pet_p) || pet_p >= 0.1) {
     # PET is valid or PEESE is not triggered
     mod <- list(
-      b = coef(summary(pet_fit))["(Intercept)", "Estimate"],
-      ci.lb = confint(pet_fit)["(Intercept)", "2.5 %"],
-      ci.ub = confint(pet_fit)["(Intercept)", "97.5 %"],
+      b = stats::coef(stats::summary(pet_fit))["(Intercept)", "Estimate"],
+      ci.lb = stats::confint(pet_fit)["(Intercept)", "2.5 %"],
+      ci.ub = stats::confint(pet_fit)["(Intercept)", "97.5 %"],
       pval = pet_p,
       type = "PET"
     )
   } else {
     # PEESE estimation
     peese_fit <- tryCatch({
-      lm(yi ~ vi, weights = 1 / vi, data = data)
+      stats::lm(yi ~ vi, weights = 1 / vi, data = data)
     }, error = function(e) return(NULL))
 
     if (is.null(peese_fit)) {
@@ -45,10 +48,10 @@ calculate_pet.peese <- function(data) {
     }
 
     mod <- list(
-      b = coef(summary(peese_fit))["(Intercept)", "Estimate"],
-      ci.lb = confint(peese_fit)["(Intercept)", "2.5 %"],
-      ci.ub = confint(peese_fit)["(Intercept)", "97.5 %"],
-      pval = coef(summary(peese_fit))["(Intercept)", "Pr(>|t|)"],
+      b = stats::coef(stats::summary(peese_fit))["(Intercept)", "Estimate"],
+      ci.lb = stats::confint(peese_fit)["(Intercept)", "2.5 %"],
+      ci.ub = stats::confint(peese_fit)["(Intercept)", "97.5 %"],
+      pval = stats::coef(stats::summary(peese_fit))["(Intercept)", "Pr(>|t|)"],
       type = "PEESE"
     )
   }
@@ -62,12 +65,14 @@ calculate_pet.peese <- function(data) {
 #'
 #' @param data A data frame of results, including `ma_method` and `b` columns.
 #' @return A data frame with added corrected rows for PET-PEESE.
+#' @importFrom dplyr filter mutate bind_rows
+#' @export
 add_pet_peese_corrected <- function(data) {
   pet_peese_corrected <- data %>%
-    filter(ma_method == "pet-peese" & b < 0) %>%
-    mutate(b = 0, ma_method = "pet-peese (corrected)")
+    dplyr::filter(ma_method == "pet-peese" & b < 0) %>%
+    dplyr::mutate(b = 0, ma_method = "pet-peese (corrected)")
 
-  data_combined <- bind_rows(data, pet_peese_corrected)
+  data_combined <- dplyr::bind_rows(data, pet_peese_corrected)
   data_combined$ma_method <- factor(data_combined$ma_method, levels = unique(data_combined$ma_method))
 
   return(data_combined)
@@ -81,6 +86,8 @@ add_pet_peese_corrected <- function(data) {
 #'
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
+#' @importFrom puniform puni_star
+#' @export
 calculate_puni_star <- function(dat) {
   mod <- tryCatch({
     mod.puni <- puniform::puni_star(
@@ -115,17 +122,19 @@ calculate_puni_star <- function(dat) {
 #'
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
+#' @importFrom stats lm coef confint
+#' @export
 calculate_uwls <- function(dat) {
   d <- dat$yi
   sed <- sqrt(dat$vi)
   Precision <- 1 / sed
-  reg_uwls <- lm(d / sed ~ 0 + Precision)
+  reg_uwls <- stats::lm(d / sed ~ 0 + Precision)
 
   list(
-    b = coef(summary(reg_uwls))["Precision", "Estimate"],
-    ci.lb = confint(reg_uwls)["Precision", "2.5 %"],
-    ci.ub = confint(reg_uwls)["Precision", "97.5 %"],
-    pval = coef(summary(reg_uwls))["Precision", "Pr(>|t|)"]
+    b = stats::coef(stats::summary(reg_uwls))["Precision", "Estimate"],
+    ci.lb = stats::confint(reg_uwls)["Precision", "2.5 %"],
+    ci.ub = stats::confint(reg_uwls)["Precision", "97.5 %"],
+    pval = stats::coef(stats::summary(reg_uwls))["Precision", "Pr(>|t|)"]
   )
 }
 
@@ -135,23 +144,25 @@ calculate_uwls <- function(dat) {
 #'
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
+#' @importFrom stats lm coef confint
+#' @export
 calculate_waap <- function(dat) {
   d <- dat$yi
   sed <- sqrt(dat$vi)
   Precision <- 1 / sed
-  reg_uwls <- lm(d / sed ~ 0 + Precision)
-  UWLS <- coef(reg_uwls)["Precision"]
+  reg_uwls <- stats::lm(d / sed ~ 0 + Precision)
+  UWLS <- stats::coef(reg_uwls)["Precision"]
   powered <- sed < abs(UWLS) / 2.8
 
   if (sum(powered) < 2) {
     return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA))
   }
 
-  reg_waap <- lm(d[powered] / sed[powered] ~ 0 + Precision[powered])
+  reg_waap <- stats::lm(d[powered] / sed[powered] ~ 0 + Precision[powered])
   list(
-    b = coef(summary(reg_waap))["Precision[powered]", "Estimate"],
-    ci.lb = confint(reg_waap)["Precision[powered]", "2.5 %"],
-    ci.ub = confint(reg_waap)["Precision[powered]", "97.5 %"],
-    pval = coef(summary(reg_waap))["Precision[powered]", "Pr(>|t|)"]
+    b = stats::coef(stats::summary(reg_waap))["Precision[powered]", "Estimate"],
+    ci.lb = stats::confint(reg_waap)["Precision[powered]", "2.5 %"],
+    ci.ub = stats::confint(reg_waap)["Precision[powered]", "97.5 %"],
+    pval = stats::coef(stats::summary(reg_waap))["Precision[powered]", "Pr(>|t|)"]
   )
 }
