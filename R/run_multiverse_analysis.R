@@ -35,6 +35,7 @@
 #' \code{\link{general_multiverse}},
 #' \code{\link{add_pet_peese_corrected}}
 #'
+#' @importFrom stats complete.cases
 #' @examples
 #' # Example usage:
 #' final_results <- run_multiverse_analysis(
@@ -57,7 +58,7 @@ run_multiverse_analysis <- function(data_multiverse, specifications, how_methods
   final_results$full_set <- as.numeric(final_results$set == paste(1:nrow(data_multiverse), collapse = ","))
 
   # Step 4: Remove missing values
-  final_results <- final_results[complete.cases(final_results), ]
+  final_results <- final_results[stats::complete.cases(final_results), ]
 
   # Step 5: Remove duplicates, keeping first occurrence (more specific which factors)
   final_results <- final_results[!duplicated(final_results[, c("b", "set", "ma_method")]), ]

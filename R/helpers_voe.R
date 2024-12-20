@@ -12,16 +12,16 @@
 #' compute_density_colors(data, x = "b", y = "pvalue")
 #'
 #' @export
-#' @importFrom grDevices densCols
+#' @importFrom grDevices densCols rainbow colorRampPalette
 #' @importFrom viridis viridis
 compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
   dens_values <- grDevices::densCols(
     x = data[[x]],
     y = data[[y]],
     colramp = if (colorblind_friendly)
-      colorRampPalette(viridis::viridis(256, direction = -1))
+      grDevices::colorRampPalette(viridis::viridis(256, direction = -1))
     else
-      colorRampPalette(rev(rainbow(10, end = 4/6)))
+      grDevices::colorRampPalette(rev(grDevices::rainbow(10, end = 4/6)))
   )
   data$density <- dens_values
   return(data)
@@ -42,7 +42,7 @@ compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
 #' generate_tooltip(data, x = "b", y = "pvalue")
 #'
 #' @export
-#' @importFrom dplyr mutate
+#' @importFrom dplyr mutate %>%
 #' @importFrom glue glue
 #' @importFrom scales scientific
 #' @importFrom stringr str_wrap

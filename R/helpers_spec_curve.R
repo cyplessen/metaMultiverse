@@ -94,7 +94,7 @@ generate_tooltip <- function(data, factor_label_lookup) {
 }
 
 # -----------------------------------------------------------------------------
-# 3. Assign Quantile Levels
+# 3. Assign  Quantile  Levels
 # -----------------------------------------------------------------------------
 #' @title Assign Quantile Levels
 #' @description Assigns quantile-based levels to a specified column for visualization.
@@ -113,11 +113,11 @@ assign_quantile_levels <- function(data, k_column, num_levels = 9) {
   if (!is.numeric(data[[k_column]])) stop("`k_column` must be numeric.")
 
   # Dynamically adjust breaks for unique quantiles
-  fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+  fill_quantiles <- unique(stats::quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
 
   while (length(fill_quantiles) <= num_levels) {
     num_levels <- num_levels - 1
-    fill_quantiles <- unique(quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
+    fill_quantiles <- unique(stats::quantile(data[[k_column]], probs = seq(0, 1, length.out = num_levels + 1), na.rm = TRUE))
     if (num_levels < 2) stop("Insufficient unique values in `k` to create quantile levels.")
   }
 
