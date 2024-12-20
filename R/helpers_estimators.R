@@ -1,5 +1,8 @@
 # helpers_estimators.R
+
 # This file contains functions to perform various estimation methods used in multiverse meta-analysis.
+# Suppress warnings for dynamically evaluated variables
+globalVariables(c("b", "ci.lb", "ci.ub", "pval", "ma_method", "vi", "yi"))
 
 ## PET-PEESE Estimation -------------------------------------------------------
 
@@ -11,7 +14,7 @@
 #' @param data A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, `pval`, and `type` (either "PET" or "PEESE").
 #' @importFrom stats lm coef confint
-#'
+#' @importFrom dplyr %>%
 #' @export
 calculate_pet.peese <- function(data) {
   mod <- list()
@@ -65,7 +68,7 @@ calculate_pet.peese <- function(data) {
 #'
 #' @param data A data frame of results, including `ma_method` and `b` columns.
 #' @return A data frame with added corrected rows for PET-PEESE.
-#' @importFrom dplyr filter mutate bind_rows
+#' @import dplyr
 #' @export
 add_pet_peese_corrected <- function(data) {
   pet_peese_corrected <- data %>%

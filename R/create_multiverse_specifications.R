@@ -1,3 +1,6 @@
+# Suppress warnings for dynamically evaluated variables
+globalVariables(c("dependency"))
+
 #' Create Specifications for Multiverse Meta-Analysis
 #'
 #' This function generates a grid of specifications for multiverse meta-analysis based on "Which" and "How" factors.
@@ -8,7 +11,7 @@
 #' @param ma_methods A character vector specifying the meta-analytic methods to consider (e.g., `"reml"`, `"fe"`, `"3-level"`, `"rve"`, `"p-uniform"`, etc.).
 #' @param dependencies A character vector specifying dependency handling strategies to include (e.g., `"modeled"`, `"aggregate"``).
 #'
-#' @importFrom dplyr filter mutate row_number
+#' @importFrom dplyr filter mutate row_number %>%
 #'
 #' @return A list with two elements:
 #' \itemize{

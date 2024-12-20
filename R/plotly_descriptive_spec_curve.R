@@ -1,3 +1,6 @@
+# Suppress warnings for dynamically evaluated variables
+globalVariables(c("factor_label_lookup", "k", "set", "fill_levels", "fill_manual", "tooltip", "group_id", "study", ""))
+
 #' Interactive Specification Curve Plot
 #'
 #' Creates an interactive specification curve plot with a forest plot for effect sizes and a tile plot for specification factors.
@@ -14,7 +17,7 @@
 #' @examples
 #' plotly_descriptive_spec_curve(data, ylim_lower = -0.5, ylim_upper = 1.5, interactive = TRUE)
 #'
-#' @importFrom dplyr select mutate left_join filter distinct
+#' @importFrom dplyr %>% select mutate left_join filter distinct all_of
 #' @importFrom ggplot2 ggplot aes geom_raster geom_errorbar geom_line geom_point geom_hline labs scale_x_continuous scale_y_discrete scale_fill_manual scale_color_manual theme_classic theme_bw
 #' @importFrom plotly ggplotly subplot style
 #' @importFrom viridis viridis
@@ -62,7 +65,7 @@ plotly_descriptive_spec_curve <- function(data,
 
   # Select columns required for plotting
   data <- data %>%
-    dplyr::select(all_of(all_factors), b, ci.lb, ci.ub, pval, k, set)
+    dplyr::select(dplyr::all_of(all_factors), b, ci.lb, ci.ub, pval, k, set)
 
   # Generate spec matrix to define the tile plot structure
   spec <- NULL

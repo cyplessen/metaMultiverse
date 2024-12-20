@@ -1,3 +1,6 @@
+# Suppress warnings for dynamically evaluated variables
+globalVariables(c("density", ".data’"))
+
 #' Interactive Vibration of Effects (VoE) Plot
 #'
 #' Creates an interactive plot visualizing the vibration of effects with effect sizes and p-values.
@@ -21,13 +24,14 @@
 #' plotly_VoE(data, x = "b", y = "pval", cutoff = 10)
 #'
 #' @export
-#' @importFrom dplyr mutate filter sym
+#' @importFrom dplyr mutate filter sym %>%
 #' @importFrom ggplot2 ggplot aes geom_jitter geom_hline geom_vline scale_color_identity scale_y_continuous scale_x_continuous labs theme_bw theme
 #' @importFrom plotly ggplotly layout
 #' @importFrom scales label_scientific
 #' @importFrom glue glue
 #' @importFrom stats quantile
 #' @importFrom cowplot plot_grid
+#' @importFrom data.table :=
 plotly_VoE <- function(
     data,
     x = "b",
