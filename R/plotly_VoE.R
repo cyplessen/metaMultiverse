@@ -1,7 +1,7 @@
 # Suppress warnings for dynamically evaluated variables
-globalVariables(c("density", ".data’"))
+globalVariables(c("density", ".data"))
 
-#' Interactive Vibration of Effects (VoE) Plot
+#' Interactive Vibration of Effects Plot
 #'
 #' Creates an interactive plot visualizing the vibration of effects with effect sizes and p-values.
 #'
@@ -21,7 +21,20 @@ globalVariables(c("density", ".data’"))
 #'
 #' @return A `plotly` object containing the interactive vibration of effects plot if `interactive = TRUE`, or a combined `ggplot` object if `interactive = FALSE`.
 #' @examples
-#' plotly_VoE(data, x = "b", y = "pval", cutoff = 10)
+#'
+#'example_data <- data.frame(
+#'     b = as.numeric(c(0.5, 0.3, 0.3)),
+#'     pval = as.numeric(c(0.001, 0.05, 0.3)),
+#'     k = c(10, 12, 11),
+#'     set = c("1,2,3", "4,5,6", "1")
+#'   )
+#'plotly_VoE(
+#'    data = example_data,
+#'    x = "b",
+#'    y = "pval",
+#'    colorblind_friendly = TRUE,
+#'    interactive = FALSE
+#'  )
 #'
 #' @export
 #' @importFrom dplyr mutate filter sym %>%

@@ -9,7 +9,8 @@ plotly_descriptive_spec_curve(
   ylim_lower = NULL,
   ylim_upper = NULL,
   colorblind_friendly = TRUE,
-  interactive = TRUE
+  interactive = TRUE,
+  factor_label_lookup
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ plotly_descriptive_spec_curve(
 \item{colorblind_friendly}{Logical. Use a colorblind-friendly palette (default: TRUE).}
 
 \item{interactive}{Logical. Whether to create an interactive Plotly plot (`TRUE`) or static ggplot plot (`FALSE`). Default is `TRUE`.}
+
+\item{factor_label_lookup}{A named list mapping column names to human-readable labels.}
 }
 \value{
 A `plotly` object containing the interactive specification curve plot if `interactive = TRUE`, or a combined `ggplot` object if `interactive = FALSE`.
@@ -33,6 +36,27 @@ Creates an interactive specification curve plot with a forest plot for effect si
 Combines a forest plot for effect sizes with confidence intervals and a tile plot visualizing specification factors.
 }
 \examples{
-plotly_descriptive_spec_curve(data, ylim_lower = -0.5, ylim_upper = 1.5, interactive = TRUE)
+  # Mock data with required columns
+mock_data <- data.frame(
+ b = c(0.5, 0.4),
+ ci.lb = c(0.3, 0.2),
+ ci.ub = c(0.7, 0.6),
+ pval = c(0.01, 0.05),
+ k = c(10, 15),
+ set = c("1,2,3", "4,5,6"),  # Add 'set' column
+ wf_1 = c("A", "B"),
+ ma_method = "reml"
+)
+
+# Flexible lookup table for WF and How factors
+factor_label_lookup <- list(
+ wf_1 = "Group",
+ ma_method = "Meta-Analysis Method"
+)
+
+# Run the function
+plot <- plotly_descriptive_spec_curve(mock_data,
+                                     colorblind_friendly = TRUE,
+                                     factor_label_lookup = factor_label_lookup)
 
 }

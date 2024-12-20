@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotly_VoE.R
 \name{plotly_VoE}
 \alias{plotly_VoE}
-\title{Interactive Vibration of Effects (VoE) Plot}
+\title{Interactive Vibration of Effects Plot}
 \usage{
 plotly_VoE(
   data,
@@ -55,6 +55,19 @@ A `plotly` object containing the interactive vibration of effects plot if `inter
 Creates an interactive plot visualizing the vibration of effects with effect sizes and p-values.
 }
 \examples{
-plotly_VoE(data, x = "b", y = "pval", cutoff = 10)
+
+example_data <- data.frame(
+    b = as.numeric(c(0.5, 0.3, 0.3)),
+    pval = as.numeric(c(0.001, 0.05, 0.3)),
+    k = c(10, 12, 11),
+    set = c("1,2,3", "4,5,6", "1")
+  )
+plotly_VoE(
+   data = example_data,
+   x = "b",
+   y = "pval",
+   colorblind_friendly = TRUE,
+   interactive = FALSE
+ )
 
 }

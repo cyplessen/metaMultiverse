@@ -10,12 +10,34 @@ globalVariables(c("factor_label_lookup", "k", "set", "fill_levels", "fill_manual
 #' @param ylim_upper Numeric. Upper limit for the y-axis of the forest plot.
 #' @param colorblind_friendly Logical. Use a colorblind-friendly palette (default: TRUE).
 #' @param interactive Logical. Whether to create an interactive Plotly plot (`TRUE`) or static ggplot plot (`FALSE`). Default is `TRUE`.
+#' @param factor_label_lookup A named list mapping column names to human-readable labels.
 #'
 #' @return A `plotly` object containing the interactive specification curve plot if `interactive = TRUE`, or a combined `ggplot` object if `interactive = FALSE`.
 #' @details Combines a forest plot for effect sizes with confidence intervals and a tile plot visualizing specification factors.
 #'
 #' @examples
-#' plotly_descriptive_spec_curve(data, ylim_lower = -0.5, ylim_upper = 1.5, interactive = TRUE)
+#'   # Mock data with required columns
+#'mock_data <- data.frame(
+#'  b = c(0.5, 0.4),
+#'  ci.lb = c(0.3, 0.2),
+#'  ci.ub = c(0.7, 0.6),
+#'  pval = c(0.01, 0.05),
+#'  k = c(10, 15),
+#'  set = c("1,2,3", "4,5,6"),  # Add 'set' column
+#'  wf_1 = c("A", "B"),
+#'  ma_method = "reml"
+#')
+#'
+#'# Flexible lookup table for WF and How factors
+#'factor_label_lookup <- list(
+#'  wf_1 = "Group",
+#'  ma_method = "Meta-Analysis Method"
+#')
+#'
+#'# Run the function
+#'plot <- plotly_descriptive_spec_curve(mock_data,
+#'                                      colorblind_friendly = TRUE,
+#'                                      factor_label_lookup = factor_label_lookup)
 #'
 #' @importFrom dplyr %>% select mutate left_join filter distinct all_of
 #' @importFrom ggplot2 ggplot aes geom_raster geom_errorbar geom_line geom_point geom_hline labs scale_x_continuous scale_y_discrete scale_fill_manual scale_color_manual theme_classic theme_bw
@@ -32,7 +54,8 @@ plotly_descriptive_spec_curve <- function(data,
                                           ylim_lower = NULL,
                                           ylim_upper = NULL,
                                           colorblind_friendly = TRUE,
-                                          interactive = TRUE) {
+                                          interactive = TRUE,
+                                          factor_label_lookup) {
 
   # Detect "Which" and "How" factors dynamically
   wf_cols <- colnames(data)[grep("^wf_", colnames(data))]

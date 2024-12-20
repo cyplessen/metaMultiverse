@@ -19,7 +19,3 @@ The input data frame with an additional `fill_levels` column.
 \description{
 Assigns quantile-based levels to a specified column for visualization.
 }
-\examples{
-data <- assign_quantile_levels(data, k_column = "k", num_levels = 9)
-
-}

@@ -17,13 +17,14 @@
 #' }
 #' @examples
 #' # Example dataset
-#' example_data <- data.frame(
-#'   study = c("Study1", "Study2"),
-#'   es_id = 1:2,
-#'   yi = c(0.2, 0.3),
-#'   vi = c(0.01, 0.02),
-#'   wf_1 = c("group1", "group2")
-#' )
+#'    example_data <-  data.frame(
+#'               study = as.character(c("Study 1", "Study 2")),
+#'               es_id = as.numeric(1:2),
+#'               yi = as.numeric(c(0.5, 0.6)),
+#'               vi = as.numeric(c(0.02, 0.03)),
+#'               sei = as.numeric(c(0.14, 0.17)),
+#'               wf_1 = as.character(c("A", "B"))
+#'               )
 #'
 #' # Run the check
 #' check_data_multiverse(example_data)

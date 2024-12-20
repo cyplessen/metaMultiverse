@@ -29,12 +29,12 @@ calculate_pet.peese <- function(data) {
   }
 
   # Extract PET p-value
-  pet_p <- stats::coef(stats::summary(pet_fit))["(Intercept)", "Pr(>|t|)"]
+  pet_p <- stats::coef(summary(pet_fit))["(Intercept)", "Pr(>|t|)"]
 
   if (is.na(pet_p) || pet_p >= 0.1) {
     # PET is valid or PEESE is not triggered
     mod <- list(
-      b = stats::coef(stats::summary(pet_fit))["(Intercept)", "Estimate"],
+      b = stats::coef(summary(pet_fit))["(Intercept)", "Estimate"],
       ci.lb = stats::confint(pet_fit)["(Intercept)", "2.5 %"],
       ci.ub = stats::confint(pet_fit)["(Intercept)", "97.5 %"],
       pval = pet_p,
@@ -51,10 +51,10 @@ calculate_pet.peese <- function(data) {
     }
 
     mod <- list(
-      b = stats::coef(stats::summary(peese_fit))["(Intercept)", "Estimate"],
+      b = stats::coef(summary(peese_fit))["(Intercept)", "Estimate"],
       ci.lb = stats::confint(peese_fit)["(Intercept)", "2.5 %"],
       ci.ub = stats::confint(peese_fit)["(Intercept)", "97.5 %"],
-      pval = stats::coef(stats::summary(peese_fit))["(Intercept)", "Pr(>|t|)"],
+      pval = stats::coef(summary(peese_fit))["(Intercept)", "Pr(>|t|)"],
       type = "PEESE"
     )
   }
@@ -134,10 +134,10 @@ calculate_uwls <- function(dat) {
   reg_uwls <- stats::lm(d / sed ~ 0 + Precision)
 
   list(
-    b = stats::coef(stats::summary(reg_uwls))["Precision", "Estimate"],
+    b = stats::coef(summary(reg_uwls))["Precision", "Estimate"],
     ci.lb = stats::confint(reg_uwls)["Precision", "2.5 %"],
     ci.ub = stats::confint(reg_uwls)["Precision", "97.5 %"],
-    pval = stats::coef(stats::summary(reg_uwls))["Precision", "Pr(>|t|)"]
+    pval = stats::coef(summary(reg_uwls))["Precision", "Pr(>|t|)"]
   )
 }
 
@@ -163,9 +163,9 @@ calculate_waap <- function(dat) {
 
   reg_waap <- stats::lm(d[powered] / sed[powered] ~ 0 + Precision[powered])
   list(
-    b = stats::coef(stats::summary(reg_waap))["Precision[powered]", "Estimate"],
+    b = stats::coef(summary(reg_waap))["Precision[powered]", "Estimate"],
     ci.lb = stats::confint(reg_waap)["Precision[powered]", "2.5 %"],
     ci.ub = stats::confint(reg_waap)["Precision[powered]", "97.5 %"],
-    pval = stats::coef(stats::summary(reg_waap))["Precision[powered]", "Pr(>|t|)"]
+    pval = stats::coef(summary(reg_waap))["Precision[powered]", "Pr(>|t|)"]
   )
 }

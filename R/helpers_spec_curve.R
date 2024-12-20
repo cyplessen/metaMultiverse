@@ -15,8 +15,6 @@
 #' @param data A data frame containing the specification data.
 #' @param lookup_table A named list mapping column names to human-readable labels.
 #' @return A named vector of human-readable labels for each relevant column.
-#' @examples
-#' factor_labels <- generate_dynamic_labels(data, lookup_table)
 #'
 generate_dynamic_labels <- function(data, lookup_table) {
   # Detect wf_ columns and include ma_method
@@ -46,8 +44,6 @@ generate_dynamic_labels <- function(data, lookup_table) {
 #' @param data A data frame containing the specification data.
 #' @param factor_label_lookup A named list mapping column names to human-readable labels.
 #' @return The input data frame with an additional `tooltip` column.
-#' @examples
-#' data <- generate_tooltip(data, factor_label_lookup)
 #'
 #' @importFrom stringr str_to_sentence
 #'
@@ -102,12 +98,9 @@ generate_tooltip <- function(data, factor_label_lookup) {
 #' @param k_column A string specifying the column for quantile calculation (e.g., "k").
 #' @param num_levels An integer specifying the number of quantile levels (default: 9).
 #' @return The input data frame with an additional `fill_levels` column.
-#' @examples
-#' data <- assign_quantile_levels(data, k_column = "k", num_levels = 9)
 #'
 #' @importFrom dplyr mutate
 #' @importFrom stats quantile
-#' @importFrom base cut
 assign_quantile_levels <- function(data, k_column, num_levels = 9) {
   # Ensure k is numeric
   if (!is.numeric(data[[k_column]])) stop("`k_column` must be numeric.")
@@ -122,7 +115,7 @@ assign_quantile_levels <- function(data, k_column, num_levels = 9) {
   }
 
   # Assign quantile levels
-  data$fill_levels <- cut(
+  data$fill_levels <- base::cut(
     data[[k_column]],
     breaks = fill_quantiles,
     include.lowest = TRUE,

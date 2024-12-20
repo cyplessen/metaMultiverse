@@ -18,7 +18,9 @@ test_that("plotly_descriptive_spec_curve produces an interactive plot", {
   )
 
   # Run the function
-  plot <- plotly_descriptive_spec_curve(mock_data, colorblind_friendly = TRUE)
+  plot <- plotly_descriptive_spec_curve(mock_data,
+                                        colorblind_friendly = TRUE,
+                                        factor_label_lookup = factor_label_lookup)
 
   # Expectations
   expect_s3_class(plot, "plotly")

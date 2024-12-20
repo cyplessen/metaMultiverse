@@ -43,11 +43,21 @@ Steps:
 }
 \examples{
 # Example usage:
-final_results <- run_multiverse_analysis(
-  data_multiverse = my_data,
-  specifications = my_specifications,
-  how_methods = c("reml", "fe", "p-uniform", "pet-peese (corrected)")
+data_multiverse <- data.frame(
+ study = rep(paste0("S", 1:6), each = 2),
+ es_id = 1:12,
+ yi = rnorm(12, mean = 0.5),
+ vi = runif(12, min = 0.01, max = 0.1),
+ wf_1 = rep(c("A", "B"), times = 6)
 )
+specifications <- data.frame(
+ wf_1 = c("A", "B"),
+ dependency = "aggregate",
+ ma_method = "reml"
+)
+
+# Run function
+run_multiverse_analysis(data_multiverse, specifications, how_methods = c("reml"))
 
 }
 \seealso{

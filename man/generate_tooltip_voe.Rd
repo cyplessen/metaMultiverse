@@ -23,7 +23,3 @@ A data frame with an additional `tooltip` column.
 \description{
 Creates a `tooltip` column for interactive plots by dynamically summarizing key information.
 }
-\examples{
-generate_tooltip(data, x = "b", y = "pvalue")
-
-}

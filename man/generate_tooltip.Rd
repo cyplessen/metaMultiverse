@@ -18,7 +18,3 @@ The input data frame with an additional `tooltip` column.
 Dynamically generates tooltip text for specification curve plots,
   combining human-readable labels and row-level information.
 }
-\examples{
-data <- generate_tooltip(data, factor_label_lookup)
-
-}

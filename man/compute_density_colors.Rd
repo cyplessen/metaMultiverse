@@ -21,7 +21,3 @@ A data frame with an additional `density` column for coloring points.
 \description{
 Adds a `density` column to the dataset based on the relationship between two variables.
 }
-\examples{
-compute_density_colors(data, x = "b", y = "pvalue")
-
-}

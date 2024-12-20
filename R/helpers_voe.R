@@ -8,8 +8,6 @@
 #' @param colorblind_friendly Logical. Use a colorblind-friendly palette (default: TRUE).
 #'
 #' @return A data frame with an additional `density` column for coloring points.
-#' @examples
-#' compute_density_colors(data, x = "b", y = "pvalue")
 #'
 #' @export
 #' @importFrom grDevices densCols rainbow colorRampPalette
@@ -38,8 +36,6 @@ compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
 #' @param set_col Character. Name of the column containing the study set IDs (default: "set").
 #'
 #' @return A data frame with an additional `tooltip` column.
-#' @examples
-#' generate_tooltip(data, x = "b", y = "pvalue")
 #'
 #' @export
 #' @importFrom dplyr mutate %>%

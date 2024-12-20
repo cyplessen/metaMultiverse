@@ -18,7 +18,3 @@ A named vector of human-readable labels for each relevant column.
 Dynamically maps column names to human-readable labels using
   a lookup table.
 }
-\examples{
-factor_labels <- generate_dynamic_labels(data, lookup_table)
-
-}
