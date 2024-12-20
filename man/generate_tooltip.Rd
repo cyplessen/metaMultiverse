@@ -20,4 +20,5 @@ Dynamically generates tooltip text for specification curve plots,
 }
 \examples{
 data <- generate_tooltip(data, factor_label_lookup)
+
 }

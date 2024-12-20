@@ -9,9 +9,9 @@ generate_tooltip_voe(data, x, y, k_col = "k", set_col = "set")
 \arguments{
 \item{data}{Data frame containing the input data.}
 
-\item{x}{Character. Name of the x-variable column.}
+\item{x}{Character. Name of the x-variable column for the effect size}
 
-\item{y}{Character. Name of the y-variable column.}
+\item{y}{Character. Name of the y-variable column for the pvalue.}
 
 \item{k_col}{Character. Name of the column containing the number of studies (default: "k").}
 

@@ -7,17 +7,18 @@
 plotly_VoE(
   data,
   x = "b",
-  y = "pvalue",
+  y = "pval",
   colorblind_friendly = TRUE,
   cutoff = 10,
   x_breaks = seq(-0.5, 2, by = 0.25),
   y_breaks = c(1e-11, 1e-10, 1e-09, 1e-08, 1e-07, 1e-06, 1e-05, 1e-04, 0.001, 0.01, 0.05,
     0.1, 0.5, 1),
-  x_limits = c(-0.7, 2.1),
+  x_limits = NULL,
   y_limits = c(1e-11, 1),
   vertical_lines = c(0.1, 0.9),
   hline_value = 0.05,
-  title_template = "{k} meta-analyses with at least {cutoff} studies."
+  title_template = "{k} meta-analyses with at least {cutoff} studies.",
+  interactive = TRUE
 )
 }
 \arguments{
@@ -44,14 +45,16 @@ plotly_VoE(
 \item{hline_value}{Numeric. Horizontal reference line value (default: 0.05).}
 
 \item{title_template}{Character. Template for the plot title (supports glue syntax).}
+
+\item{interactive}{Logical. Whether to create an interactive Plotly plot (`TRUE`) or static ggplot plot (`FALSE`).}
 }
 \value{
-A `plotly` object with an interactive vibration of effects plot.
+A `plotly` object containing the interactive vibration of effects plot if `interactive = TRUE`, or a combined `ggplot` object if `interactive = FALSE`.
 }
 \description{
 Creates an interactive plot visualizing the vibration of effects with effect sizes and p-values.
 }
 \examples{
-plotly_VoE(data, x = "b", y = "pvalue", cutoff = 10)
+plotly_VoE(data, x = "b", y = "pval", cutoff = 10)
 
 }

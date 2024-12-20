@@ -20,4 +20,5 @@ Dynamically maps column names to human-readable labels using
 }
 \examples{
 factor_labels <- generate_dynamic_labels(data, lookup_table)
+
 }

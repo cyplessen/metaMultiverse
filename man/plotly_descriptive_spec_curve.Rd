@@ -8,7 +8,8 @@ plotly_descriptive_spec_curve(
   data,
   ylim_lower = NULL,
   ylim_upper = NULL,
-  colorblind_friendly = TRUE
+  colorblind_friendly = TRUE,
+  interactive = TRUE
 )
 }
 \arguments{
@@ -19,9 +20,11 @@ plotly_descriptive_spec_curve(
 \item{ylim_upper}{Numeric. Upper limit for the y-axis of the forest plot.}
 
 \item{colorblind_friendly}{Logical. Use a colorblind-friendly palette (default: TRUE).}
+
+\item{interactive}{Logical. Whether to create an interactive Plotly plot (`TRUE`) or static ggplot plot (`FALSE`). Default is `TRUE`.}
 }
 \value{
-A `plotly` object containing the interactive specification curve plot.
+A `plotly` object containing the interactive specification curve plot if `interactive = TRUE`, or a combined `ggplot` object if `interactive = FALSE`.
 }
 \description{
 Creates an interactive specification curve plot with a forest plot for effect sizes and a tile plot for specification factors.
@@ -30,6 +33,6 @@ Creates an interactive specification curve plot with a forest plot for effect si
 Combines a forest plot for effect sizes with confidence intervals and a tile plot visualizing specification factors.
 }
 \examples{
-plotly_descriptive_spec_curve(data, ylim_lower = -0.5, ylim_upper = 1.5)
+plotly_descriptive_spec_curve(data, ylim_lower = -0.5, ylim_upper = 1.5, interactive = TRUE)
 
 }
