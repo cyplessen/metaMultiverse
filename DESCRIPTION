@@ -1,15 +1,26 @@
 Package: metaMultiverse
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Multiverse Meta-Analysis Toolkit
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Constantin Yves Plessen <yves.plessen@gmail.com>
+Maintainer: Constantin Yves Plessen <yves.plessen@gmail.com>
+Description: A toolkit for conducting multiverse meta-analysis, with functions for generating specification grids, performing various estimation methods (PET-PEESE, P-uniform, UWLS, WAAP), and visualizing results using both static and interactive plots. Designed for researchers and data scientists working with meta-analytic methods.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
+Imports: 
+    RColorBrewer,
+    cowplot,
+    data.table,
+    dplyr,
+    ggplot2,
+    glue,
+    plotly,
+    puniform,
+    scales,
+    stringr,
+    viridis
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
