@@ -36,8 +36,8 @@ plotly_VoE <- function(
     cutoff = 10,
     x_breaks = seq(-0.5, 2, by = 0.25),
     y_breaks = c(1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 0.001, 0.01, 0.05, 0.1, 0.5, 1),
-    x_limits = c(-0.7, 2.1),
-    y_limits = c(1e-11, 1),
+     x_limits = NULL,
+     y_limits = c(1e-11,1),
     vertical_lines = c(0.1, 0.9),
     hline_value = 0.05,
     title_template = "{k} meta-analyses with at least {cutoff} studies.",
@@ -58,9 +58,21 @@ plotly_VoE <- function(
   k <- nrow(data)
   x_quantiles <- stats::quantile(data[[x]], vertical_lines, na.rm = TRUE)  # Compute quantiles
 
+  # Dynamically compute x_limits and y_limits if not provided
+  if (is.null(x_limits)) {
+    x_limits <- c(min(data[[x]], na.rm = TRUE) -.3, max(data[[x]], na.rm = TRUE) + .3)
+  }
+
+  if (is.null(y_limits)) {
+    y_limits <- c(min(data[[y]], na.rm = TRUE), max(data[[y]], na.rm = TRUE))
+  }
+
   # Create ggplot base
   p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[x]], y = .data[[y]], text = tooltip)) +
-    ggplot2::geom_jitter(ggplot2::aes(colour = density), size = 1, width = 0.001, show.legend = FALSE) +
+    ggplot2::geom_point(ggplot2::aes(colour = density),
+                         size = 1,
+                         #width = 0.01,
+                        show.legend = FALSE) +
     ggplot2::scale_color_identity() +
     ggplot2::geom_hline(yintercept = hline_value, linetype = 2, color = "black") +
     ggplot2::geom_vline(xintercept = x_quantiles, color = "red", linetype = 2) +
