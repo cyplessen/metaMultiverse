@@ -1,4 +1,9 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 dev/
+tutorials/
 ^LICENSE\.md$
+
+^vignettes/modern-styles\.css$
+^doc$
+^Meta$

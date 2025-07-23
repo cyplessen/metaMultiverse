@@ -1,0 +1,511 @@
+---
+title: "Multiverse Meta-Analysis with metaMultiverse"
+author: "Constantin Yves Plessen"
+date: today
+format:
+  html:
+    theme: cosmo
+    cache: true
+    toc: true
+    toc-location: left
+    code-fold: true
+    code-tools: true
+    highlight-style: github
+    fig-width: 8
+    fig-height: 6
+    html-math-method: katex
+    css: styles.css
+    self-contained: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 6,
+  fig.retina = 2,
+  out.width = "100%"
+)
+```
+
+## Introduction to Multiverse Meta-Analysis {.unnumbered}
+
+Multiverse meta-analysis is an approach that addresses the analytical flexibility inherent in meta-analysis by exploring multiple reasonable analytical choices simultaneously. This package provides tools for conducting multiverse pairwise meta-analyses with standardized mean differences.
+
+::: {.callout-note}
+## What is a multiverse analysis?
+
+A multiverse analysis considers all reasonable analytical choices simultaneously, rather than committing to a single analytical path. This approach acknowledges the potential impact of researcher decisions on results and provides a more complete picture of possible outcomes.
+:::
+
+### Package Philosophy
+
+The `metaMultiverse` package is designed to:
+
+1. Enable exploration of different meta-analytic choices ("which" factors and "how" factors)
+2. Visualize the impact of these choices on effect size estimates
+3. Assess the robustness of conclusions across the multiverse of possible analyses
+
+## Installation {#installation}
+
+You can install the development version of `metaMultiverse` from GitHub:
+
+```{r installation, eval=FALSE}
+# install.packages("devtools")
+devtools::install_github("cyplessen/metaMultiverse")
+```
+
+## Workflow Overview {#workflow}
+
+The typical workflow for a multiverse meta-analysis using this package consists of four main steps:
+
+::: {.panel-tabset}
+## 1. Data Preparation
+Prepare and validate your dataset to ensure it meets the requirements for multiverse analysis.
+
+## 2. Create Specifications
+Define the analytical choices to explore, including "which" factors (data subsets) and "how" factors (meta-analytic methods).
+
+## 3. Run Analysis
+Apply specifications to create a multiverse of meta-analyses, exploring all reasonable analytical paths.
+
+## 4. Visualize Results
+Explore the results through specification curves and other visualizations to assess robustness.
+:::
+
+This tutorial walks through each step with a practical example.
+
+### Example Dataset
+
+For this tutorial, we'll use a dataset of digital depression interventions:
+
+```{r load-data}
+# Load required packages
+library(metaMultiverse)
+library(tidyr)
+library(dplyr) # data wrangling
+library(ggplot2) # data visualization
+library(plotly) # interactive data visualization
+library(kableExtra) # data formatting
+
+# Load example dataset
+data("data_digDep") 
+
+# Examine the structure
+data_digDep %>%
+  kbl() %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+    full_width = FALSE,
+    position = "center"
+  ) %>%
+  scroll_box(width = "100%", height = "300px")
+```
+
+## Step 1: Data Validation {#step1}
+
+Before proceeding with a multiverse meta-analysis, it's important to ensure your data meets the requirements:
+
+```{r validate-data}
+# Check if data meets requirements for multiverse analysis
+check_data_multiverse(data_digDep)
+```
+
+::: {.callout-tip}
+## What the validator checks
+The `check_data_multiverse()` function validates:
+
+- Required columns are present (`study`, `es_id`, `yi`, `vi`, and `wf_*` columns)
+- Columns have correct data types
+- Effect size IDs are unique
+- No critical missing values
+:::
+
+## Step 2: Create Specifications {#step2}
+
+### Principled Selection of Which and How Factors
+
+When conducting a multiverse meta-analysis, a critical step is determining which analytic choices (decision nodes) should be included in your multiverse. Not all potential choices merit inclusion, and an overly expansive multiverse can obscure meaningful effects with unjustified alternatives. Following Del Giudice and Gangestad (2021), we recommend a systematic approach to evaluating decision nodes.
+
+### Three Types of Nonequivalence to Consider
+
+Before including factors in your multiverse, assess them against these criteria:
+
+1. **Measurement Nonequivalence**: Do different measurement choices have different validities or reliabilities?
+   - Individual indicators vs. composites
+   - Validated vs. non-validated measures
+   - Measures with different psychometric properties
+
+2. **Effect Nonequivalence**: Do different specifications capture different effects?
+   - Different covariate sets that change the nature of the estimated effect
+   - Direct vs. total effects in mediation scenarios
+   - Incompatible causal assumptions
+
+3. **Power/Precision Nonequivalence**: Do alternatives yield predictably different levels of precision?
+   - Sample size differences due to exclusion criteria
+   - Reliability differences affecting statistical power
+   - Measurement approaches with different sensitivities
+
+### Decision Framework for Each Factor
+
+For each decision node in your analysis, classify it into one of these three categories:
+
+1. **Type E (Principled Equivalence)**: Alternatives that are objectively equivalent
+   - Choices with comparable validity and reliability
+   - Options that test the same effect with similar precision
+   - These can be included in a single multiverse
+
+2. **Type N (Principled Nonequivalence)**: Alternatives where some are objectively better
+   - One measurement approach has clearly higher validity
+   - Some specifications reflect bias in effect estimation
+   - These should NOT be combined in a single multiverse
+   - Choose the theoretically justified option(s)
+
+3. **Type U (Uncertainty)**: Cases where optimal choice is unclear
+   - Insufficient evidence to determine superior options
+   - Genuine theoretical uncertainty about causal relationships
+   - Create separate multiverses for conceptually distinct models
+
+### Step-by-Step Evaluation Process
+
+1. **Identify all potential decision nodes** in your analysis:
+   - Which predictors or outcomes to use
+   - How to operationalize key constructs
+   - Which covariates to include
+   - Data exclusion criteria
+   
+2. **Evaluate each decision node** using the three nonequivalence criteria:
+   - Research the psychometric properties of measures
+   - Consider causal relationships between variables
+   - Assess impact on statistical power and precision
+
+3. **Classify each decision** as Type E, N, or U:
+   - Document your reasoning for each classification
+   - For Type U decisions, specify what information would resolve uncertainty
+
+4. **Construct appropriate multiverses**:
+   - Include Type E decisions in a single homogeneous multiverse
+   - For Type N decisions, select justified options only
+   - Create separate multiverses for Type U decisions
+
+This approach leads to more interpretable and theoretically meaningful results by avoiding the creation of multiverse "black holes" where true effects are obscured by a sea of unjustified alternatives.
+
+### Example Application
+
+For our depression and inflammation example:
+
+* **Choice of composites** (Type E): Using a composite of all validated depression instruments, or excluding potentially problematic ones with minimal impact
+* **Outlier criteria** (Type E): Different reasonable thresholds when sample size impact is minimal
+* **Including fatigue as a covariate** (Type U): Create two separate multiverses, one treating fatigue as a collider, another as a mediator
+* **Including unvalidated biomarkers** (Type N): Exclude from the multiverse analyses
+* **Including inadequate meta-analytical models** (Type N): Models that are arguably indefensible, for instance using a common effect model where no theoretical argument can be made for only varying around a fixed effect, or using an unweighted "voting model", where each study gets one vote.
+* **Including unvalidated biomarkers** (Type N): Exclude from the multiverse analyses
+
+By applying this framework, we ensure our multiverse analysis is both comprehensive where appropriate and focused where theory provides clear guidance.
+
+Next, we define the specifications to explore in our multiverse analysis:
+
+
+```{r}
+data_digDep %>% 
+  arrange(desc(yi))
+
+data_digDep %>% 
+  arrange(desc(yi)) %>% 
+  # Calculate mean and SD for statistical cutoffs
+  mutate(
+    # Basic statistics
+    mean_g = mean(yi, na.rm = TRUE),
+    sd_g = sd(yi, na.rm = TRUE),
+    
+    # Standard deviation based cutoffs
+    is_outlier_2sd = abs(yi - mean_g) > 2 * sd_g,
+    is_outlier_3sd = abs(yi - mean_g) > 3 * sd_g,
+    
+    # Tukey's method (IQR-based)
+    q1_g = quantile(yi, 0.25, na.rm = TRUE),
+    q3_g = quantile(yi, 0.75, na.rm = TRUE),
+    iqr_g = q3_g - q1_g,
+    lower_tukey = q1_g - 1.5 * iqr_g,
+    upper_tukey = q3_g + 1.5 * iqr_g,
+    is_outlier_tukey = yi < lower_tukey | yi > upper_tukey,
+    
+    # Percentile-based cutoffs
+    lower_5pct = quantile(yi, 0.05, na.rm = TRUE),
+    upper_95pct = quantile(yi, 0.95, na.rm = TRUE),
+    is_outlier_pct5 = yi < lower_5pct | yi > upper_95pct,
+    
+    lower_10pct = quantile(yi, 0.10, na.rm = TRUE),
+    upper_90pct = quantile(yi, 0.90, na.rm = TRUE),
+    is_outlier_pct10 = yi < lower_10pct | yi > upper_90pct,
+    
+    # Cohen's conventional benchmarks (for flagging "extreme" values)
+    is_very_large = abs(yi) > 0.80,
+    is_extremely_large = abs(yi) > 1.20,  # 1.5x Cohen's large effect
+    
+    # Absolute thresholds (based on plausibility in many psychological interventions)
+    is_implausible = abs(yi) > 2.0  # Adjust based on your field
+  )
+```
+
+```{r create-specs}
+# Define "Which factors" (analytical choices about data subsets)
+wf_vars <- c("wf_1", "wf_2", "wf_3", "wf_4")
+
+# Define meta-analytical methods
+ma_methods <- c("reml", "fe", "3-level", "rve", "p-uniform")
+
+# Define dependency handling approaches
+dependencies <- c("aggregate", "modeled")
+
+# Create specifications grid
+specs <- create_multiverse_specifications(
+  data = data_digDep,
+  wf_vars = wf_vars,
+  ma_methods = ma_methods,
+  dependencies = dependencies
+)
+
+# Display number of specifications
+tibble(
+  "Description" = "Number of valid specifications",
+  "Value" = specs$number_specs
+) %>%
+  kable(format = "html") %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+# Look at first few specifications
+specs$specifications %>%
+  head(10) %>% 
+  kable(format = "html") %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE
+  ) %>%
+  column_spec(1:ncol(specs$specifications), 
+              background = if_else(
+                grepl("total_", as.matrix(specs$specifications[1:10,])), 
+                "#e8f4f8", "white"
+              ))
+```
+
+
+
+::: {.callout-important}
+## Understanding specifications
+Each row in the specifications represents a unique analytical path through the multiverse. The columns indicate:
+
+- Which data subsets to use (which factors, `wf_*` columns)
+- How to handle dependencies between effect sizes (`dependency`)
+- Which meta-analytical method to apply (`ma_method`)
+:::
+
+## Step 3: Run Multiverse Analysis {#step3}
+
+With our specifications defined, we can now run the multiverse analysis:
+
+```{r run-multiverse}
+#| warning: false
+
+# Run the multiverse analysis
+results <- run_multiverse_analysis(
+  data_multiverse = data_digDep,
+  specifications = specs$specifications,
+  how_methods = ma_methods
+)
+
+# View summary of results
+summary_stats <- results %>%
+  summarize(
+    n_analyses = n(),
+    mean_es = mean(b, na.rm = TRUE),
+    median_es = median(b, na.rm = TRUE),
+    min_es = min(b, na.rm = TRUE),
+    max_es = max(b, na.rm = TRUE),
+    prop_significant = mean(pval < 0.05, na.rm = TRUE)
+  )
+
+summary_stats %>%
+  tidyr::pivot_longer(cols = everything(), names_to = "Statistic", values_to = "Value") %>%
+  mutate(
+    Value = case_when(
+      Statistic == "prop_significant" ~ paste0(round(Value * 100, 1), "%"),
+      TRUE ~ round(Value, 3) %>% as.character()
+    ),
+    Statistic = case_when(
+      Statistic == "n_analyses" ~ "Number of Analyses",
+      Statistic == "mean_es" ~ "Mean Effect Size",
+      Statistic == "median_es" ~ "Median Effect Size",
+      Statistic == "min_es" ~ "Minimum Effect Size",
+      Statistic == "max_es" ~ "Maximum Effect Size",
+      Statistic == "prop_significant" ~ "Proportion Significant (p < 0.05)",
+      TRUE ~ Statistic
+    )
+  ) %>%
+  kable(format = "html", caption = "Summary of Multiverse Meta-Analysis Results") %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = FALSE,
+    position = "center"
+  ) %>%
+  row_spec(row = 0, bold = TRUE, color = "white", background = "#2c3e50")
+```
+
+## Step 4: Visualize Results {#step4}
+
+The `metaMultiverse` package provides several visualization options to explore and interpret your results.
+
+### Specification Curve {#spec-curve}
+
+The specification curve visualizes the distribution of effect sizes across all specifications:
+
+```{r fig.width=10, fig.height=8}
+#| label: fig-spec-curve
+#| fig-cap: "Specification curve showing the distribution of effect sizes across all analytical choices."
+
+# Define a lookup table for factor labels
+factor_label_lookup <- list(
+  wf_1 = "Technology Type",
+  wf_2 = "Guidance Level",
+  wf_3 = "Target Group",
+  wf_4 = "Therapy Type",
+  ma_method = "Meta-Analysis Method"
+)
+
+# Create the specification curve plot
+plotly_descriptive_spec_curve(
+  data = results,
+  ylim_lower = -0.5,
+  ylim_upper = 1.5,
+  colorblind_friendly = TRUE,
+  factor_label_lookup = factor_label_lookup
+)
+```
+
+The specification curve consists of two panels:
+
+1. **Top panel**: Shows the effect size estimates with confidence intervals, ordered by effect size magnitude
+2. **Bottom panel**: Shows which analytical choices were made for each specification
+
+### Vibration of Effects Plot {#voe-plot}
+
+The Vibration of Effects plot shows the relationship between effect sizes and p-values:
+
+```{r fig.width=8, fig.height=6}
+#| label: fig-voe
+#| fig-cap: "Vibration of Effects plot showing relationship between effect sizes and p-values."
+
+plotly_VoE(
+  data = results,
+  x = "b",
+  y = "pval",
+  colorblind_friendly = TRUE,
+  cutoff = 5,  # Minimum number of studies
+  vertical_lines = c(0.1, 0.9),  # Quantile reference lines
+  hline_value = 0.05  # Significance threshold
+)
+```
+
+::: {.callout-note}
+## Interpreting the Vibration of Effects plot
+- Points represent individual meta-analyses
+- Color intensity represents point density
+- Horizontal line: conventional significance threshold (p = 0.05)
+- Vertical lines: effect size distribution quantiles (10th and 90th percentiles)
+:::
+
+## Interpreting Multiverse Results {#interpretation}
+
+When interpreting results from a multiverse meta-analysis, consider:
+
+::: {.panel-tabset}
+## Consistency
+**Consistency of direction**: Do most specifications suggest effects in the same direction?
+
+A finding is more robust if the majority of specifications point to effects in the same direction, even if magnitude varies.
+
+## Range
+**Range of effect sizes**: How much do effect sizes vary across specifications?
+
+A narrow range suggests conclusions are stable across analytical choices, while wide ranges indicate high sensitivity to analytical decisions.
+
+## Decision Impact
+**Analytical decisions driving variation**: Which analytical choices have the largest impact on results?
+
+Identify which factors (e.g., inclusion criteria, meta-analytical method) most strongly influence effect size estimates.
+
+## Significance
+**Proportion of significant results**: What proportion of specifications yield statistically significant results?
+
+A high proportion of significant results across the multiverse suggests a robust finding.
+
+## Sensitivity
+**Decision sensitivity**: Are conclusions robust to different analytical choices?
+
+Assess whether key conclusions change substantively depending on analytical choices.
+:::
+
+## Advanced Usage {#advanced}
+
+### Custom Meta-Analytical Methods {#custom-methods}
+
+You can extend the package by adding custom meta-analytical methods:
+
+```{r custom-method, eval=FALSE}
+# Example of defining a custom meta-analytical function
+calculate_custom_method <- function(dat) {
+  # Your custom implementation here
+  
+  # Return results in standardized format
+  list(
+    b = estimate,
+    ci.lb = lower_ci,
+    ci.ub = upper_ci,
+    pval = p_value
+  )
+}
+
+# Add to how_methods
+custom_methods <- c(ma_methods, "custom_method")
+```
+
+### Subset Analysis {#subset-analysis}
+
+You can focus on a subset of specifications for targeted analysis:
+
+```{r subset-analysis, eval=FALSE}
+# Focus on specifications with specific characteristics
+subset_specs <- specs$specifications %>%
+  filter(
+    wf_1 == "specific_value",
+    dependency == "modeled"
+  )
+
+# Run analysis on subset
+#subset_results <- run_multiverse_analysis(
+#  data_multiverse = data_digDep,
+#  specifications = subset_specs,
+#  how_methods = ma_methods
+#)
+```
+
+## Conclusion {#conclusion}
+
+The `metaMultiverse` package provides a systematic framework for exploring the impact of analytical decisions in meta-analysis. By conducting and visualizing multiple analyses simultaneously, researchers can:
+
+1. Identify which analytical choices significantly impact conclusions
+2. Present more transparent and robust meta-analytic results
+3. Better understand the sensitivity of findings to methodological decisions
+
+::: {.callout-tip}
+## Best practices for multiverse meta-analysis
+- Pre-register your multiverse analysis plan when possible
+- Clearly document all analytical choices
+- Report the full range of results rather than cherry-picking
+- Consider theoretical justifications for different analytical choices
+- Use visualizations to communicate the multiverse of results effectively
+:::
+
+For more information, see the package documentation or contact the developers.
