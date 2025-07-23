@@ -9,7 +9,6 @@
 #'
 #' @return A data frame with an additional `density` column for coloring points.
 #'
-#' @export
 #' @importFrom grDevices densCols rainbow colorRampPalette
 #' @importFrom viridis viridis
 compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
@@ -37,7 +36,6 @@ compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
 #'
 #' @return A data frame with an additional `tooltip` column.
 #'
-#' @export
 #' @importFrom dplyr mutate %>%
 #' @importFrom glue glue
 #' @importFrom scales scientific
