@@ -6,7 +6,6 @@
 #'   for the multiverse analysis.
 #' @param specifications Data frame. Specifications generated using
 #'   \code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.
-#' @param how_methods Character vector. A list of meta-analysis methods to apply for the "How" factors.
 #'
 #' @return A data frame containing the aggregated results of the multiverse analysis, including:
 #'   - Effect size estimate (\code{b}),
@@ -28,7 +27,6 @@
 #' 3. Adds an indicator (\code{full_set}) to identify if all studies are included in the analysis.
 #' 4. Removes missing values.
 #' 5. Deduplicates results by keeping the first occurrence of duplicate rows.
-#' 6. Adds PET-PEESE corrected results if specified.
 #'
 #' @seealso
 #' \code{\link{create_multiverse_specifications}},
@@ -52,13 +50,13 @@
 #')
 #'
 #' # Run function
-#' run_multiverse_analysis(data_multiverse, specifications, how_methods = c("reml"))
+#' run_multiverse_analysis(data_multiverse, specifications)
 #'
 #' @export
-run_multiverse_analysis <- function(data_multiverse, specifications, how_methods) {
+run_multiverse_analysis <- function(data_multiverse, specifications) {
   # Step 1: Run multiverse analysis for each specification
   results <- lapply(seq_len(nrow(specifications)), function(i) {
-    general_multiverse(i, data_multiverse, specifications, how_methods)
+    general_multiverse(i, data_multiverse, specifications)
   })
 
   # Step 2: Combine results into a single data frame
@@ -72,11 +70,6 @@ run_multiverse_analysis <- function(data_multiverse, specifications, how_methods
 
   # Step 5: Remove duplicates, keeping first occurrence (more specific which factors)
   final_results <- final_results[!duplicated(final_results[, c("b", "set", "ma_method")]), ]
-
-  # Step 6: Add PET-PEESE corrected results if specified
-  if ("pet-peese (corrected)" %in% how_methods) {
-    final_results <- add_pet_peese_corrected(final_results)
-  }
 
   # Return final results
   return(final_results)

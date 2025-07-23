@@ -2,7 +2,7 @@
   register_ma_method("fe",
                      fun = function(dat)
                        metafor::rma(yi = dat$yi, vi = dat$vi, method = "FE"),
-                     dependencies = "ignore")
+                     dependencies = c("select_max", "select_min", "aggregate"))
 
   register_ma_method("reml",
                      fun = function(dat)
@@ -10,13 +10,18 @@
                                     method = "REML",
                                     control = list(stepadj = 0.5,
                                                    maxiter = 2000)),
-                     dependencies = c("ignore", "aggregate"))
+                     dependencies = c("select_max", "select_min", "aggregate"))
 
-  # aggregate-only helpers
-  register_ma_method("uwls",  calculate_uwls,  "aggregate")
-  register_ma_method("waap",  calculate_waap,  "aggregate")
-  register_ma_method("pet-peese", calculate_pet.peese, "aggregate")
-  register_ma_method("p-uniform", calculate_puni_star, "aggregate")
+  register_ma_method("uwls",  calculate_uwls,  dependencies = c("select_max", "select_min", "aggregate"))
+  register_ma_method("waap",  calculate_waap,  dependencies = c("select_max", "select_min", "aggregate"))
+  register_ma_method("pet-peese", calculate_pet.peese, dependencies = c("select_max", "select_min", "aggregate"))
+  register_ma_method(
+    "pet-peese-corr",
+    pet_peese_corr,
+    dependencies = c("select_max", "select_min", "aggregate")
+  )
+  # no aggregate methods for selection based estimators
+  register_ma_method("p-uniform", calculate_puni_star, dependencies = c("select_max", "select_min"))
 
   # modeled-dependency helpers
   register_ma_method("3-level",

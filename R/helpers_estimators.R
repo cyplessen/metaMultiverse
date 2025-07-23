@@ -61,22 +61,15 @@ calculate_pet.peese <- function(data) {
   return(mod)
 }
 
-#' Correct PET-PEESE Estimates
+#' PET-PEESE (corrected)
 #'
-#' Filters the results of PET-PEESE and sets negative effect sizes to zero.
-#'
-#' @param data A data frame of results, including `ma_method` and `b` columns.
-#' @return A data frame with added corrected rows for PET-PEESE.
-#' @importFrom dplyr %>% filter mutate bind_rows
-add_pet_peese_corrected <- function(data) {
-  pet_peese_corrected <- data %>%
-    dplyr::filter(ma_method == "pet-peese" & b < 0) %>%
-    dplyr::mutate(b = 0, ma_method = "pet-peese (corrected)")
-
-  data_combined <- dplyr::bind_rows(data, pet_peese_corrected)
-  data_combined$ma_method <- factor(data_combined$ma_method, levels = unique(data_combined$ma_method))
-
-  return(data_combined)
+#' Runs PET-PEESE, then sets b = 0 whenever the estimate is negative
+#' (common sensitivity correction).
+#' @keywords internal
+pet_peese_corr <- function(dat) {
+  out <- calculate_pet.peese(dat)
+  if (!is.na(out$b) && out$b < 0) out$b <- 0
+  out
 }
 
 ## P-Uniform Estimation ------------------------------------------------------

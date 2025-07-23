@@ -9,7 +9,6 @@
 #'   for the multiverse analysis.
 #' @param specifications Data frame. Contains all specifications generated using
 #'   \code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.
-#' @param how_methods Character vector. A list of meta-analysis methods to apply for the "How" factors.
 #' @param k_smallest_ma Integer. The smallest number of unique studies required for a valid meta-analysis.
 #'   Defaults to 5.
 #'
@@ -48,15 +47,14 @@
 # Run function
 #' result <- general_multiverse(1,
 #'    data_multiverse,
-#'    specifications,
-#'    how_methods = c("reml"))
+#'    specifications)
 
 
 #'
 #' @export
-general_multiverse <- function(i, data_multiverse, specifications, how_methods, k_smallest_ma = 5) {
+general_multiverse <- function(i, data_multiverse, specifications, k_smallest_ma = 5) {
   # Validate k_smallest_ma
-  if (!is.numeric(k_smallest_ma) || k_smallest_ma <= 0) {
+  if (!is.numeric(k_smallest_ma) ||  k_smallest_ma <= 0) {
     stop("`k_smallest_ma` must be a positive numeric value.")
   }
 
@@ -89,14 +87,12 @@ general_multiverse <- function(i, data_multiverse, specifications, how_methods, 
   dependency <- specifications$dependency[i]
   ma_method <- specifications$ma_method[i]
 
-  # Aggregating dependency
-  if (dependency == "aggregate") {
-    mod <- run_aggregate_dependency(dat, ma_method, how_methods)
-  }
-
-  # Modeling dependency
-  else if (dependency == "modeled") {
-    mod <- run_modeled_dependency(dat, ma_method, how_methods)
+  if (dependency %in% c("select_max", "select_min")) {
+    mod <- run_select_dependency(dat, ma_method, dependency)
+  } else if (dependency == "aggregate") {
+    mod <- run_aggregate_dependency(dat, ma_method)
+  } else if (dependency == "modeled") {
+    mod <- run_modeled_dependency(dat, ma_method)
   }
 
   # Return results
