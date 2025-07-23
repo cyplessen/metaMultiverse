@@ -15,7 +15,6 @@ globalVariables(c("b", "ci.lb", "ci.ub", "pval", "ma_method", "vi", "yi"))
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, `pval`, and `type` (either "PET" or "PEESE").
 #' @importFrom stats lm coef confint
 #' @importFrom dplyr %>%
-#' @export
 calculate_pet.peese <- function(data) {
   mod <- list()
 
@@ -68,8 +67,7 @@ calculate_pet.peese <- function(data) {
 #'
 #' @param data A data frame of results, including `ma_method` and `b` columns.
 #' @return A data frame with added corrected rows for PET-PEESE.
-#' @import dplyr
-#' @export
+#' @importFrom dplyr %>% filter mutate bind_rows
 add_pet_peese_corrected <- function(data) {
   pet_peese_corrected <- data %>%
     dplyr::filter(ma_method == "pet-peese" & b < 0) %>%
@@ -90,7 +88,6 @@ add_pet_peese_corrected <- function(data) {
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
 #' @importFrom puniform puni_star
-#' @export
 calculate_puni_star <- function(dat) {
   mod <- tryCatch({
     mod.puni <- puniform::puni_star(
@@ -126,7 +123,6 @@ calculate_puni_star <- function(dat) {
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
 #' @importFrom stats lm coef confint
-#' @export
 calculate_uwls <- function(dat) {
   d <- dat$yi
   sed <- sqrt(dat$vi)
@@ -148,7 +144,6 @@ calculate_uwls <- function(dat) {
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
 #' @importFrom stats lm coef confint
-#' @export
 calculate_waap <- function(dat) {
   d <- dat$yi
   sed <- sqrt(dat$vi)
