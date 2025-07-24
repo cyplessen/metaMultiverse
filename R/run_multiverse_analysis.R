@@ -65,8 +65,8 @@ run_multiverse_analysis <- function(data_multiverse, specifications) {
   # Step 3: Add full_set indicator
   final_results$full_set <- as.numeric(final_results$set == paste(1:nrow(data_multiverse), collapse = ","))
 
-  # Step 4: Remove missing values
-  final_results <- final_results[stats::complete.cases(final_results), ]
+  # Step 4: Remove missing values (except pval due to Bayesian methods)
+  final_results <- final_results[ complete.cases(final_results[ , !(names(final_results) %in% "pval") ]), ]
 
   # Step 5: Remove duplicates, keeping first occurrence (more specific which factors)
   final_results <- final_results[!duplicated(final_results[, c("b", "set", "ma_method")]), ]
