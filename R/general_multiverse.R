@@ -98,11 +98,11 @@ general_multiverse <- function(i, data_multiverse, specifications, k_smallest_ma
   # Return results
   out <- data.frame(
     specifications[i, ],
-    b = mod$b[[1]],
-    ci.lb = mod$ci.lb[[1]],
-    ci.ub = mod$ci.ub[[1]],
-    pval = mod$pval[[1]],
-    k = nrow(dat),
+    b     = as.numeric(mod$b),
+    ci.lb = as.numeric(mod$ci.lb),
+    ci.ub = as.numeric(mod$ci.ub),
+    pval  = as.numeric(mod$pval),
+    k     = nrow(dat),
     set
   )
 
