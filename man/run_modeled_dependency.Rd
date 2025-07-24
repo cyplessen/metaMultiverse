@@ -4,14 +4,12 @@
 \alias{run_modeled_dependency}
 \title{Run Modeled Dependency}
 \usage{
-run_modeled_dependency(dat, ma_method, how_methods)
+run_modeled_dependency(dat, ma_method)
 }
 \arguments{
 \item{dat}{A data frame containing `yi` (effect size), `vi` (variance), `es_id` (effect size ID), and `study` columns.}
 
 \item{ma_method}{The meta-analysis method to apply (e.g., "3-level", "rve").}
-
-\item{how_methods}{A vector of allowed methods for the analysis.}
 }
 \value{
 A list containing the meta-analysis results or a standardized NA list if the method fails.

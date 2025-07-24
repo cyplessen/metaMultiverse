@@ -10,8 +10,6 @@ run_aggregate_dependency(dat, ma_method, how_methods)
 \item{dat}{A data frame containing `yi` (effect size), `vi` (variance), and `study` columns.}
 
 \item{ma_method}{The meta-analysis method to apply (e.g., "fe", "reml", "uwls").}
-
-\item{how_methods}{A vector of allowed methods for the analysis.}
 }
 \value{
 A list containing the meta-analysis results or a standardized NA list if the method fails.

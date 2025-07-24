@@ -4,7 +4,7 @@
 \alias{run_multiverse_analysis}
 \title{Run Multiverse Analysis}
 \usage{
-run_multiverse_analysis(data_multiverse, specifications, how_methods)
+run_multiverse_analysis(data_multiverse, specifications)
 }
 \arguments{
 \item{data_multiverse}{Data frame. Contains the dataset with all potential studies and factors
@@ -12,8 +12,6 @@ for the multiverse analysis.}
 
 \item{specifications}{Data frame. Specifications generated using
 \code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.}
-
-\item{how_methods}{Character vector. A list of meta-analysis methods to apply for the "How" factors.}
 }
 \value{
 A data frame containing the aggregated results of the multiverse analysis, including:
@@ -39,7 +37,6 @@ Steps:
 3. Adds an indicator (\code{full_set}) to identify if all studies are included in the analysis.
 4. Removes missing values.
 5. Deduplicates results by keeping the first occurrence of duplicate rows.
-6. Adds PET-PEESE corrected results if specified.
 }
 \examples{
 # Example usage:
@@ -57,7 +54,7 @@ specifications <- data.frame(
 )
 
 # Run function
-run_multiverse_analysis(data_multiverse, specifications, how_methods = c("reml"))
+run_multiverse_analysis(data_multiverse, specifications)
 
 }
 \seealso{

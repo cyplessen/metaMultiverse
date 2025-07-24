@@ -4,13 +4,7 @@
 \alias{general_multiverse}
 \title{General Multiverse Meta-Analysis Handler}
 \usage{
-general_multiverse(
-  i,
-  data_multiverse,
-  specifications,
-  how_methods,
-  k_smallest_ma = 5
-)
+general_multiverse(i, data_multiverse, specifications, k_smallest_ma = 5)
 }
 \arguments{
 \item{i}{Integer. The row index in the `specifications` data frame, representing a single
@@ -21,8 +15,6 @@ for the multiverse analysis.}
 
 \item{specifications}{Data frame. Contains all specifications generated using
 \code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.}
-
-\item{how_methods}{Character vector. A list of meta-analysis methods to apply for the "How" factors.}
 
 \item{k_smallest_ma}{Integer. The smallest number of unique studies required for a valid meta-analysis.
 Defaults to 5.}
@@ -62,8 +54,7 @@ specifications <- data.frame(
 )
 result <- general_multiverse(1,
    data_multiverse,
-   specifications,
-   how_methods = c("reml"))
+   specifications)
 
 }
 \seealso{
