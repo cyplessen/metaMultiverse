@@ -6,7 +6,7 @@ globalVariables(c("b", "ci.lb", "ci.ub", "pval", "ma_method", "vi", "yi"))
 
 ## PET-PEESE Estimation -------------------------------------------------------
 
-#' Calculate PET-PEESE Estimates
+#' Fit PET-PEESE Estimates
 #'
 #' Computes the PET-PEESE estimates based on the provided data.
 #' PET is applied first, and if the PET p-value is below 0.1, PEESE is used.
@@ -15,7 +15,7 @@ globalVariables(c("b", "ci.lb", "ci.ub", "pval", "ma_method", "vi", "yi"))
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, `pval`, and `type` (either "PET" or "PEESE").
 #' @importFrom stats lm coef confint
 #' @importFrom dplyr %>%
-calculate_pet.peese <- function(data) {
+fit_pet.peese <- function(data) {
   mod <- list()
 
   # Try PET estimation
@@ -67,21 +67,21 @@ calculate_pet.peese <- function(data) {
 #' (common sensitivity correction).
 #' @keywords internal
 pet_peese_corr <- function(dat) {
-  out <- calculate_pet.peese(dat)
+  out <- fit_pet.peese(dat)
   if (!is.na(out$b) && out$b < 0) out$b <- 0
   out
 }
 
 ## P-Uniform Estimation ------------------------------------------------------
 
-#' Calculate P-Uniform Star
+#' Fit P-Uniform Star
 #'
 #' Computes the P-Uniform Star estimates for a dataset.
 #'
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
 #' @importFrom puniform puni_star
-calculate_puni_star <- function(dat) {
+fit_puni_star <- function(dat) {
   mod <- tryCatch({
     mod.puni <- puniform::puni_star(
       yi = dat$yi,
@@ -109,14 +109,14 @@ calculate_puni_star <- function(dat) {
 
 ## UWLS and WAAP Estimation --------------------------------------------------
 
-#' Calculate UWLS Estimates
+#' Fit UWLS Estimates
 #'
 #' Performs Unweighted Least Squares (UWLS) estimation.
 #'
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
 #' @importFrom stats lm coef confint
-calculate_uwls <- function(dat) {
+fit_uwls <- function(dat) {
   d <- dat$yi
   sed <- sqrt(dat$vi)
   Precision <- 1 / sed
@@ -130,14 +130,14 @@ calculate_uwls <- function(dat) {
   )
 }
 
-#' Calculate WAAP Estimates
+#' Fit WAAP Estimates
 #'
 #' Performs Weighted Average of Adequately Powered (WAAP) estimation.
 #'
 #' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
 #' @importFrom stats lm coef confint
-calculate_waap <- function(dat) {
+fit_waap <- function(dat) {
   d <- dat$yi
   sed <- sqrt(dat$vi)
   Precision <- 1 / sed
@@ -156,4 +156,100 @@ calculate_waap <- function(dat) {
     ci.ub = stats::confint(reg_waap)["Precision[powered]", "97.5 %"],
     pval = stats::coef(summary(reg_waap))["Precision[powered]", "Pr(>|t|)"]
   )
+}
+
+# Paule–Mandel estimator (frequentist REML alternative)
+fit_pm <- function(dat) {
+  mod <- tryCatch(
+    metafor::rma(yi = dat$yi,
+                 vi = dat$vi,
+                 method = "PM",
+                 test   = "z"),
+    error = function(e) NULL
+  )
+
+  if (is.null(mod))
+    return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA))
+
+  list(b     = unname(mod$b),
+       ci.lb = unname(mod$ci.lb),
+       ci.ub = unname(mod$ci.ub),
+       pval  = unname(mod$pval))
+}
+
+fit_hk_sj <- function(dat) {
+  mod <- tryCatch(
+    meta::metagen(TE      = dat$yi,
+                  seTE    = sqrt(dat$vi),
+                  method.random.ci = "HK", # Hartung–Knapp
+                  method.tau = "SJ"),      # Sidik–Jonkman tau²
+    error = function(e) NULL
+  )
+
+  if (is.null(mod))
+    return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA))
+
+  list(b     = mod$TE.random,
+       ci.lb = mod$lower.random,
+       ci.ub = mod$upper.random,
+       pval  = mod$pval.random)
+}
+
+#' Fit Bayesian model-averaged meta-analysis (RoBMA ≥ 3.0)
+#' Returns list(b, ci.lb, ci.ub, pval), or all NA if the fit fails.
+#' @keywords internal
+# fit_robma <- function(dat) {
+#
+#   # RoBMA needs SEs, not variances
+#   sei_vec <- sqrt(dat$vi)
+#
+#   fit <- tryCatch(
+#     RoBMA::RoBMA(
+#       y          = dat$yi,
+#       se         = sei_vec,
+#       transformation = "none",
+#       prior_scale    = "none",
+#       parallel   = FALSE,      # safer for CRAN / Windows
+#       silent     = TRUE
+#     ),
+#     error = function(e) {
+#       message("[RoBMA] Fit failed: ", e$message)
+#       return(NULL)
+#     }
+#   )
+#
+#   # If the fit object is NULL or MCMC didn’t converge,
+#   # return the standard NA row so the multiverse keeps running.
+#   if (is.null(fit) || isFALSE(fit$convergence))
+#     return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA))
+#
+#   ens <- summary(fit)$ensemble   # data.frame with estimate + CI
+#
+#   list(
+#     b     = ens$estimate,
+#     ci.lb = ens$CI_low,
+#     ci.ub = ens$CI_high,
+#     pval  = ens$p_value
+#   )
+# }
+
+fit_bayesmeta <- function(dat) {
+
+  tryCatch({
+
+    bm <- bayesmeta::bayesmeta(y = dat$yi,
+                                 sigma = sqrt(dat$vi))
+
+    post <- bm$summary                   # posterior summary data.frame
+    list(
+      b     = post["median",     "mu"],
+      ci.lb = post["95% lower",  "mu"],
+      ci.ub = post["95% upper",  "mu"],
+      pval  = NA_real_                    # not defined for Bayesian fit
+    )
+
+  }, error = function(e) {
+    message("[bayesmeta] ", e$message)
+    safe_out
+  })
 }

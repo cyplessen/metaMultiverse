@@ -1,63 +1,51 @@
-# helpers_dependencies.R
-# This file contains functions to handle aggregate and modeled dependencies in multiverse meta-analysis.
+# helpers_dependencies.R ----------------------------------------------------
+# Standard NA row every runner must return on failure
+safe_out <- list(b = NA_real_, ci.lb = NA_real_, ci.ub = NA_real_, pval = NA_real_)
 
-## Aggregate Dependency -------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Aggregate dependency
+# ---------------------------------------------------------------------------
+run_aggregate_dependency <- function(dat, ma_method) {
 
-#' Run Aggregate Dependency
-#'
-#' Aggregates the data by clusters (studies) and applies the selected meta-analysis method.
-#'
-#' @param dat A data frame containing `yi` (effect size), `vi` (variance), and `study` columns.
-#' @param ma_method The meta-analysis method to apply (e.g., "fe", "reml", "uwls").
-#' @return A list containing the meta-analysis results or a standardized NA list if the method fails.
-run_aggregate_dependency <- function(dat, ma_method, how_methods) {
-  # Step 1: Compute effect sizes
+  # escalc + cluster aggregation
   dat <- metafor::escalc(yi = yi, vi = vi, data = dat)
+  dat <- metafor::aggregate.escalc(dat, cluster = study,
+                                   struct = "CS", rho = 0.5)
 
-  # Step 2: Aggregate data by cluster (study)
-  dat <- metafor::aggregate.escalc(
-    dat,
-    cluster = study,
-    struct = "CS",  # Compound symmetric structure
-    rho = 0.5
-  )
-
-  entry <- .ma_method_registry[[ma_method]]
+  entry <- .ma_method_registry[[as.character(ma_method)]]
   if (is.null(entry) || !("aggregate" %in% entry$deps))
-    return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA))
+    return(safe_out)
 
-  entry$fun(dat)
+  tryCatch(entry$fun(dat),
+           error = function(e) {
+             message("[aggregate:", ma_method, "] ", e$message)
+             safe_out
+           })
 }
 
-## Modeled Dependency ---------------------------------------------------------
-
-#' Run Modeled Dependency
-#'
-#' Applies a multilevel (modeled) dependency approach using a random-effects model.
-#'
-#' @param dat A data frame containing `yi` (effect size), `vi` (variance), `es_id` (effect size ID), and `study` columns.
-#' @param ma_method The meta-analysis method to apply (e.g., "3-level", "rve").
-#' @return A list containing the meta-analysis results or a standardized NA list if the method fails.
+# ---------------------------------------------------------------------------
+# Modeled dependency  (multi-level / RVE)
+# ---------------------------------------------------------------------------
 run_modeled_dependency <- function(dat, ma_method) {
 
-  # need ≥2 effect sizes in at least one study, otherwise nothing to model
-  if (sum(duplicated(dat$study)) < 1)
-    return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA))
+  if (sum(duplicated(dat$study)) < 1)                # nothing to model
+    return(safe_out)
 
-  entry <- .ma_method_registry[[ma_method]]
-
-  # either the key is unknown, or the method isn't flagged for "modeled"
+  entry <- .ma_method_registry[[as.character(ma_method)]]
   if (is.null(entry) || !("modeled" %in% entry$deps))
-    return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA))
+    return(safe_out)
 
-  # run the estimator; any try-catch lives inside the registered fun
-  entry$fun(dat)
+  tryCatch(entry$fun(dat),
+           error = function(e) {
+             message("[modeled:", ma_method, "] ", e$message)
+             safe_out
+           })
 }
 
-# Collapse data to one effect per study --------------------------------------
-collapse_one <- function(dat,
-                         rule = c("max", "min"),
-                         abs_cols = c("yi")) {
+# ---------------------------------------------------------------------------
+# Select-one-effect per study  (select_max / select_min)
+# ---------------------------------------------------------------------------
+collapse_one <- function(dat, rule = c("max", "min"), abs_cols = "yi") {
   rule <- match.arg(rule)
   dplyr::group_by(dat, study) |>
     dplyr::slice({
@@ -68,15 +56,21 @@ collapse_one <- function(dat,
 }
 
 run_select_dependency <- function(dat, ma_method, dependency) {
-  if (dependency == "select_max")      dat <- collapse_one(dat, "max")
-  else if (dependency == "select_min") dat <- collapse_one(dat, "min")
-  else stop("Unknown dependency: ", dependency)
 
-  entry <- .ma_method_registry[[ as.character(ma_method) ]]
+  dat <- switch(
+    dependency,
+    "select_max" = collapse_one(dat, "max"),
+    "select_min" = collapse_one(dat, "min"),
+    stop("Unknown dependency: ", dependency)
+  )
 
-  ## NEW test: does this estimator claim to support *this* dependency?
+  entry <- .ma_method_registry[[as.character(ma_method)]]
   if (is.null(entry) || !(dependency %in% entry$deps))
-    return(list(b = NA, ci.lb = NA, ci.ub = NA, pval = NA))
+    return(safe_out)
 
-  entry$fun(dat)
+  tryCatch(entry$fun(dat),
+           error = function(e) {
+             message("[", dependency, ":", ma_method, "] ", e$message)
+             safe_out
+           })
 }
