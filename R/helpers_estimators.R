@@ -4,6 +4,16 @@
 # Suppress warnings for dynamically evaluated variables
 globalVariables(c("b", "ci.lb", "ci.ub", "pval", "ma_method", "vi", "yi"))
 
+
+fit_fe  <- function(variables) {
+  metafor::rma(yi = dat$yi, vi = dat$vi, method = "FE")
+}
+
+fit_reml <- function(variables) {
+  metafor::rma(yi = dat$yi, vi = dat$vi, method = "REML",
+               control = list(stepadj = 0.5, maxiter = 2000))
+}
+
 ## PET-PEESE Estimation -------------------------------------------------------
 
 #' Fit PET-PEESE Estimates
