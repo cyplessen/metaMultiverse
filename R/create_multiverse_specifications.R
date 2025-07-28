@@ -54,7 +54,7 @@ globalVariables(c("dependency"))
 #' print(specs$number_specs)
 #'
 #' @export
-create_multiverse_specifications <- function(data, wf_vars, ma_methods, dependencies) {
+create_multiverse_specifications <- function(data, wf_vars, ma_methods, dependencies, decision_map) {
   # Input validation
   if (!is.data.frame(data)) stop("`data` must be a data frame.")
   if (!all(wf_vars %in% colnames(data))) stop("Not all `wf_vars` are present in the dataset.")
