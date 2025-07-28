@@ -53,7 +53,6 @@ rsconnect/
 
 
 # Package specific
-dev/
-.html
+*.html
 /doc/
 /Meta/
