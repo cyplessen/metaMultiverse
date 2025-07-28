@@ -1,23 +1,47 @@
-test_that("general_multiverse runs meta-analysis for a given specification", {
-  # Mock data with at least 5 unique studies
-  data_multiverse <- data.frame(
-    study = rep(paste0("S", 1:5), each = 2),
-    es_id = 1:10,
-    yi = rnorm(10, mean = 0.5),
-    vi = runif(10, min = 0.01, max = 0.1),
-    wf_1 = rep(c("A", "B"), times = 5)
-  )
-  specifications <- data.frame(
-    wf_1 = c("A", "B"),
-    dependency = "aggregate",
-    ma_method = "reml"
+## tests/testthat/test-general_multiverse.R
+## -----------------------------------------
+
+# small spec grid: one which-factor, one estimator, one dependency
+specs <- metaMultiverse::create_multiverse_specifications(
+  data         = data_tiny,        # <- fixture from helper-data.R
+  wf_vars      = "wf_1",
+  ma_methods   = "reml",
+  dependencies = "aggregate"
+)$specifications
+
+test_that("general_multiverse returns one-row data.frame for a valid spec", {
+
+  res <- metaMultiverse::general_multiverse(
+    i               = 1,
+    data_multiverse = data_tiny,
+    specifications  = specs,
+    k_smallest_ma   = 3            # low threshold, always satisfied
   )
 
-  # Run function
-  result <- general_multiverse(1, data_multiverse, specifications, how_methods = c("reml"))
+  expect_s3_class(res, "data.frame")
+  expect_equal(nrow(res), 1)
 
-  # Expectations
-  expect_s3_class(result, "data.frame")
-  expect_true("b" %in% colnames(result))
-  expect_true("k" %in% colnames(result))
+  core <- c("b","ci.lb","ci.ub","pval","k","set")
+  expect_true(all(core %in% names(res)))
+
+  expect_type(res$b,     "double")
+  expect_type(res$ci.lb, "double")
+  expect_type(res$ci.ub, "double")
+  expect_type(res$pval,  "double")
+  expect_length(res$b, 1)
+})
+
+test_that("general_multiverse returns NULL when subset is too small", {
+
+  expect_warning(
+    res_null <- metaMultiverse::general_multiverse(
+      i               = 1,
+      data_multiverse = data_tiny,
+      specifications  = specs,
+      k_smallest_ma   = 20          # impossible with only 10 rows
+    ),
+    regexp = "skipped"
+  )
+
+  expect_null(res_null)
 })

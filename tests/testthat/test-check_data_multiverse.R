@@ -1,18 +1,48 @@
-test_that("check_data_multiverse validates input data", {
-  # Mock correct data with appropriate column types
-  valid_data <- data.frame(
-    study = as.character(c("Study 1", "Study 2")),
-    es_id = as.numeric(1:2),
-    yi = as.numeric(c(0.5, 0.6)),
-    vi = as.numeric(c(0.02, 0.03)),
-    sei = as.numeric(c(0.14, 0.17)),
-    wf_1 = as.character(c("A", "B"))
+## tests/testthat/test-check_data_multiverse.R
+## -------------------------------------------
+
+core_cols <- c("study","es_id","yi","vi")
+
+test_that("valid data passes and returns TRUE", {
+  expect_message(                       # prints “Data check passed…”
+    ok <- metaMultiverse::check_data_multiverse(data_tiny),
+    regexp = "Dataset is valid"
   )
+  expect_true(ok)
+})
 
-  # Expect TRUE for valid input
-  expect_true(check_data_multiverse(valid_data))
+test_that("missing required column triggers error", {
+  bad <- data_tiny |> dplyr::select(-yi)     # drop one core column
+  expect_error(
+    metaMultiverse::check_data_multiverse(bad),
+    regexp = "Missing required columns"
+  )
+})
 
-  # Missing required columns
-  invalid_data <- valid_data[, -1]
-  expect_error(check_data_multiverse(invalid_data), "Missing required columns")
+test_that("wrong data type triggers error", {
+  bad <- data_tiny
+  bad$es_id <- as.character(bad$es_id)       # should be numeric
+  expect_error(
+    metaMultiverse::check_data_multiverse(bad),
+    regexp = "incorrect.*type"
+  )
+})
+
+test_that("duplicate es_id triggers error", {
+  bad <- data_tiny
+  bad$es_id[1:2] <- bad$es_id[1]             # make a duplicate
+  expect_error(
+    metaMultiverse::check_data_multiverse(bad),
+    regexp = "Duplicate values"
+  )
+})
+
+test_that("missing values issue a warning but still return TRUE", {
+  bad <- data_tiny
+  bad$yi[3] <- NA
+  expect_warning(
+    ok <- metaMultiverse::check_data_multiverse(bad),
+    regexp = "missing values"
+  )
+  expect_true(ok)
 })

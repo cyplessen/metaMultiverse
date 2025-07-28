@@ -1,26 +1,30 @@
 # helpers_dependencies.R ----------------------------------------------------
-# Standard NA row every runner must return on failure
-safe_out <- list(b = NA_real_, ci.lb = NA_real_, ci.ub = NA_real_, pval = NA_real_)
-
 # ---------------------------------------------------------------------------
 # Aggregate dependency
-# ---------------------------------------------------------------------------
 run_aggregate_dependency <- function(dat, ma_method) {
 
-  # escalc + cluster aggregation
+  ## 1. escalc + aggregation -----------------------------------------------
   dat <- metafor::escalc(yi = yi, vi = vi, data = dat)
   dat <- metafor::aggregate.escalc(dat, cluster = study,
                                    struct = "CS", rho = 0.5)
 
-  entry <- .ma_method_registry[[as.character(ma_method)]]
+  ## 2. look-up estimator ----------------------------------------------------
+  entry <- .ma_method_registry[[ as.character(ma_method) ]]
   if (is.null(entry) || !("aggregate" %in% entry$deps))
-    return(safe_out)
+    return(multiverse_NA)
 
-  tryCatch(entry$fun(dat),
-           error = function(e) {
-             message("[aggregate:", ma_method, "] ", e$message)
-             safe_out
-           })
+  ## 3. run it safely --------------------------------------------------------
+  res <- tryCatch(entry$fun(dat),
+                  error = function(e) {
+                    message("[aggregate:", ma_method, "] ", e$message)
+                    multiverse_NA
+                  })
+
+  ## 4. ensure the label is present -----------------------------------------
+  if (is.null(attr(res, "method", exact = TRUE)))
+    attr(res, "method") <- ma_method     # attach the key as the label
+
+  res                                           # return the enriched result
 }
 
 # ---------------------------------------------------------------------------
@@ -29,17 +33,22 @@ run_aggregate_dependency <- function(dat, ma_method) {
 run_modeled_dependency <- function(dat, ma_method) {
 
   if (sum(duplicated(dat$study)) < 1)                # nothing to model
-    return(safe_out)
+    return(multiverse_NA)
 
   entry <- .ma_method_registry[[as.character(ma_method)]]
   if (is.null(entry) || !("modeled" %in% entry$deps))
-    return(safe_out)
+    return(multiverse_NA)
 
-  tryCatch(entry$fun(dat),
-           error = function(e) {
-             message("[modeled:", ma_method, "] ", e$message)
-             safe_out
-           })
+  res <- tryCatch(entry$fun(dat),
+                  error = function(e) {
+                    message("[modeled:", ma_method, "] ", e$message)
+                    multiverse_NA
+                  })
+
+  if (is.null(attr(res, "method", exact = TRUE)))
+    attr(res, "method") <- ma_method     # attach the key as the label
+
+  res                                           # return the enriched result
 }
 
 # ---------------------------------------------------------------------------
@@ -66,11 +75,16 @@ run_select_dependency <- function(dat, ma_method, dependency) {
 
   entry <- .ma_method_registry[[as.character(ma_method)]]
   if (is.null(entry) || !(dependency %in% entry$deps))
-    return(safe_out)
+    return(multiverse_NA)
 
-  tryCatch(entry$fun(dat),
-           error = function(e) {
-             message("[", dependency, ":", ma_method, "] ", e$message)
-             safe_out
-           })
+  res <- tryCatch(entry$fun(dat),
+                  error = function(e) {
+                    message("[", dependency, ":", ma_method, "] ", e$message)
+                    multiverse_NA
+                  })
+
+  if (is.null(attr(res, "method", exact = TRUE)))
+    attr(res, "method") <- ma_method     # attach the key as the label
+
+  res                                           # return the enriched result
 }

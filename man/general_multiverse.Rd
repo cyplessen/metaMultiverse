@@ -4,7 +4,12 @@
 \alias{general_multiverse}
 \title{General Multiverse Meta-Analysis Handler}
 \usage{
-general_multiverse(i, data_multiverse, specifications, k_smallest_ma = 5)
+general_multiverse(
+  i,
+  data_multiverse,
+  specifications,
+  k_smallest_ma = getOption("metaMultiverse.k_smallest_ma", 5)
+)
 }
 \arguments{
 \item{i}{Integer. The row index in the `specifications` data frame, representing a single
@@ -56,8 +61,4 @@ result <- general_multiverse(1,
    data_multiverse,
    specifications)
 
-}
-\seealso{
-\code{\link{create_multiverse_specifications}}, \code{\link{run_aggregate_dependency}},
-  \code{\link{run_modeled_dependency}}
 }

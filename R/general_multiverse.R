@@ -26,9 +26,6 @@
 #' \code{dependency}). The analysis only proceeds if the subset contains at least
 #' \code{k_smallest_ma} unique studies. Supports both \code{aggregate} and \code{modeled} dependencies.
 #'
-#' @seealso \code{\link{create_multiverse_specifications}}, \code{\link{run_aggregate_dependency}},
-#'   \code{\link{run_modeled_dependency}}
-#'
 #' @examples
 #' # Example of applying a specification:
 #' data_multiverse <- data.frame(
@@ -52,7 +49,7 @@
 
 #'
 #' @export
-general_multiverse <- function(i, data_multiverse, specifications, k_smallest_ma = 5) {
+general_multiverse <- function(i, data_multiverse, specifications, k_smallest_ma = getOption("metaMultiverse.k_smallest_ma", 5)) {
   # Validate k_smallest_ma
   if (!is.numeric(k_smallest_ma) ||  k_smallest_ma <= 0) {
     stop("`k_smallest_ma` must be a positive numeric value.")

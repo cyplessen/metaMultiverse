@@ -60,5 +60,4 @@ run_multiverse_analysis(data_multiverse, specifications)
 \seealso{
 \code{\link{create_multiverse_specifications}},
 \code{\link{general_multiverse}},
-\code{\link{add_pet_peese_corrected}}
 }

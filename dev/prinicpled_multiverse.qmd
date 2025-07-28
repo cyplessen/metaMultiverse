@@ -1,0 +1,786 @@
+---
+title: "Principled Multiverse"
+format: html
+editor: visual
+---
+
+# Setup and Run
+
+```{r}
+#' Create Principled Multiverse Specifications
+#'
+#' This function generates specifications for multiverse meta-analysis, allowing
+#' for principled classification of decision nodes as Type E (equivalence),
+#' Type N (nonequivalence), or Type U (uncertainty).
+#'
+#' @param data A data frame containing the dataset to base the specifications on.
+#' @param wf_vars A character vector specifying the "Which factors" to include.
+#' @param ma_methods A character vector specifying the meta-analytic methods to consider.
+#' @param dependencies A character vector specifying dependency handling strategies.
+#' @param decision_types A list specifying the classification of each decision node.
+#' @param separate_by A character vector of decision nodes that should create separate multiverses.
+#'
+#' @return A list containing separate multiverses based on the classification.
+create_principled_specifications <- function(data, 
+                                           wf_vars, 
+                                           ma_methods, 
+                                           dependencies,
+                                           decision_types = NULL,
+                                           separate_by = NULL) {
+  
+  # Input validation
+  if (!is.data.frame(data)) stop("`data` must be a data frame.")
+  if (!all(wf_vars %in% colnames(data))) stop("Not all `wf_vars` are present in the dataset.")
+  
+  # Default decision types if not provided
+  if (is.null(decision_types)) {
+    message("No decision type classifications provided. Treating all decisions as Type E (equivalence).")
+    decision_types <- list(
+      wf_vars = rep("E", length(wf_vars)),
+      ma_methods = rep("E", length(ma_methods)),
+      dependencies = rep("E", length(dependencies))
+    )
+  }
+  
+  # Extract decision types
+  wf_types <- decision_types$wf_vars
+  ma_types <- decision_types$ma_methods
+  dep_types <- decision_types$dependencies
+  
+  # Identify Type N decisions (to be excluded from multiverse)
+  wf_type_n <- wf_vars[wf_types == "N"]
+  ma_type_n <- ma_methods[ma_types == "N"]
+  dep_type_n <- dependencies[dep_types == "N"]
+  
+  # Identify Type U decisions for separate multiverses
+  if (is.null(separate_by)) {
+    # By default, separate all Type U decisions
+    wf_separate <- wf_vars[wf_types == "U"]
+    ma_separate <- ma_methods[ma_types == "U"]
+    dep_separate <- dependencies[dep_types == "U"]
+  } else {
+    # Use user-provided list
+    wf_separate <- intersect(wf_vars, separate_by)
+    ma_separate <- intersect(ma_methods, separate_by)
+    dep_separate <- intersect(dependencies, separate_by)
+  }
+  
+  # Function to create a single multiverse specification
+  create_single_multiverse <- function(wf_subset = NULL, 
+                                      ma_subset = NULL, 
+                                      dep_subset = NULL) {
+    
+    # Filter the variables based on subsets and exclude Type N
+    wf_use <- wf_vars
+    if (!is.null(wf_subset)) wf_use <- intersect(wf_use, wf_subset)
+    wf_use <- setdiff(wf_use, wf_type_n)
+    
+    ma_use <- ma_methods
+    if (!is.null(ma_subset)) ma_use <- intersect(ma_use, ma_subset)
+    ma_use <- setdiff(ma_use, ma_type_n)
+    
+    dep_use <- dependencies
+    if (!is.null(dep_subset)) dep_use <- intersect(dep_use, dep_subset)
+    dep_use <- setdiff(dep_use, dep_type_n)
+    
+    # Create "Which factors"
+    wf_factors <- lapply(wf_use, function(wf) {
+      unique_values <- unique(data[[wf]])
+      c(unique_values, paste0("total_", wf))
+    })
+    
+    names(wf_factors) <- wf_use
+    
+    # Validate "How factors"
+    if (length(ma_use) == 0) stop("`ma_methods` must include at least one method.")
+    if (length(dep_use) == 0) stop("`dependencies` must include at least one dependency.")
+    
+    # Dynamically build the expand.grid call
+    grid_args <- c(wf_factors, list(dependency = dep_use, ma_method = ma_use))
+    
+    # Generate the specifications grid
+    specifications_grid <- do.call(expand.grid, grid_args)
+    
+    # Prune impossible paths (as in your original function)
+    specifications_grid <- specifications_grid %>%
+      dplyr::filter((dependency == "modeled" & 
+                    ma_method %in% c("3-level", "rve")) | 
+                   (dependency == "aggregate" & 
+                    ma_method %in% c("reml", "fe", "p-uniform", "pet-peese", "uwls", "waap")) | 
+                   (dependency == "ignore" & 
+                    ma_method %in% c("reml", "fe"))) %>% 
+      dplyr::mutate(row_id = dplyr::row_number())
+    
+    # Return final specifications grid
+    list(
+      specifications = data.frame(specifications_grid),
+      number_specs = nrow(specifications_grid)
+    )
+  }
+  
+  # Function to create multiverses based on Type U decisions
+  generate_multiverses <- function() {
+    # For simplicity, focus on the first Type U decision from each category
+    multiverses <- list()
+    multiverse_labels <- list()
+    
+    # Base case - Type E decisions only
+    multiverses[[1]] <- create_single_multiverse()
+    multiverse_labels[[1]] <- "base"
+    multiverse_count <- 1
+    
+    # Handle Type U decisions
+    # For WF variables
+    for (wf in wf_separate) {
+      wf_values <- unique(data[[wf]])
+      
+      for (val in wf_values) {
+        multiverse_count <- multiverse_count + 1
+        multiverses[[multiverse_count]] <- create_single_multiverse(
+          wf_subset = c(setdiff(wf_vars, wf), wf),
+          ma_subset = NULL,
+          dep_subset = NULL
+        )
+        multiverse_labels[[multiverse_count]] <- paste0(wf, "=", val)
+      }
+    }
+    
+    # For MA methods
+    for (ma in ma_separate) {
+      multiverse_count <- multiverse_count + 1
+      multiverses[[multiverse_count]] <- create_single_multiverse(
+        wf_subset = NULL,
+        ma_subset = c(ma),
+        dep_subset = NULL
+      )
+      multiverse_labels[[multiverse_count]] <- paste0("ma=", ma)
+    }
+    
+    # For dependencies
+    for (dep in dep_separate) {
+      multiverse_count <- multiverse_count + 1
+      multiverses[[multiverse_count]] <- create_single_multiverse(
+        wf_subset = NULL,
+        ma_subset = NULL,
+        dep_subset = c(dep)
+      )
+      multiverse_labels[[multiverse_count]] <- paste0("dep=", dep)
+    }
+    
+    # Return all multiverses with labels
+    names(multiverses) <- multiverse_labels
+    return(multiverses)
+  }
+  
+  # Generate the multiverses
+  all_multiverses <- generate_multiverses()
+  
+  # Return the final result
+  return(list(
+    multiverses = all_multiverses,
+    decision_types = decision_types,
+    separate_by = separate_by
+  ))
+}
+```
+
+# Plot
+
+```{r}
+#' Plot Multiple Multiverse Results
+#'
+#' Visualizes results from multiple multiverses created by principled classification
+#'
+#' @param multiverse_results A list of multiverse results from running multiple multiverses
+#' @param facet Logical. Whether to display results as facets (TRUE) or separate plots (FALSE)
+#' @param plot_type Character. Type of plot: "curve" for specification curve, "voe" for vibration of effects
+#' @param factor_label_lookup List of human-readable labels for factors
+#'
+#' @return A plotly or ggplot object
+plot_multiverses <- function(multiverse_results, 
+                            facet = TRUE,
+                            plot_type = c("curve", "voe"),
+                            factor_label_lookup = NULL) {
+  
+  plot_type <- match.arg(plot_type)
+  
+  # Code for creating the appropriate visualization type
+  # This would be an extension of your current plotting functions
+  # to handle multiple multiverses
+  
+  # For specification curve with facets
+  if (plot_type == "curve" && facet) {
+    # Code to create faceted specification curve
+  }
+  
+  # For vibration of effects
+  if (plot_type == "voe") {
+    # Code to create VoE plots
+  }
+  
+  # Return the plot object
+}
+```
+
+# Implement
+
+```{r}
+# Define which and how factors
+wf_vars <- c("wf_1", "wf_2", "wf_3", "wf_4")
+ma_methods <- c("reml", "fe", "3-level", "rve", "p-uniform")
+dependencies <- c("aggregate", "modeled")
+
+# Define decision types
+decision_types <- list(
+  wf_vars = c("E", "E", "U", "N"),  # wf_3 uncertain, wf_4 non-equivalent
+  ma_methods = c("E", "E", "E", "E", "U"),  # p-uniform uncertain
+  dependencies = c("E", "U")  # modeled dependency uncertain
+)
+
+# Create principled specifications
+specs <- create_principled_specifications(
+  data = data_digDep,
+  wf_vars = wf_vars,
+  ma_methods = ma_methods,
+  dependencies = dependencies,
+  decision_types = decision_types,
+  separate_by = c("wf_3", "dependencies")  # Create separate multiverses for these
+)
+
+# Run analyses for each multiverse
+results <- list()
+for (i in seq_along(specs$multiverses)) {
+  multiverse_name <- names(specs$multiverses)[i]
+  current_specs <- specs$multiverses[[i]]
+  
+  results[[multiverse_name]] <- run_multiverse_analysis(
+    data_multiverse = data_digDep,
+    specifications = current_specs$specifications,
+    how_methods = ma_methods
+  )
+}
+
+# Visualize results
+plot_multiverses(
+  multiverse_results = results,
+  facet = TRUE,
+  plot_type = "curve",
+  factor_label_lookup = factor_label_lookup
+)
+```
+
+# New
+
+```{r}
+# Example Implementation of Principled Multiverse Meta-Analysis
+# Focusing on Risk of Bias (wf_7) and Outlier Handling Strategies
+
+library(metaMultiverse)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+
+# Let's assume we have the data loaded
+# data("data_digDep")
+
+#' Function to create principled multiverse specifications
+#'
+#' This is the implementation of the function described earlier
+create_principled_specifications <- function(data, 
+                                            wf_vars, 
+                                            ma_methods, 
+                                            dependencies,
+                                            decision_types = NULL,
+                                            separate_by = NULL) {
+  
+  # Input validation
+  if (!is.data.frame(data)) stop("`data` must be a data frame.")
+  if (!all(wf_vars %in% colnames(data))) stop("Not all `wf_vars` are present in the dataset.")
+  
+  # Default decision types if not provided
+  if (is.null(decision_types)) {
+    message("No decision type classifications provided. Treating all decisions as Type E (equivalence).")
+    decision_types <- list(
+      wf_vars = rep("E", length(wf_vars)),
+      ma_methods = rep("E", length(ma_methods)),
+      dependencies = rep("E", length(dependencies))
+    )
+  }
+  
+  # Extract decision types
+  wf_types <- decision_types$wf_vars
+  ma_types <- decision_types$ma_methods
+  dep_types <- decision_types$dependencies
+  
+  # Identify Type N decisions (to be excluded from multiverse)
+  wf_type_n <- wf_vars[wf_types == "N"]
+  ma_type_n <- ma_methods[ma_types == "N"]
+  dep_type_n <- dependencies[dep_types == "N"]
+  
+  # Identify Type U decisions for separate multiverses
+  if (is.null(separate_by)) {
+    # By default, separate all Type U decisions
+    wf_separate <- wf_vars[wf_types == "U"]
+    ma_separate <- ma_methods[ma_types == "U"]
+    dep_separate <- dependencies[dep_types == "U"]
+  } else {
+    # Use user-provided list
+    wf_separate <- intersect(wf_vars, separate_by)
+    ma_separate <- intersect(ma_methods, separate_by)
+    dep_separate <- intersect(dependencies, separate_by)
+  }
+  
+  # Function to create a single multiverse specification
+  create_single_multiverse <- function(wf_subset = NULL, 
+                                      ma_subset = NULL, 
+                                      dep_subset = NULL) {
+    
+    # Filter the variables based on subsets and exclude Type N
+    wf_use <- wf_vars
+    if (!is.null(wf_subset)) wf_use <- intersect(wf_use, wf_subset)
+    wf_use <- setdiff(wf_use, wf_type_n)
+    
+    ma_use <- ma_methods
+    if (!is.null(ma_subset)) ma_use <- intersect(ma_use, ma_subset)
+    ma_use <- setdiff(ma_use, ma_type_n)
+    
+    dep_use <- dependencies
+    if (!is.null(dep_subset)) dep_use <- intersect(dep_use, dep_subset)
+    dep_use <- setdiff(dep_use, dep_type_n)
+    
+    # Create "Which factors"
+    wf_factors <- lapply(wf_use, function(wf) {
+      unique_values <- unique(data[[wf]])
+      c(unique_values, paste0("total_", wf))
+    })
+    
+    names(wf_factors) <- wf_use
+    
+    # Validate "How factors"
+    if (length(ma_use) == 0) stop("`ma_methods` must include at least one method.")
+    if (length(dep_use) == 0) stop("`dependencies` must include at least one dependency.")
+    
+    # Dynamically build the expand.grid call
+    grid_args <- c(wf_factors, list(dependency = dep_use, ma_method = ma_use))
+    
+    # Generate the specifications grid
+    specifications_grid <- do.call(expand.grid, grid_args)
+    
+    # Prune impossible paths (as in your original function)
+    specifications_grid <- specifications_grid %>%
+      filter((dependency == "modeled" & 
+                    ma_method %in% c("3-level", "rve")) | 
+                   (dependency == "aggregate" & 
+                    ma_method %in% c("reml", "fe", "p-uniform", "pet-peese", "uwls", "waap")) | 
+                   (dependency == "ignore" & 
+                    ma_method %in% c("reml", "fe"))) %>% 
+      mutate(row_id = row_number())
+    
+    # Return final specifications grid
+    list(
+      specifications = data.frame(specifications_grid),
+      number_specs = nrow(specifications_grid)
+    )
+  }
+  
+  # Generate separate multiverses based on Type U decisions
+  # Focus on specified dimensions (like risk of bias or outlier criteria)
+  generate_focused_multiverses <- function() {
+    multiverses <- list()
+    multiverse_labels <- list()
+    
+    # Base case - all Type E decisions
+    multiverses[[1]] <- create_single_multiverse()
+    multiverse_labels[[1]] <- "base"
+    multiverse_count <- 1
+    
+    # Process each separate_by variable
+    for (var in separate_by) {
+      # Check if it's a which factor
+      if (var %in% wf_vars) {
+        var_index <- match(var, wf_vars)
+        # Check unique values in the data
+        var_values <- unique(data[[var]])
+        
+        # For each unique value, create a separate multiverse
+        for (val in var_values) {
+          # Create multiverse specification for this specific value
+          multiverse_count <- multiverse_count + 1
+          
+          # Create subset of wf_vars focused on this specific value
+          wf_subset_spec <- wf_vars
+          
+          # This constrains the specific variable to only one value
+          # We'll modify the grid creation later to only use this value
+          multiverses[[multiverse_count]] <- create_single_multiverse(
+            wf_subset = wf_subset_spec
+          )
+          
+          # Force only this value for the variable
+          var_col <- which(names(multiverses[[multiverse_count]]$specifications) == var)
+          multiverses[[multiverse_count]]$specifications <- 
+            multiverses[[multiverse_count]]$specifications %>%
+            filter(!!sym(var) == val | !!sym(var) == paste0("total_", var))
+          
+          # Update the count and label
+          multiverse_labels[[multiverse_count]] <- paste0(var, "=", val)
+        }
+        
+        # Add a multiverse for the "combined" approach
+        multiverse_count <- multiverse_count + 1
+        multiverses[[multiverse_count]] <- create_single_multiverse(
+          wf_subset = wf_subset_spec
+        )
+        
+        # Keep only the "total" value for this variable
+        var_col <- which(names(multiverses[[multiverse_count]]$specifications) == var)
+        multiverses[[multiverse_count]]$specifications <- 
+          multiverses[[multiverse_count]]$specifications %>%
+          filter(!!sym(var) == paste0("total_", var))
+        
+        multiverse_labels[[multiverse_count]] <- paste0(var, "=combined")
+      }
+      
+      # Handle meta-analytic methods similarly
+      if (var == "ma_method" && "ma_method" %in% names(decision_types)) {
+        for (method in ma_methods) {
+          multiverse_count <- multiverse_count + 1
+          multiverses[[multiverse_count]] <- create_single_multiverse(
+            ma_subset = c(method)
+          )
+          multiverse_labels[[multiverse_count]] <- paste0("ma=", method)
+        }
+      }
+      
+      # Handle dependencies similarly
+      if (var == "dependency" && "dependency" %in% names(decision_types)) {
+        for (dep in dependencies) {
+          multiverse_count <- multiverse_count + 1
+          multiverses[[multiverse_count]] <- create_single_multiverse(
+            dep_subset = c(dep)
+          )
+          multiverse_labels[[multiverse_count]] <- paste0("dep=", dep)
+        }
+      }
+    }
+    
+    # Apply names and return
+    names(multiverses) <- multiverse_labels
+    return(multiverses)
+  }
+  
+  # Generate the multiverses
+  all_multiverses <- generate_focused_multiverses()
+  
+  # Return the final result
+  return(list(
+    multiverses = all_multiverses,
+    decision_types = decision_types,
+    separate_by = separate_by
+  ))
+}
+
+# Now, let's create a complete example focusing on risk of bias and outliers
+
+# ----------------------------------------------------------------------------------
+# Example focused on risk of bias (wf_7) and outlier strategies
+# ----------------------------------------------------------------------------------
+
+# For this example, we'll simulate some data to mimic your package's structure
+set.seed(123)
+
+# Simulate dataset with different risk of bias levels and potential outliers
+n_studies <- 50
+data_digDep <- data.frame(
+  study = paste0("Study_", 1:n_studies),
+  es_id = 1:n_studies,
+  yi = c(
+    rnorm(30, mean = 0.4, sd = 0.2),   # Regular effects
+    rnorm(15, mean = 0.7, sd = 0.3),   # Higher effects for high risk studies
+    c(1.5, 1.7, 1.8, 1.9, 2.0)         # Potential outliers
+  ),
+  vi = c(
+    runif(30, min = 0.01, max = 0.1),  # Regular variance
+    runif(15, min = 0.05, max = 0.15), # Higher variance for high risk
+    runif(5, min = 0.1, max = 0.2)     # Even higher for outliers
+  ),
+  sei = sqrt(c(
+    runif(30, min = 0.01, max = 0.1),
+    runif(15, min = 0.05, max = 0.15),
+    runif(5, min = 0.1, max = 0.2)
+  )),
+  # Which factors
+  wf_1 = sample(c("website", "mobile", "computer"), n_studies, replace = TRUE),
+  wf_2 = sample(c("guided", "minimal", "none"), n_studies, replace = TRUE),
+  wf_3 = sample(c("adult", "adolescent"), n_studies, replace = TRUE),
+  wf_4 = sample(c("cbt-based", "not-cbt-based"), n_studies, replace = TRUE),
+  wf_5 = sample(c("wl", "other"), n_studies, replace = TRUE),
+  wf_6 = sample(c("cut", "diag"), n_studies, replace = TRUE),
+  # Risk of bias - stratified to match our simulated effects
+  wf_7 = c(rep("low risk", 15), rep("some concerns", 15), rep("high risk", 15), rep("high risk", 5)),
+  wf_8 = sample(c("post", "follow-up"), n_studies, replace = TRUE),
+  # Conditions for completeness
+  condition_arm1 = sample(c("cbt", "other psy"), n_studies, replace = TRUE),
+  condition_arm2 = sample(c("wl", "other ctr"), n_studies, replace = TRUE)
+)
+
+# Define which and how factors
+wf_vars <- paste0("wf_", 1:8)
+ma_methods <- c("reml", "fe", "3-level", "rve", "p-uniform", "pet-peese")
+dependencies <- c("aggregate", "modeled")
+
+# Define decision types
+# Focus on risk of bias (wf_7) as Type U - genuinely uncertain how to handle
+# Include outlier detection as another Type U decision node
+decision_types <- list(
+  wf_vars = c("E", "E", "E", "E", "E", "E", "U", "E"),  # wf_7 (risk of bias) as uncertain
+  ma_methods = c("E", "E", "E", "E", "E", "E"),  # All methods as equivalent for simplicity
+  dependencies = c("E", "E")  # Dependencies as equivalent for simplicity
+)
+
+# Add outlier definitions to the dataset for demonstration
+# Identify outliers using different criteria
+data_digDep <- data_digDep %>%
+  mutate(
+    # Standard deviation based cutoffs
+    mean_yi = mean(yi, na.rm = TRUE),
+    sd_yi = sd(yi, na.rm = TRUE),
+    is_outlier_2sd = abs(yi - mean_yi) > 2 * sd_yi,
+    is_outlier_3sd = abs(yi - mean_yi) > 3 * sd_yi,
+    
+    # Tukey's method (IQR-based)
+    q1_yi = quantile(yi, 0.25, na.rm = TRUE),
+    q3_yi = quantile(yi, 0.75, na.rm = TRUE),
+    iqr_yi = q3_yi - q1_yi,
+    lower_tukey = q1_yi - 1.5 * iqr_yi,
+    upper_tukey = q3_yi + 1.5 * iqr_yi,
+    is_outlier_tukey = yi < lower_tukey | yi > upper_tukey
+  )
+
+# Create principled specifications - separating by risk of bias
+# We'll create a modified create_principled_specifications for outliers
+specs_by_risk <- create_principled_specifications(
+  data = data_digDep,
+  wf_vars = wf_vars,
+  ma_methods = ma_methods,
+  dependencies = dependencies,
+  decision_types = decision_types,
+  separate_by = c("wf_7")  # Create separate multiverses for risk of bias
+)
+```
+
+```{r}
+# To implement outlier handling, we'll run each multiverse with different criteria
+# First, let's create datasets with different outlier exclusions
+data_all_cases <- data_digDep  # No exclusions
+data_2sd <- data_digDep %>% filter(!is_outlier_2sd)
+data_3sd <- data_digDep %>% filter(!is_outlier_3sd)
+data_tukey <- data_digDep %>% filter(!is_outlier_tukey)
+
+# Now we'll run our analysis across risk of bias multiverses and outlier datasets
+results <- list()
+
+# For demonstration, we'll just take two risk of bias levels and two outlier approaches
+# In practice, you would loop through all available multiverses
+
+# Function to run a multiverse analysis on a specific dataset
+run_principle_analysis <- function(specs, data, multiverse_name) {
+  if (is.list(specs$multiverses)) {
+    # For each multiverse (risk of bias level), run the analysis
+    result_list <- list()
+    
+    for (i in seq_along(specs$multiverses)) {
+      current_name <- names(specs$multiverses)[i]
+      current_specs <- specs$multiverses[[i]]
+      
+      # Skip if there are no valid specifications
+      if (nrow(current_specs$specifications) == 0) next
+      
+      # Run the multiverse analysis
+      analysis_result <- run_multiverse_analysis(
+        data_multiverse = data,
+        specifications = current_specs$specifications,
+        how_methods = ma_methods
+      )
+      
+      # Store the result
+      result_list[[current_name]] <- analysis_result
+    }
+    
+    return(result_list)
+  } else {
+    # Single multiverse case
+    return(list(
+      multiverse_name = run_multiverse_analysis(
+        data_multiverse = data,
+        specifications = specs$specifications,
+        how_methods = ma_methods
+      )
+    ))
+  }
+}
+
+# Run analyses across datasets
+results_all_cases <- run_principle_analysis(specs_by_risk, data_all_cases, "all_cases")
+results_2sd <- run_principle_analysis(specs_by_risk, data_2sd, "outliers_2sd")
+results_3sd <- run_principle_analysis(specs_by_risk, data_3sd, "outliers_3sd")
+results_tukey <- run_principle_analysis(specs_by_risk, data_tukey, "outliers_tukey")
+
+# Combine results for different outlier approaches
+results_by_outlier_approach <- list(
+  "No Exclusions" = results_all_cases$`wf_7=low risk`,
+  "Exclude >2SD" = results_2sd$`wf_7=low risk`,
+  "Exclude >3SD" = results_3sd$`wf_7=low risk`,
+  "Exclude Tukey" = results_tukey$`wf_7=low risk`
+)
+
+# Combine results for different risk of bias levels
+results_by_risk_level <- list(
+  "Low Risk" = results_all_cases$`wf_7=low risk`,
+  "Some Concerns" = results_all_cases$`wf_7=some concerns`,
+  "High Risk" = results_all_cases$`wf_7=high risk`,
+  "Risk Combined" = results_all_cases$`wf_7=combined`
+)
+
+# Define nice labels for factors
+factor_label_lookup <- list(
+  wf_1 = "Technology",
+  wf_2 = "Guidance",
+  wf_3 = "Target Group",
+  wf_4 = "Therapy Type",
+  wf_5 = "Control Group",
+  wf_6 = "Diagnosis",
+  wf_7 = "Risk of Bias",
+  wf_8 = "Time Point",
+  ma_method = "Meta-Analysis Method"
+)
+
+# Now we can visualize our results!
+
+# 1. How outlier strategies impact results (for low risk studies)
+outlier_plot <- plot_multiverses(
+  multiverse_results = results_by_outlier_approach,
+
+plot_type = "curve",
+  facet = TRUE,
+  factor_label_lookup = factor_label_lookup,
+  colorblind_friendly = TRUE,
+  ylim_lower = 0,
+  ylim_upper = 1.0,
+  multiverse_labels = c("No Exclusions", "Exclude >2SD", "Exclude >3SD", "Tukey's Method")
+)
+
+# 2. How risk of bias impacts results (with no outlier exclusion)
+risk_plot <- plot_multiverses(
+  multiverse_results = results_by_risk_level,
+  plot_type = "curve",
+  facet = TRUE,
+  factor_label_lookup = factor_label_lookup,
+  colorblind_friendly = TRUE,
+  ylim_lower = 0,
+  ylim_upper = 1.2,
+  multiverse_labels = c("Low Risk", "Some Concerns", "High Risk", "All Studies")
+)
+
+# 3. VoE plot comparing different risk of bias levels
+risk_voe_plot <- plot_multiverses(
+  multiverse_results = results_by_risk_level,
+  plot_type = "voe",
+  facet = TRUE,
+  factor_label_lookup = factor_label_lookup,
+  colorblind_friendly = TRUE,
+  multiverse_labels = c("Low Risk", "Some Concerns", "High Risk", "All Studies")
+)
+
+# 4. Generate a summary table comparing results across multiverses
+risk_summary <- summarize_multiverses(results_by_risk_level, digits = 3)
+outlier_summary <- summarize_multiverses(results_by_outlier_approach, digits = 3)
+
+# 5. Assess which factors have the most impact on results
+# Combine all results
+all_results <- c(results_by_risk_level, results_by_outlier_approach)
+impact_assessment <- plot_decision_impact(
+  all_results,
+  metric = "effect_size",
+  colorblind_friendly = TRUE
+)
+
+# Print the summary tables
+print(risk_summary)
+print(outlier_summary)
+
+# ----------------------------------------------------------
+# Interpretation and Recommendations
+# ----------------------------------------------------------
+
+# Based on our principled multiverse analysis, we can draw several conclusions:
+
+# 1. Risk of Bias Impact (Type U decision):
+#    - Studies with high risk of bias show consistently larger effects
+#    - Including vs. excluding high risk studies significantly changes conclusions
+#    - Recommendation: Report separate analyses for different risk levels
+
+# 2. Outlier Handling Impact (Type U decision):
+#    - Different outlier definitions produce moderately different effect estimates
+#    - The most conservative approach (2SD) may remove legitimate effects
+#    - Tukey's method produces the most consistent results
+#    - Recommendation: Use Tukey's method with sensitivity analysis using 3SD
+
+# 3. Overall Assessment:
+#    - The treatment effect appears robust across most specifications when
+#      controlling properly for risk of bias and outliers
+#    - Publishing separate analyses by risk of bias levels provides the most
+#      transparent and informative presentation of results
+
+# ----------------------------------------------------------
+# Further Extensions
+# ----------------------------------------------------------
+
+# The principled multiverse approach can be extended in several ways:
+
+# 1. Combining both risk of bias and outlier handling in a single framework:
+combined_results <- list()
+for (risk_level in c("low risk", "some concerns", "high risk", "combined")) {
+  for (outlier_method in c("all_cases", "outliers_2sd", "outliers_3sd", "outliers_tukey")) {
+    # This would be implemented with a nested approach
+    method_var <- switch(outlier_method,
+                         "all_cases" = "No Exclusion",
+                         "outliers_2sd" = "Exclude >2SD",
+                         "outliers_3sd" = "Exclude >3SD",
+                         "outliers_tukey" = "Tukey's Method")
+    
+    # Get the appropriate results object based on risk level and outlier method
+    outlier_results_list <- switch(outlier_method,
+                                  "all_cases" = results_all_cases,
+                                  "outliers_2sd" = results_2sd,
+                                  "outliers_3sd" = results_3sd,
+                                  "outliers_tukey" = results_tukey)
+    
+    # Store in combined results if available
+    if (!is.null(outlier_results_list[[paste0("wf_7=", risk_level)]])) {
+      combined_results[[paste0(risk_level, "_", method_var)]] <- 
+        outlier_results_list[[paste0("wf_7=", risk_level)]]
+    }
+  }
+}
+
+# Analyze only the most important combinations
+key_combinations <- list(
+  "Low Risk, No Exclusions" = combined_results[["low risk_No Exclusion"]],
+  "Low Risk, Tukey's Method" = combined_results[["low risk_Tukey's Method"]],
+  "High Risk, No Exclusions" = combined_results[["high risk_No Exclusion"]],
+  "High Risk, Tukey's Method" = combined_results[["high risk_Tukey's Method"]]
+)
+
+# Compare these key combinations
+key_plot <- plot_multiverses(
+  multiverse_results = key_combinations,
+  plot_type = "curve",
+  facet = TRUE,
+  factor_label_lookup = factor_label_lookup,
+  colorblind_friendly = TRUE,
+  ylim_lower = 0,
+  ylim_upper = 1.2
+)
+
+```
