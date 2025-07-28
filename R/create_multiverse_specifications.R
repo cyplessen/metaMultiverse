@@ -77,12 +77,19 @@ create_multiverse_specifications <- function(data, wf_vars, ma_methods, dependen
   # Generate the specifications grid
   specifications_grid <- do.call(expand.grid, grid_args)
 
-  # Prune impossible paths
-  specifications_grid <- specifications_grid %>%
-    dplyr::filter((dependency == "modeled" &
-              ma_method %in% c("3-level", "rve")) |
-             (dependency == "aggregate" &
-                ma_method %in% c("reml", "fe", "p-uniform", "pet-peese", "uwls", "waap"))) %>%
+  dep_table <- purrr::map_dfr(list_ma_methods(), function(m) {
+    tibble::tibble(
+      ma_method  = m,
+      dependency = .ma_method_registry[[m]]$deps
+    )
+  })
+
+  specifications_grid <- specifications_grid |>
+    dplyr::mutate(
+      ma_method  = as.character(ma_method),   # drop factor levels
+      dependency = as.character(dependency)
+    ) |>
+    dplyr::inner_join(dep_table, by = c("ma_method", "dependency")) |>
     dplyr::mutate(row_id = dplyr::row_number())
 
   # Return final specifications grid

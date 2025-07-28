@@ -1,23 +1,32 @@
-test_that("run_multiverse_analysis combines multiverse results", {
-  # Mock data
-  data_multiverse <- data.frame(
-    study = rep(paste0("S", 1:6), each = 2),
-    es_id = 1:12,
-    yi = rnorm(12, mean = 0.5),
-    vi = runif(12, min = 0.01, max = 0.1),
-    wf_1 = rep(c("A", "B"), times = 6)
+test_that("run_multiverse_analysis returns tidy multiverse", {
+
+  spec_df <- create_multiverse_specifications(
+    data          = data_tiny,
+    wf_vars       = "wf_1",
+    ma_methods    = c("reml"),
+    dependencies  = "aggregate"
+  )$specifications
+
+  withr::with_options(
+    list(metaMultiverse.k_smallest_ma = 1),   # read by general_multiverse()
+    {
+      res <- run_multiverse_analysis(data_tiny, spec_df)
+    }
   )
-  specifications <- data.frame(
-    wf_1 = c("A", "B"),
-    dependency = "aggregate",
-    ma_method = "reml"
+  # --- structure -----------------------------
+  expect_s3_class(res, "data.frame")
+  expect_true(all(c("b", "ci.lb", "ci.ub", "pval",
+                    "k", "set", "full_set") %in% names(res)))
+
+  # --- each result corresponds to a spec -----
+  expect_true(all(res$row_id %in% spec_df$row_id))
+
+  # --- no duplicate b / set / method rows ----
+  expect_equal(
+    nrow(res),
+    nrow(unique(res[, c("b", "set", "ma_method")]))
   )
 
-  # Run function
-  result <- run_multiverse_analysis(data_multiverse, specifications, how_methods = c("reml"))
-
-  # Expectations
-  expect_s3_class(result, "data.frame")
-  expect_true("b" %in% colnames(result))
-  expect_true("k" %in% colnames(result))
+  # --- full_set is always 0 or 1 -------------
+  expect_true(all(res$full_set %in% c(0, 1)))
 })

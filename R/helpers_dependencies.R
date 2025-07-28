@@ -1,85 +1,90 @@
-# helpers_dependencies.R
-# This file contains functions to handle aggregate and modeled dependencies in multiverse meta-analysis.
+# helpers_dependencies.R ----------------------------------------------------
+# ---------------------------------------------------------------------------
+# Aggregate dependency
+run_aggregate_dependency <- function(dat, ma_method) {
 
-## Aggregate Dependency -------------------------------------------------------
-
-#' Run Aggregate Dependency
-#'
-#' Aggregates the data by clusters (studies) and applies the selected meta-analysis method.
-#'
-#' @param dat A data frame containing `yi` (effect size), `vi` (variance), and `study` columns.
-#' @param ma_method The meta-analysis method to apply (e.g., "fe", "reml", "uwls").
-#' @param how_methods A vector of allowed methods for the analysis.
-#' @return A list containing the meta-analysis results or a standardized NA list if the method fails.
-run_aggregate_dependency <- function(dat, ma_method, how_methods) {
-  # Step 1: Compute effect sizes
+  ## 1. escalc + aggregation -----------------------------------------------
   dat <- metafor::escalc(yi = yi, vi = vi, data = dat)
+  dat <- metafor::aggregate.escalc(dat, cluster = study,
+                                   struct = "CS", rho = 0.5)
 
-  # Step 2: Aggregate data by cluster (study)
-  dat <- metafor::aggregate.escalc(
-    dat,
-    cluster = study,
-    struct = "CS",  # Compound symmetric structure
-    rho = 0.5
-  )
+  ## 2. look-up estimator ----------------------------------------------------
+  entry <- .ma_method_registry[[ as.character(ma_method) ]]
+  if (is.null(entry) || !("aggregate" %in% entry$deps))
+    return(multiverse_NA)
 
-  # Step 3: Apply the selected method
-  if (ma_method == "fe" & "fe" %in% how_methods) {
-    return(metafor::rma(yi = dat$yi, vi = dat$vi, method = "FE"))
-  } else if (ma_method == "reml" & "reml" %in% how_methods) {
-    return(metafor::rma(
-      yi = dat$yi, vi = dat$vi, method = "REML",
-      control = list(stepadj = 0.5, maxiter = 2000)
-    ))
-  } else if (ma_method == "uwls" & "uwls" %in% how_methods) {
-    return(calculate_uwls(dat))
-  } else if (ma_method == "waap" & "waap" %in% how_methods) {
-    return(calculate_waap(dat))
-  } else if (ma_method == "pet-peese" & "pet-peese" %in% how_methods) {
-    return(calculate_pet.peese(dat))
-  } else if (ma_method == "p-uniform" & "p-uniform" %in% how_methods) {
-    return(calculate_puni_star(dat))
-  } else {
-    # Default response if method is unsupported
-    return(list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA))
-  }
+  ## 3. run it safely --------------------------------------------------------
+  res <- tryCatch(entry$fun(dat),
+                  error = function(e) {
+                    message("[aggregate:", ma_method, "] ", e$message)
+                    multiverse_NA
+                  })
+
+  ## 4. ensure the label is present -----------------------------------------
+  if (is.null(attr(res, "method", exact = TRUE)))
+    attr(res, "method") <- ma_method     # attach the key as the label
+
+  res                                           # return the enriched result
 }
 
-## Modeled Dependency ---------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Modeled dependency  (multi-level / RVE)
+# ---------------------------------------------------------------------------
+run_modeled_dependency <- function(dat, ma_method) {
 
-#' Run Modeled Dependency
-#'
-#' Applies a multilevel (modeled) dependency approach using a random-effects model.
-#'
-#' @param dat A data frame containing `yi` (effect size), `vi` (variance), `es_id` (effect size ID), and `study` columns.
-#' @param ma_method The meta-analysis method to apply (e.g., "3-level", "rve").
-#' @param how_methods A vector of allowed methods for the analysis.
-#' @return A list containing the meta-analysis results or a standardized NA list if the method fails.
-run_modeled_dependency <- function(dat, ma_method, how_methods) {
-  # Check if multiple effect sizes per study exist
-  if (sum(duplicated(dat$study)) > 1) {
-    # Try to fit the model
-    mod_modeled <- tryCatch({
-      metafor::rma.mv(
-        data = dat, yi = yi, V = vi, method = "REML",
-        random = list(~1 | es_id, ~1 | study), sparse = TRUE
-      )
-    }, error = function(e) list(error = TRUE))  # Add an error indicator
+  if (sum(duplicated(dat$study)) < 1)                # nothing to model
+    return(multiverse_NA)
 
-    # Check if the model fitting was successful
-    if (!is.list(mod_modeled) || is.null(mod_modeled$error)) {
-      if (ma_method == "3-level" & "3-level" %in% how_methods) {
-        return(mod_modeled)
-      } else if (ma_method == "rve" & "rve" %in% how_methods) {
-        return(tryCatch({
-          metafor::robust(mod_modeled,
-                          cluster = dat$study,
-                          clubSandwich = TRUE)
-        }, error = function(e) list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)))
-      }
-    }
-  }
+  entry <- .ma_method_registry[[as.character(ma_method)]]
+  if (is.null(entry) || !("modeled" %in% entry$deps))
+    return(multiverse_NA)
 
-  # Default return if no valid model or unsupported method
-  list(b = NA, pval = NA, ci.lb = NA, ci.ub = NA)
+  res <- tryCatch(entry$fun(dat),
+                  error = function(e) {
+                    message("[modeled:", ma_method, "] ", e$message)
+                    multiverse_NA
+                  })
+
+  if (is.null(attr(res, "method", exact = TRUE)))
+    attr(res, "method") <- ma_method     # attach the key as the label
+
+  res                                           # return the enriched result
+}
+
+# ---------------------------------------------------------------------------
+# Select-one-effect per study  (select_max / select_min)
+# ---------------------------------------------------------------------------
+collapse_one <- function(dat, rule = c("max", "min"), abs_cols = "yi") {
+  rule <- match.arg(rule)
+  dplyr::group_by(dat, study) |>
+    dplyr::slice({
+      if (rule == "max") which.max(abs(.data[[abs_cols[1]]]))
+      else               which.min(abs(.data[[abs_cols[1]]]))
+    }) |>
+    dplyr::ungroup()
+}
+
+run_select_dependency <- function(dat, ma_method, dependency) {
+
+  dat <- switch(
+    dependency,
+    "select_max" = collapse_one(dat, "max"),
+    "select_min" = collapse_one(dat, "min"),
+    stop("Unknown dependency: ", dependency)
+  )
+
+  entry <- .ma_method_registry[[as.character(ma_method)]]
+  if (is.null(entry) || !(dependency %in% entry$deps))
+    return(multiverse_NA)
+
+  res <- tryCatch(entry$fun(dat),
+                  error = function(e) {
+                    message("[", dependency, ":", ma_method, "] ", e$message)
+                    multiverse_NA
+                  })
+
+  if (is.null(attr(res, "method", exact = TRUE)))
+    attr(res, "method") <- ma_method     # attach the key as the label
+
+  res                                           # return the enriched result
 }

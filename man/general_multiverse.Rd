@@ -8,8 +8,7 @@ general_multiverse(
   i,
   data_multiverse,
   specifications,
-  how_methods,
-  k_smallest_ma = 5
+  k_smallest_ma = getOption("metaMultiverse.k_smallest_ma", 5)
 )
 }
 \arguments{
@@ -21,8 +20,6 @@ for the multiverse analysis.}
 
 \item{specifications}{Data frame. Contains all specifications generated using
 \code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.}
-
-\item{how_methods}{Character vector. A list of meta-analysis methods to apply for the "How" factors.}
 
 \item{k_smallest_ma}{Integer. The smallest number of unique studies required for a valid meta-analysis.
 Defaults to 5.}
@@ -62,11 +59,6 @@ specifications <- data.frame(
 )
 result <- general_multiverse(1,
    data_multiverse,
-   specifications,
-   how_methods = c("reml"))
+   specifications)
 
-}
-\seealso{
-\code{\link{create_multiverse_specifications}}, \code{\link{run_aggregate_dependency}},
-  \code{\link{run_modeled_dependency}}
 }
