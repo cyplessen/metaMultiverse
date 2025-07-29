@@ -53,8 +53,8 @@ plotly_VoE <- function(
     cutoff = 10,
     x_breaks = seq(-0.5, 2, by = 0.25),
     y_breaks = c(1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 0.001, 0.01, 0.05, 0.1, 0.5, 1),
-     x_limits = NULL,
-     y_limits = c(1e-11,1),
+    x_limits = NULL,
+    y_limits = c(1e-11,1),
     vertical_lines = c(0.1, 0.9),
     hline_value = 0.05,
     title_template = "{k} meta-analyses with at least {cutoff} studies.",
@@ -65,6 +65,9 @@ plotly_VoE <- function(
     dplyr::mutate(!!dplyr::sym(y) := ifelse(!!dplyr::sym(y) < 1e-11, 1e-11, !!dplyr::sym(y))) %>%
     dplyr::filter(k >= cutoff)
 
+  # Check if we have multiple multiverse_ids (Type N factors present)
+  has_multiple_multiverses <- length(unique(data$multiverse_id)) > 1
+
   # Compute density-based colors
   data <- compute_density_colors(data, x, y, colorblind_friendly)
 
@@ -73,7 +76,6 @@ plotly_VoE <- function(
 
   # Number of analyses
   k <- nrow(data)
-  x_quantiles <- stats::quantile(data[[x]], vertical_lines, na.rm = TRUE)  # Compute quantiles
 
   # Dynamically compute x_limits and y_limits if not provided
   if (is.null(x_limits)) {
@@ -84,15 +86,13 @@ plotly_VoE <- function(
     y_limits <- c(min(data[[y]], na.rm = TRUE), max(data[[y]], na.rm = TRUE))
   }
 
-  # Create ggplot base
+  # Create base ggplot
   p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[x]], y = .data[[y]], text = tooltip)) +
     ggplot2::geom_point(ggplot2::aes(colour = density),
-                         size = 1,
-                         #width = 0.01,
+                        size = 1,
                         show.legend = FALSE) +
     ggplot2::scale_color_identity() +
     ggplot2::geom_hline(yintercept = hline_value, linetype = 2, color = "black") +
-    ggplot2::geom_vline(xintercept = x_quantiles, color = "red", linetype = 2) +
     ggplot2::scale_y_continuous(
       trans = "log",
       breaks = y_breaks,
@@ -106,11 +106,43 @@ plotly_VoE <- function(
     ggplot2::labs(
       x = "Effect Size (b)",
       y = "P-value",
-      title = glue::glue(title_template, k = k, cutoff = cutoff)
+      title = if (has_multiple_multiverses) {
+        glue::glue("{k} meta-analyses across {length(unique(data$multiverse_id))} multiverses (≥{cutoff} studies)")
+      } else {
+        glue::glue(title_template, k = k, cutoff = cutoff)
+      }
     ) +
     ggplot2::theme_bw() +
-    ggplot2::theme(panel.border = ggplot2::element_blank(), plot.title = ggplot2::element_text(size = 10)) +
+    ggplot2::theme(panel.border = ggplot2::element_blank(),
+                   plot.title = ggplot2::element_text(size = 10)) +
     ggplot2::guides(colour = "none")
+
+  # Add faceting if multiple multiverses exist
+  if (has_multiple_multiverses) {
+    # Compute quantiles per multiverse for vertical lines
+    quantile_data <- data %>%
+      dplyr::group_by(multiverse_id) %>%
+      dplyr::summarise(
+        q10 = stats::quantile(.data[[x]], vertical_lines[1], na.rm = TRUE),
+        q90 = stats::quantile(.data[[x]], vertical_lines[2], na.rm = TRUE),
+        .groups = "drop"
+      )
+
+    # Add vertical lines per facet
+    p <- p +
+      ggplot2::geom_vline(data = quantile_data,
+                          ggplot2::aes(xintercept = q10),
+                          color = "red", linetype = 2) +
+      ggplot2::geom_vline(data = quantile_data,
+                          ggplot2::aes(xintercept = q90),
+                          color = "red", linetype = 2) +
+      ggplot2::facet_wrap(~ multiverse_id,
+                          labeller = ggplot2::labeller(multiverse_id = function(x) paste("Multiverse:", x)))
+  } else {
+    # Single multiverse - add global quantiles
+    x_quantiles <- stats::quantile(data[[x]], vertical_lines, na.rm = TRUE)
+    p <- p + ggplot2::geom_vline(xintercept = x_quantiles, color = "red", linetype = 2)
+  }
 
   if (interactive) {
     # Convert to Plotly for interactivity
