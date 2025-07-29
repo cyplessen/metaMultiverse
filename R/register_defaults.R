@@ -14,20 +14,8 @@
   register_ma_method("p-uniform", fit_puni_star, dependencies = c("select_max", "select_min"))
 
   # modeled-dependency helpers
-  register_ma_method("3-level",
-                     fun = function(dat)
-                       metafor::rma.mv(data = dat, yi = yi, V = vi,
-                                       random = list(~1 | es_id, ~1 | study),
-                                       method = "REML", sparse = TRUE),
-                     dependencies = "modeled")
+  # modeled-dependency helpers
+  register_ma_method("3-level", fit_three_level, dependencies = "modeled")
+  register_ma_method("rve", fit_rve, dependencies = "modeled")
 
-  register_ma_method("rve",
-                     fun = function(dat) {
-                       mod <- metafor::rma.mv(data = dat, yi = yi, V = vi,
-                                              random = list(~1 | es_id, ~1 | study),
-                                              method = "REML", sparse = TRUE)
-                       metafor::robust(mod, cluster = dat$study,
-                                       clubSandwich = TRUE)
-                     },
-                     dependencies = "modeled")
 }
