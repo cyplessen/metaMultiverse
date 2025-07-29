@@ -11,13 +11,13 @@ run_aggregate_dependency <- function(dat, ma_method) {
   ## 2. look-up estimator ----------------------------------------------------
   entry <- .ma_method_registry[[ as.character(ma_method) ]]
   if (is.null(entry) || !("aggregate" %in% entry$deps))
-    return(multiverse_NA)
+    return(universe_NA)
 
   ## 3. run it safely --------------------------------------------------------
   res <- tryCatch(entry$fun(dat),
                   error = function(e) {
                     message("[aggregate:", ma_method, "] ", e$message)
-                    multiverse_NA
+                    universe_NA
                   })
 
   ## 4. ensure the label is present -----------------------------------------
@@ -33,16 +33,16 @@ run_aggregate_dependency <- function(dat, ma_method) {
 run_modeled_dependency <- function(dat, ma_method) {
 
   if (sum(duplicated(dat$study)) < 1)                # nothing to model
-    return(multiverse_NA)
+    return(universe_NA)
 
   entry <- .ma_method_registry[[as.character(ma_method)]]
   if (is.null(entry) || !("modeled" %in% entry$deps))
-    return(multiverse_NA)
+    return(universe_NA)
 
   res <- tryCatch(entry$fun(dat),
                   error = function(e) {
                     message("[modeled:", ma_method, "] ", e$message)
-                    multiverse_NA
+                    universe_NA
                   })
 
   if (is.null(attr(res, "method", exact = TRUE)))
@@ -75,12 +75,12 @@ run_select_dependency <- function(dat, ma_method, dependency) {
 
   entry <- .ma_method_registry[[as.character(ma_method)]]
   if (is.null(entry) || !(dependency %in% entry$deps))
-    return(multiverse_NA)
+    return(universe_NA)
 
   res <- tryCatch(entry$fun(dat),
                   error = function(e) {
                     message("[", dependency, ":", ma_method, "] ", e$message)
-                    multiverse_NA
+                    universe_NA
                   })
 
   if (is.null(attr(res, "method", exact = TRUE)))

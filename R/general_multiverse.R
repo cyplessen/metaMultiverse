@@ -94,6 +94,7 @@ general_multiverse <- function(i, data_multiverse, specifications, k_smallest_ma
 
   # Return results
   out <- data.frame(
+    multiverse_id = specifications$multiverse_id[i],
     specifications[i, ],
     b     = as.numeric(mod$b),
     ci.lb = as.numeric(mod$ci.lb),

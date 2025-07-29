@@ -16,7 +16,7 @@ safe_call <- function(expr) {
 ## Standard fixed effect estimates
 fit_fe  <- function(data) safe_call({
   mod <- metafor::rma(yi = data$yi, vi = data$vi, method = "FE")
-  out <- new_multiverse_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
+  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
   attr(out, "method") <- "FE"
   out
 })
@@ -25,7 +25,7 @@ fit_fe  <- function(data) safe_call({
 fit_reml <- function(data) safe_call({
   mod <- metafor::rma(yi = data$yi, vi = data$vi, method = "REML",
                       control = list(stepadj = 0.5, maxiter = 2000))
-  out <- new_multiverse_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
+  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
   attr(out, "method") <- "REML"
   out
 })
@@ -53,7 +53,7 @@ fit_pet.peese <- function(dat) safe_call({
   # PEESE decision rule
   if (is.na(pet_p) || pet_p >= 0.10) {
     ## keep PET
-    out <- new_multiverse_result(
+    out <- new_universe_result(
       b     = stats::coef(pet_fit)["(Intercept)"],
       ci.lb = stats::confint(pet_fit)["(Intercept)", "2.5 %"],
       ci.ub = stats::confint(pet_fit)["(Intercept)", "97.5 %"],
@@ -75,7 +75,7 @@ fit_pet.peese <- function(dat) safe_call({
     return(out)
   }
 
-  out <- new_multiverse_result(
+  out <- new_universe_result(
     b     = stats::coef(peese_fit)["(Intercept)"],
     ci.lb = stats::confint(peese_fit)["(Intercept)", "2.5 %"],
     ci.ub = stats::confint(peese_fit)["(Intercept)", "97.5 %"],
@@ -121,7 +121,7 @@ fit_puni_star <- function(dat) safe_call({
     return(out)
   }
 
-  out <- new_multiverse_result(
+  out <- new_universe_result(
     b     = pu$est,
     ci.lb = pu$ci.lb,
     ci.ub = pu$ci.ub,
@@ -150,7 +150,7 @@ fit_uwls <- function(dat) safe_call({
 
   reg <- stats::lm(d / sed ~ 0 + Precision)
 
-  out <- new_multiverse_result(
+  out <- new_universe_result(
     b     = stats::coef(reg)["Precision"],
     ci.lb = stats::confint(reg)["Precision", "2.5 %"],
     ci.ub = stats::confint(reg)["Precision", "97.5 %"],
@@ -182,7 +182,7 @@ fit_waap <- function(dat) safe_call({
   # WAAP regression
   reg <- stats::lm(d[powered] / sed[powered] ~ 0 + Precision[powered])
 
-  out <- new_multiverse_result(
+  out <- new_universe_result(
     b     = stats::coef(reg)["Precision[powered]"],
     ci.lb = stats::confint(reg)["Precision[powered]", "2.5 %"],
     ci.ub = stats::confint(reg)["Precision[powered]", "97.5 %"],
@@ -210,7 +210,7 @@ fit_pm <- function(dat) safe_call({
     return(out)
   }
 
-  out <- new_multiverse_result(
+  out <- new_universe_result(
     b     = unname(mod$b),
     ci.lb = unname(mod$ci.lb),
     ci.ub = unname(mod$ci.ub),
@@ -239,7 +239,7 @@ fit_hk_sj <- function(dat) safe_call({
     return(out)
   }
 
-  out <- new_multiverse_result(
+  out <- new_universe_result(
     b     = mod$TE.random,
     ci.lb = mod$lower.random,
     ci.ub = mod$upper.random,
@@ -268,7 +268,7 @@ fit_bayesmeta <- function(dat) safe_call({
 
   s <- bm$summary   # posterior summary data.frame
 
-  out <- new_multiverse_result(
+  out <- new_universe_result(
     b     = s["median",    "mu"],
     ci.lb = s["95% lower", "mu"],
     ci.ub = s["95% upper", "mu"],
