@@ -45,14 +45,44 @@ ensemble <- list_ma_methods()
 # "paule-mandel"   "rve"            "reml"     
 
 specs <- create_multiverse_specifications(
-  data = data_digDep,              # use a small test frame
-  wf_vars         = c("wf_1", "wf_2"),
+  data = data_tiny,              # use a small test frame
+  wf_vars         = c("wf_1"),
   ma_methods      = ensemble,
   dependencies    = c("select_min","aggregate", "modeled", "select_max")
 )$specifications
 
 res <- run_multiverse_analysis(data_digDep, specs)
 res
+```
+
+```{r}
+# Example usage:
+data_digDep
+
+decision_map <- c(wf_1="U", wf_7 = "N")
+
+ensemble <- list_ma_methods() 
+
+ensemble <- setdiff(ensemble, "bayesmeta")
+
+out <- create_principled_multiverse_specifications(
+  data          = data_tiny,
+  wf_vars       = c("wf_1", "wf_7"),
+  ma_methods    = ensemble,
+  dependencies  = c("aggregate", "modeled"),
+  decision_map  = decision_map
+)
+
+specs <- out$specifications
+# ▶ specs$cluster_id shows which "N partition" each spec belongs to
+
+# Set globally for your session
+options(metaMultiverse.k_smallest_ma = 2)
+
+res <- run_multiverse_analysis(data_tiny, specs, verbose = T) 
+
+
+plotly_VoE(res$results, cutoff = 5)
 ```
 
 
@@ -166,11 +196,11 @@ data_digDep
 
 decision_map <- c(wf_1="E"
                   )
-
+ensamble <- makeMethodsList()
 out <- create_principled_multiverse_specifications(
   data          = data_digDep,
   wf_vars       = c("wf_1"),
-  ma_methods    = "3-level",
+  ma_methods    = ensamble,
   dependencies  = "modeled",
   decision_map  = decision_map
 )
@@ -183,6 +213,8 @@ options(metaMultiverse.k_smallest_ma = 2)
 
 res <- run_multiverse_analysis(data_multiverse, specs, verbose = T) 
 
+
+plotly_VoE(res$results)
 ```
 
 
