@@ -19,22 +19,9 @@ register_default_ma_methods <- function(fast_only = FALSE) {
   register_ma_method("hk_sj", fun = fit_hk_sj, dependencies = c("aggregate","select_min","select_max"))
 
   # modeled-dependency helpers
-  register_ma_method("3-level",
-                     fun = function(dat)
-                       metafor::rma.mv(data = dat, yi = yi, V = vi,
-                                       random = list(~1 | es_id, ~1 | study),
-                                       method = "REML", sparse = TRUE),
-                     dependencies = "modeled")
+  register_ma_method("3-level", fit_three_level, dependencies = "modeled")
+  register_ma_method("rve", fit_rve, dependencies = "modeled")
 
-  register_ma_method("rve",
-                     fun = function(dat) {
-                       mod <- metafor::rma.mv(data = dat, yi = yi, V = vi,
-                                              random = list(~1 | es_id, ~1 | study),
-                                              method = "REML", sparse = TRUE)
-                       metafor::robust(mod, cluster = dat$study,
-                                       clubSandwich = TRUE)
-                     },
-                     dependencies = "modeled")
   if (!fast_only) {
     register_ma_method("bayesmeta", fun = fit_bayesmeta, dependencies = c("aggregate"))
   }
