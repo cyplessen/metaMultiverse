@@ -1,0 +1,101 @@
+study,es_id,yi,vi,sei,wf_1,wf_2,wf_3,wf_4,wf_5,wf_6,wf_7,wf_8,condition_arm1,condition_arm2
+"Montero-Marin, 2016",167,0.483255331803683,0.0314522070282129,0.177347700938616,website,guided,adul,cbt-based,cau,mdd,low risk,follow-up,cbt,cau
+"Krämer, 2022",129,2.34095537392476,0.0276934714237836,0.166413555408757,website,minimal to no support,adul,not-cbt-based,wl,mood,high risk,post,other psy,wl
+"Pfeiffer, 2020",187,0.126265398878695,0.0184122190142708,0.13569163207166,website,guided,other group,cbt-based,cau,cut,some concerns,follow-up,cbt,cau
+"Gili, 2020",85,0.23,0.0361,0.19,website,automated encouragement,adul,not-cbt-based,cau,mood,some concerns,post,other psy,cau
+"Gilbody, 2015",79,-0.0733015311130425,0.0112937623490935,0.106272114635466,website,human encouragement,adul,cbt-based,cau,cut,high risk,post,cbt,cau
+"Sander, 2020",215,0.42284428693507,0.0138653294640968,0.11775113360005,website,guided,med,cbt-based,cau,cut,some concerns,post,cbt,cau
+"Braun, 2021",37,0.280660521956205,0.0118814678745412,0.109002146192363,website,guided,other group,not-cbt-based,other ctr,cut,some concerns,post,other psy,other ctr
+"Hobfoll, 2016",105,0.219170161625132,0.0155026502962154,0.124509639370675,website,human encouragement,other group,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Sander, 2020",219,0.342933121760053,0.0137610770534386,0.117307617201265,website,guided,med,cbt-based,cau,cut,some concerns,follow-up,cbt,cau
+"Hur, 2018",110,0.661686144403844,0.124401030581046,0.352705302740186,mobile,minimal to no support,adul,cbt-based,other ctr,mood,high risk,post,cbt,other ctr
+"Sheeber, 2017",227,0.313359693023357,0.0152240741039613,0.123385874815399,website,guided,ppd,cbt-based,other ctr,cut,some concerns,post,cbt,other ctr
+"Montero-Marin, 2016",165,0.0773538133610707,0.0305734797691789,0.174852737379713,website,guided,adul,cbt-based,cau,mdd,low risk,post,cbt,cau
+"Blanco, 2023",34,0.644355132026359,0.0714295602955012,0.267263091906648,mobile,automated encouragement,adul,cbt-based,other ctr,cut,low risk,post,cbt,other ctr
+"Hoifodt, 2013",106,0.923559715311015,0.0418315026425211,0.204527510722937,website,guided,adul,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Kramer, 2021",126,0.518193516109849,0.030416514739483,0.174403310574894,website,guided,adul,not-cbt-based,wl,cut,some concerns,post,other psy,wl
+"Gräfe, 2020",89,0.21,9e-4,0.03,website,minimal to no support,adul,cbt-based,cau,cut,high risk,post,cbt,cau
+"Nobis, 2015",172,0.81911062287809,0.0169441686288003,0.130169768490231,website,guided,med,not-cbt-based,other ctr,cut,some concerns,post,other psy,other ctr
+"Rosso, 2017",207,0.781184172463377,0.0560704121111414,0.236791917326461,website,human encouragement,adul,cbt-based,other ctr,mdd,low risk,post,cbt,other ctr
+"Blanco, 2023",33,1.48001455619377,0.0884492548859665,0.297404194465994,mobile,guided,adul,cbt-based,other ctr,cut,low risk,post,cbt,other ctr
+"Gilbody, 2015",84,0.100538060354447,0.0165381548645725,0.128600757636075,website,human encouragement,adul,cbt-based,cau,cut,high risk,follow-up,cbt,cau
+"Montero-Marin, 2016",163,0.341193461376555,0.0329444770846903,0.181506135115842,website,automated encouragement,adul,cbt-based,cau,mdd,low risk,follow-up,cbt,cau
+"Fonseca, 2020",70,-0.00939110454932886,0.020620977389058,0.143600060546847,website,minimal to no support,ppd,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Forsell, 2017",74,0.518820861678004,0.115365516059628,0.33965499563473,website,guided,ppd,cbt-based,cau,mdd,some concerns,post,cbt,cau
+"Choi, 2012",42,0.893493187771156,0.0700034063223414,0.264581568372291,website,guided,other group,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Montero-Marin, 2016",166,0.382067918676967,0.0311140813831078,0.176391840466354,website,guided,adul,cbt-based,cau,mdd,low risk,follow-up,cbt,cau
+"Jannati, 2020",111,2.94626467537854,0.108044571126185,0.328701340316988,mobile,minimal to no support,ppd,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Lukas, 2021",148,1.21412248671322,0.0617940731628667,0.248584136989605,mobile,automated encouragement,adul,not-cbt-based,wl,cut,high risk,post,other psy,wl
+"Milgrom, 2016",156,0.828511190386603,0.101357468313636,0.318366876910328,website,human encouragement,ppd,cbt-based,cau,mood,low risk,post,cbt,cau
+"Baumeister, 2021",20,0.143691422811324,0.0191889497433689,0.138524184687617,website,guided,med,cbt-based,cau,mdd,some concerns,follow-up,cbt,cau
+"Clarke, 2019",44,-0.078666495254521,0.00846628498278902,0.0920124175467041,website,automated encouragement,med,cbt-based,other ctr,cut,some concerns,post,cbt,other ctr
+"Johansson, 2019a",121,1.58592277536805,0.0980525001328445,0.313133358384003,website,guided,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Gili, 2020",87,0.01,0.5184,0.72,website,automated encouragement,adul,not-cbt-based,cau,mood,some concerns,follow-up,other psy,cau
+"Titov, 2010",240,1.26172098595667,0.0561626178101016,0.236986535081851,website,guided,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Stiles-Shields, 2019",231,0.931159709655843,0.2236312792984,0.472896689878879,mobile,human encouragement,adul,cbt-based,wl,cut,high risk,post,bat,wl
+"Carlbring, 2013",40,0.854581359864437,0.0546537836973204,0.233781487071411,website,guided,adul,cbt-based,wl,mdd,some concerns,post,3rd,wl
+"Vernmark, 2010",245,0.929358322849885,0.0766157167363775,0.27679544204408,both,guided,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Beevers, 2017",25,0.814498586331099,0.0153835255912795,0.124030341414025,website,automated encouragement,adul,cbt-based,wl,cut,high risk,post,cbt,wl
+"Johansson, 2012b",119,0.569112985074952,0.0573190044715205,0.239413876940165,website,guided,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Richards, 2015",198,0.645775684004155,0.0224043552399477,0.14968084459926,website,guided,adul,cbt-based,wl,cut,high risk,post,cbt,wl
+"Johansson, 2019a",122,1.53786227873518,0.0966212155360228,0.310839533418809,website,guided,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Buntrock, 2015",39,0.282390247747456,0.00995102891639154,0.0997548440748194,website,guided,adul,not-cbt-based,cau,cut,some concerns,follow-up,other psy,cau
+"O'Mahen, 2013b",183,0.546919481547456,0.0121356635215183,0.110161987643281,website,automated encouragement,ppd,cbt-based,cau,cut,some concerns,post,bat,cau
+"Titov, 2010",238,1.07308639510617,0.0535555195982818,0.231420655081351,website,guided,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Krämer, 2022",134,1.57926067756442,0.0216208674806689,0.147040360039919,website,guided,adul,cbt-based,wl,mood,high risk,post,cbt,wl
+"Baumgartner, 2021",24,0.377282709673721,0.0086995745532498,0.0932715098690366,website,guided,adul,cbt-based,wl,cut,some concerns,follow-up,cbt,wl
+"Mohr, 2013",160,0.396496853159319,0.0600572427146872,0.245065792624526,website,minimal to no support,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Arjadi, 2018",14,0.388644587098011,0.0130252689191716,0.114128300255334,website,guided,adul,cbt-based,other ctr,mood,some concerns,post,bat,other ctr
+"Krämer, 2022",130,0.921796981294749,0.0183764220451,0.135559662308151,website,minimal to no support,adul,not-cbt-based,wl,mood,high risk,post,other psy,wl
+"Cooper, 2011",45,0.828049293553643,0.212158606991844,0.460606781313349,both,minimal to no support,med,cbt-based,cau,cut,high risk,post,cbt,cau
+"Lokman, 2017",146,0.386733093947699,0.0123865127026439,0.111294711027272,website,automated encouragement,adul,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Baumgartner, 2021",22,0.280234965057659,0.00863118073482311,0.0929041481034249,website,guided,adul,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Rosso, 2017",206,0.785627041733363,0.0561165352058593,0.236889288921765,website,human encouragement,adul,cbt-based,other ctr,mdd,low risk,post,cbt,other ctr
+"Raevuori, 2021",193,-0.258143212699748,0.0325385011103003,0.180384315034041,mobile,guided,young,not-cbt-based,cau,mdd,some concerns,post,other psy,cau
+"Johansson, 2012a",115,0.936806809469006,0.0483285894001376,0.219837643273707,website,guided,adul,not-cbt-based,wl,mdd,some concerns,post,dyn,wl
+"Heim, 2021",104,0.701916386008941,0.0956715518901203,0.309308182707992,mobile,guided,adul,cbt-based,other ctr,cut,high risk,post,bat,other ctr
+"Smith, 2017",229,0.855023750797913,0.0557363152393127,0.236085398191656,website,human encouragement,adul,cbt-based,wl,mdd,high risk,post,cbt,wl
+"Ruehlman, 2021",208,0.772181743382709,0.0832911190681254,0.288602008080549,website,minimal to no support,young,cbt-based,wl,cut,high risk,post,cbt,wl
+"Ruwaard, 2009",209,0.847330715045857,0.0901781607051832,0.300296787703737,website,guided,adul,cbt-based,wl,cut,high risk,post,cbt,wl
+"Harrer, 2021",103,0.36445868468213,0.020334608637597,0.142599469275299,website,automated encouragement,young,not-cbt-based,other ctr,cut,some concerns,post,other psy,other ctr
+"Gaudiano, 2020",75,-0.580288167580712,0.104632177929099,0.323468975218798,website,minimal to no support,adul,cbt-based,other ctr,mdd,high risk,post,3rd,other ctr
+"Arean, 2016",13,0.266596436680042,0.0290579645456039,0.170463968467251,mobile,minimal to no support,adul,not-cbt-based,other ctr,cut,some concerns,post,pst,other ctr
+"Warmerdam, 2008",251,0.430975362898046,0.0233932124330148,0.152948397941969,website,guided,adul,not-cbt-based,wl,cut,some concerns,post,pst,wl
+"O' Moore, 2018",176,0.901513827205486,0.0687512089751305,0.262204517457519,website,minimal to no support,med,cbt-based,cau,mdd,some concerns,follow-up,cbt,cau
+"Vernmark, 2010",246,0.800844022083181,0.0746462224323685,0.273214608746254,both,guided,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Baumgartner, 2021",23,0.384699831036941,0.00896156202810426,0.0946655271368847,website,guided,adul,cbt-based,wl,cut,some concerns,follow-up,cbt,wl
+"Weise, 2019",252,0.970933132653443,0.0296131566775783,0.172084736910565,website,guided,adul,cbt-based,wl,mood,high risk,post,cbt,wl
+"van Bastelaar, 2011",242,0.491578309470437,0.0255089761644643,0.159715297214964,website,guided,med,cbt-based,wl,cut,high risk,post,cbt,wl
+"Roepke, 2015",205,0.777298555716675,0.0890934638238263,0.298485282424153,website,minimal to no support,adul,cbt-based,wl,cut,high risk,post,3rd,wl
+"Berger, 2011",29,0.144242466623419,0.0786719419201384,0.280485190197519,website,minimal to no support,adul,cbt-based,wl,mood,some concerns,follow-up,cbt,wl
+"Lappalainen, 2015",141,0.624742320898388,0.110913574743826,0.33303689697063,website,guided,adul,cbt-based,wl,mdd,some concerns,post,3rd,wl
+"MacKinnon, 2022",150,0.514651001189649,0.172164738515256,0.414927389449354,mobile,guided,other group,not-cbt-based,cau,cut,high risk,post,other psy,cau
+"Stuart, 2022",234,0.181518436001386,0.0210517597350608,0.145092245606238,website,automated encouragement,adul,cbt-based,cau,cut,some concerns,follow-up,cbt,cau
+"Hoifodt, 2013",108,-0.317397152262141,0.0382314264044704,0.195528582065309,website,guided,adul,cbt-based,wl,cut,some concerns,follow-up,cbt,wl
+"Dahne, 2019a",48,0.528063164994867,0.15236080899297,0.390334227288576,mobile,automated encouragement,other group,cbt-based,cau,cut,high risk,post,bat,cau
+"Van Luenen, 2018",243,0.60891178599522,0.0222924008529631,0.14930639923648,website,guided,med,cbt-based,wl,cut,low risk,post,cbt,wl
+"Sander, 2020",217,0.402158143697536,0.0138362550582393,0.117627611801988,website,guided,med,cbt-based,cau,cut,some concerns,follow-up,cbt,cau
+"Lundgren, 2016",149,0.265276714488291,0.0807263556116015,0.284123838513423,website,guided,med,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Berger, 2011",31,0.447002654968426,0.0804821684717918,0.283693793502417,website,guided,adul,cbt-based,wl,mood,some concerns,follow-up,cbt,wl
+"Hallgren, 2015",102,0.320679855219394,0.00827639136209515,0.0909746742895799,website,guided,adul,cbt-based,cau,cut,high risk,post,cbt,cau
+"Lobner, 2018",145,0.135023040956015,0.00837986559919863,0.0915416058369014,website,minimal to no support,adul,cbt-based,cau,mood,some concerns,follow-up,cbt,cau
+"Forsell, 2017",73,1.21098566939137,0.122767249107109,0.350381576437902,website,guided,ppd,cbt-based,cau,mdd,some concerns,post,cbt,cau
+"Spek, 2007",230,0.266766596694201,0.0199814013784018,0.141355584885783,website,minimal to no support,adul,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Gilbody, 2015",83,-0.0766298970447633,0.0168449245255769,0.129787998388052,website,human encouragement,adul,cbt-based,cau,cut,high risk,follow-up,cbt,cau
+"Johansson, 2012b",118,0.790395736936628,0.0576708588918099,0.240147577318219,website,guided,adul,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Gräfe, 2020",90,0.23,0.0016,0.04,website,minimal to no support,adul,cbt-based,cau,cut,high risk,follow-up,cbt,cau
+"Pots, 2016",190,0.318760155466296,0.0239927128595327,0.154895812918015,website,guided,adul,cbt-based,wl,cut,high risk,follow-up,3rd,wl
+"Hoifodt, 2013",107,0.523364043156444,0.0390602001270908,0.197636535405503,website,guided,adul,cbt-based,wl,cut,some concerns,post,cbt,wl
+"Flygare, 2020",64,0.23062380727099,0.0423944451838055,0.205899114091842,website,guided,adul,cbt-based,other ctr,cut,some concerns,post,cbt,other ctr
+"Reins, 2019",196,0.30151559609457,0.0308871997989,0.175747545641184,website,guided,adul,not-cbt-based,other ctr,mdd,some concerns,post,other psy,other ctr
+"Ebert, 2014",60,0.380600302338239,0.0271544616311556,0.164786108732367,website,guided,other group,not-cbt-based,wl,cut,some concerns,follow-up,pst,wl
+"Dahne, 2019b",51,0.4274192980569,0.170264511396244,0.412631205068454,mobile,minimal to no support,adul,cbt-based,cau,cut,high risk,post,cbt,cau
+"Vigod, 2021",249,0.148335947953988,0.0521728181416834,0.228413699549049,website,guided,ppd,not-cbt-based,wl,cut,high risk,post,ipt,wl
+"Krämer, 2022",138,2.09040617120572,0.0734956954029349,0.271100895245543,website,guided,adul,cbt-based,wl,mood,high risk,follow-up,cbt,wl
+"Ying, 2022",260,2.57861070667052,0.033551724607193,0.183171298535532,website,guided,adul,cbt-based,wl,cut,high risk,post,cbt,wl
+"Choi, 2012",43,0.480513749529244,0.0653866508429345,0.255708136051504,website,guided,other group,cbt-based,wl,mdd,some concerns,post,cbt,wl
+"Beevers, 2017",26,0.763279741927967,0.0152756302580546,0.123594620667951,website,automated encouragement,adul,cbt-based,wl,cut,high risk,post,cbt,wl
+"Lobner, 2018",143,0.172683941406554,0.00851060212870399,0.0922529247704591,website,minimal to no support,adul,cbt-based,cau,mood,some concerns,follow-up,cbt,cau
+"Reins, 2019",195,0.316381755007509,0.0309226720172547,0.175848434787617,website,guided,adul,not-cbt-based,other ctr,mdd,some concerns,post,other psy,other ctr
+"Meyer, 2015",152,0.566846690904487,0.0255801099938633,0.159937831653,website,automated encouragement,adul,cbt-based,wl,cut,some concerns,post,cbt,wl
+"O'Mahen, 2013a",182,0.480229942816133,0.069979464695796,0.264536320182685,website,guided,ppd,cbt-based,cau,mdd,some concerns,follow-up,bat,cau
