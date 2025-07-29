@@ -10,4 +10,4 @@ tutorials/
 ^dev$
 ^docs$
 
-shiny/
+^shiny$
