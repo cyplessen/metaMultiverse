@@ -9,3 +9,5 @@ tutorials/
 ^Meta$
 ^dev$
 ^docs$
+
+shiny/

@@ -56,3 +56,6 @@ rsconnect/
 *.html
 /doc/
 /Meta/
+
+# shiny app
+shiny/
