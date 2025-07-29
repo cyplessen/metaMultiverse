@@ -9,7 +9,7 @@ globalVariables(c("b", "ci.lb", "ci.ub", "pval", "ma_method", "vi", "yi"))
 safe_call <- function(expr) {
   tryCatch(expr, error = function(e) {
     message("[estimator] ", e$message)
-    multiverse_NA
+    universe_NA
   })
 }
 
@@ -34,16 +34,16 @@ fit_reml <- function(data) safe_call({
 
 #------------------- PET-PEESE ----------------------------------------------
 
-fit_pet.peese <- function(dat) safe_call({
+fit_pet.peese <- function(data) safe_call({
 
   # ---------- PET ----------
   pet_fit <- tryCatch(
-    stats::lm(yi ~ sqrt(vi), weights = 1 / vi, data = dat),
+    stats::lm(yi ~ sqrt(vi), weights = 1 / vi, data = data),
     error = function(e) NULL
   )
 
   if (is.null(pet_fit)) {
-    out <- multiverse_NA
+    out <- universe_NA
     attr(out, "method") <- "PET (failed)"
     return(out)
   }
@@ -65,12 +65,12 @@ fit_pet.peese <- function(dat) safe_call({
 
   # ---------- PEESE ----------
   peese_fit <- tryCatch(
-    stats::lm(yi ~ vi, weights = 1 / vi, data = dat),
+    stats::lm(yi ~ vi, weights = 1 / vi, data = data),
     error = function(e) NULL
   )
 
   if (is.null(peese_fit)) {
-    out <- multiverse_NA
+    out <- universe_NA
     attr(out, "method") <- "PEESE (failed)"
     return(out)
   }
@@ -88,8 +88,8 @@ fit_pet.peese <- function(dat) safe_call({
 
 # ----------------- PET-PEESE (corrected) ------------------------------------
 
-pet_peese_corr <- function(dat) {
-  out <- fit_pet.peese(dat)
+pet_peese_corr <- function(data) {
+  out <- fit_pet.peese(data)
   if (!is.na(out$b) && out$b < 0) out$b <- 0
   attr(out, "method") <- paste(attr(out, "method"), "(corrected)")
   out
@@ -101,22 +101,22 @@ pet_peese_corr <- function(dat) {
 #'
 #' Computes the P-Uniform Star estimates for a dataset.
 #'
-#' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
+#' @param data A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
 #' @importFrom puniform puni_star
 # ----------------- p-uniform* ----------------------------------------------
 
-fit_puni_star <- function(dat) safe_call({
+fit_puni_star <- function(data) safe_call({
 
   pu <- tryCatch(
-    puniform::puni_star(yi = dat$yi,
-                        vi = dat$vi,
+    puniform::puni_star(yi = data$yi,
+                        vi = data$vi,
                         side = "right"),
     error = function(e) NULL
   )
 
   if (is.null(pu)) {
-    out <- multiverse_NA
+    out <- universe_NA
     attr(out, "method") <- "p-uniform* (failed)"
     return(out)
   }
@@ -137,15 +137,15 @@ fit_puni_star <- function(dat) safe_call({
 #'
 #' Performs Unweighted Least Squares (UWLS) estimation.
 #'
-#' @param dat A data frame containing `yi` (effect size) and `vi` (variance).
+#' @param data A data frame containing `yi` (effect size) and `vi` (variance).
 #' @return A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
 #' @importFrom stats lm coef confint
 # ----------------- UWLS -----------------------------------------------------
 
-fit_uwls <- function(dat) safe_call({
+fit_uwls <- function(data) safe_call({
 
-  d        <- dat$yi
-  sed      <- sqrt(dat$vi)
+  d        <- data$yi
+  sed      <- sqrt(data$vi)
   Precision <- 1 / sed
 
   reg <- stats::lm(d / sed ~ 0 + Precision)
@@ -162,10 +162,10 @@ fit_uwls <- function(dat) safe_call({
 
 # ----------------- WAAP -----------------------------------------------------
 
-fit_waap <- function(dat) safe_call({
+fit_waap <- function(data) safe_call({
 
-  d        <- dat$yi
-  sed      <- sqrt(dat$vi)
+  d        <- data$yi
+  sed      <- sqrt(data$vi)
   Precision <- 1 / sed
 
   # first UWLS step
@@ -174,7 +174,7 @@ fit_waap <- function(dat) safe_call({
 
   powered <- sed < abs(UWLS) / 2.8
   if (sum(powered) < 2) {
-    out <- multiverse_NA
+    out <- universe_NA
     attr(out, "method") <- "WAAP (failed - <2 powered)"
     return(out)
   }
@@ -194,18 +194,18 @@ fit_waap <- function(dat) safe_call({
 
 # ---------- Paule-Mandel -----------------------------------------------
 
-fit_pm <- function(dat) safe_call({
+fit_pm <- function(data) safe_call({
 
   mod <- tryCatch(
-    metafor::rma(yi = dat$yi,
-                 vi = dat$vi,
+    metafor::rma(yi = data$yi,
+                 vi = data$vi,
                  method = "PM",
                  test   = "z"),
     error = function(e) NULL
   )
 
   if (is.null(mod)) {
-    out <- multiverse_NA
+    out <- universe_NA
     attr(out, "method") <- "PM (failed)"
     return(out)
   }
@@ -223,18 +223,18 @@ fit_pm <- function(dat) safe_call({
 
 # ---------- Hartung-Knapp / Sidik-Jonkman --------------------------------
 
-fit_hk_sj <- function(dat) safe_call({
+fit_hk_sj <- function(data) safe_call({
 
   mod <- tryCatch(
-    meta::metagen(TE      = dat$yi,
-                  seTE    = sqrt(dat$vi),
+    meta::metagen(TE      = data$yi,
+                  seTE    = sqrt(data$vi),
                   method.random.ci = "HK",
                   method.tau       = "SJ"),
     error = function(e) NULL
   )
 
   if (is.null(mod)) {
-    out <- multiverse_NA
+    out <- universe_NA
     attr(out, "method") <- "HK/SJ (failed)"
     return(out)
   }
@@ -250,18 +250,42 @@ fit_hk_sj <- function(dat) safe_call({
 })
 
 
+# modeled-dependency helpers
+fit_three_level  <- function(data) safe_call({
+  mod <- metafor::rma.mv(data = data, yi = yi, V = vi,
+                         random = list(~1 | es_id, ~1 | study),
+                         method = "REML",
+                         sparse = TRUE)
+  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
+  attr(out, "method") <- "3-level"
+  out
+})
+
+fit_rve  <- function(data) safe_call({
+  mod <- metafor::rma.mv(data = data, yi = yi, V = vi,
+                         random = list(~1 | es_id, ~1 | study),
+                         method = "REML",
+                         sparse = TRUE)
+  metafor::robust(mod, cluster = data$study,
+                  clubSandwich = TRUE)
+  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
+  attr(out, "method") <- "rve"
+  out
+})
+
+
 # ---------- bayesmeta ----------------------------------------------------
 
-fit_bayesmeta <- function(dat) safe_call({
+fit_bayesmeta <- function(data) safe_call({
 
   bm <- tryCatch(
-    bayesmeta::bayesmeta(y = dat$yi,
-                         sigma = sqrt(dat$vi)),
+    bayesmeta::bayesmeta(y = data$yi,
+                         sigma = sqrt(data$vi)),
     error = function(e) NULL
   )
 
   if (is.null(bm)) {
-    out <- multiverse_NA
+    out <- universe_NA
     attr(out, "method") <- "bayesmeta (failed)"
     return(out)
   }
