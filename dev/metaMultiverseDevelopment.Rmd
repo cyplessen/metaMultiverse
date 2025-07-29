@@ -162,23 +162,16 @@ ggplot(plot_dat, aes(x = b, y = ma_method, colour = dependency, group = dependen
 
 ```{r}
 # Example usage:
-data_multiverse <- data.frame(
-  study = rep(paste0("S", 1:6), each = 2),
-  es_id = 1:12,
-  yi = rnorm(12, mean = 0.5),
-  vi = runif(12, min = 0.01, max = 0.1),
-  wf_1 = rep(c("A", "B"), times = 6),
-  wf_2 = rep(c("C", "D"), times = 6)
-)
+data_digDep
 
 decision_map <- c(wf_1="E"
                   )
 
 out <- create_principled_multiverse_specifications(
-  data          = data_multiverse,
+  data          = data_digDep,
   wf_vars       = c("wf_1"),
-  ma_methods    = c("fe","reml"),
-  dependencies  = c("aggregate"),
+  ma_methods    = "3-level",
+  dependencies  = "modeled",
   decision_map  = decision_map
 )
 

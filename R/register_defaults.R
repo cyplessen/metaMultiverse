@@ -5,7 +5,7 @@
   register_ma_method("waap",  fit_waap,  dependencies = c("select_max", "select_min", "aggregate"))
   register_ma_method("pet-peese", fit_pet.peese, dependencies = c("select_max", "select_min", "aggregate"))
   register_ma_method("pet-peese-corr", pet_peese_corr, dependencies = c("select_max", "select_min", "aggregate"))
-  register_ma_method("paule-mandel", fit_pm, dependencies = c("select_max", "select_min", "aggregate"))
+  register_ma_method("pm", fit_pm, dependencies = c("select_max", "select_min", "aggregate"))
   register_ma_method("hk-sj", fit_hk_sj, dependencies = c("select_max", "select_min", "aggregate"))
   #register_ma_method("robma", fit_robma, dependencies = c("select_max", "select_min", "aggregate"))
   register_ma_method("bayesmeta", fit_bayesmeta, dependencies = c("select_max", "select_min", "aggregate")
