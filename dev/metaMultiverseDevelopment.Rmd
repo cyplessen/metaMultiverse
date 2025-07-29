@@ -32,7 +32,7 @@ library(dplyr)
 library(glue)
 ```
 
-## Quick test run
+# Quick test run
 ```{r}
 devtools::load_all()
 
@@ -157,6 +157,28 @@ ggplot(plot_dat, aes(x = b, y = ma_method, colour = dependency, group = dependen
 
 
 # dev: principled ma
+
+```{r}
+
+set.seed(1)
+data_tiny <- metaMultiverse::data_digDep |>
+  dplyr::slice_sample(n = 10)
+
+decision_map <- c(wf_1="E", wf_2="N", wf_3="N")
+
+out <- create_principled_multiverse_specifications(
+  data          = data_tiny,
+  wf_vars       = c("wf_1","wf_2","wf_3"),
+  ma_methods    = c("fe","reml","rve"),
+  dependencies  = c("aggregate","modeled","select_max"),
+  decision_map  = decision_map
+)
+
+specs <- out$specifications
+# ▶ specs$cluster_id shows which "N partition" each spec belongs to
+
+```
+
 
 ```{r}
 # example sketch ----------------------------------------------------------
