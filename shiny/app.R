@@ -528,13 +528,13 @@ ui <- dashboardPage(
                         p("This application implements a principled approach to multiverse meta-analysis, allowing researchers to systematically explore how different analytical decisions affect their meta-analytic results."),
 
                         h4("The Multiverse Approach"),
-                        p("Rather than making a single set of analytical choices, multiverse analysis explores all reasonable combinations of decisions across different dimensions:"),
+                        p("Rather than making a single set of analytical choices, multiverse analysis explores all reasonable combinations of decisions across different dimensions (Voracek et al., 2021):"),
                         tags$ul(
                           tags$li(tags$strong("Which factors:"), " Decisions about which studies/effects to include (e.g., different populations, measures, conditions)"),
                           tags$li(tags$strong("How factors:"), " Decisions about analytical methods (e.g., meta-analytic estimators, dependency handling)")
                         ),
 
-                        h4("Decision Framework (Aczel et al., 2021)"),
+                        h4("Decision Framework (Del Giudice et al., 2021)"),
                         div(class = "decision-guide",
                             p(tags$strong("The framework categorizes analytical decisions into three types:")),
                             tags$ul(
@@ -554,8 +554,18 @@ ui <- dashboardPage(
                             )
                         ),
 
-                        p(tags$strong("Reference:"), " Aczel, B., et al. (2021). A traveler's guide to the multiverse: Promises, pitfalls, and a framework for the evaluation of analytic decisions. ",
-                          tags$em("Advances in Methods and Practices in Psychological Science"), ", 4(1), 2515245920966738.")
+                        p(tags$strong("Reference:"), " Del Giudice, M., & Gangestad, S. W. (2021). ",
+                          tags$a("A traveler's guide to the multiverse: Promises, pitfalls, and a framework for the evaluation of analytic decisions",
+                                 href = "https://doi.org/10.1177/2515245920954925",
+                                 target = "_blank",
+                                 style = "color: #ea580c; text-decoration: underline;"), ". ",
+                          tags$em("Advances in Methods and Practices in Psychological Science"), ", 4(1)."),
+                        p("Voracek, M., Kossmeier, M., & Tran, U. S. (2019). ",
+                          tags$a("Which data to meta-analyze, and how? A specification-curve and multiverse-analysis approach to meta-analysis",
+                                 href = "https://doi.org/10.1027/2151-2604/a000357",
+                                 target = "_blank",
+                                 style = "color: #ea580c; text-decoration: underline;"), ". ",
+                          tags$em("Zeitschrift für Psychologie"), ", 227(1), 64-82.")
                     )
                 )
               ),
@@ -1035,147 +1045,147 @@ server <- function(input, output, session) {
   # Dynamic UI for which factors configuration
 
   # Dynamic UI for column mapping and configuration (combined)
-output$wf_config <- renderUI({
-  req(values$data)
+  output$wf_config <- renderUI({
+    req(values$data)
 
-  # Get all non-required columns (potential which factors)
-  required_cols <- c("study", "es_id", "yi", "vi")
-  potential_wf_cols <- names(values$data)[!names(values$data) %in% required_cols]
+    # Get all non-required columns (potential which factors)
+    required_cols <- c("study", "es_id", "yi", "vi")
+    potential_wf_cols <- names(values$data)[!names(values$data) %in% required_cols]
 
-  if (length(potential_wf_cols) == 0) {
-    return(div(
-      class = "alert alert-warning",
-      h4("No potential which factors found"),
-      p("Your data only contains the required columns (study, es_id, yi, vi)."),
-      p("To use multiverse analysis, add columns representing different analytical choices.")
-    ))
-  }
+    if (length(potential_wf_cols) == 0) {
+      return(div(
+        class = "alert alert-warning",
+        h4("No potential which factors found"),
+        p("Your data only contains the required columns (study, es_id, yi, vi)."),
+        p("To use multiverse analysis, add columns representing different analytical choices.")
+      ))
+    }
 
-  # Create combined interface
-  div(
-    h4("Configure Which Factors"),
-    p("Select columns from your data to use as 'which factors' and set their decision types:"),
-
-    # Dynamic number of which factors
-    fluidRow(
-      column(6,
-        numericInput("n_wf_factors", "Number of which factors to use:",
-                    value = min(3, length(potential_wf_cols)),
-                    min = 0, max = length(potential_wf_cols), step = 1)
-      ),
-      column(6,
-        br(),
-        actionButton("update_wf_mapping", "Update Configuration", class = "btn-primary")
-      )
-    ),
-
-    hr(),
-
-    # Combined column mapping and decision UI
-    uiOutput("combined_wf_config")
-  )
-})
-
-# Generate combined configuration inputs
-output$combined_wf_config <- renderUI({
-  req(values$data, input$n_wf_factors)
-
-  if (input$n_wf_factors == 0) {
-    return(div(
-      class = "alert alert-info",
-      p("No which factors selected. Multiverse analysis will only vary across meta-analysis methods and dependency handling.")
-    ))
-  }
-
-  required_cols <- c("study", "es_id", "yi", "vi")
-  potential_cols <- names(values$data)[!names(values$data) %in% required_cols]
-
-  # Create combined inputs for each which factor
-  lapply(1:input$n_wf_factors, function(i) {
+    # Create combined interface
     div(
-      style = "border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;",
+      h4("Configure Which Factors"),
+      p("Select columns from your data to use as 'which factors' and set their decision types:"),
 
-      h5(paste("Which Factor", i)),
-
+      # Dynamic number of which factors
       fluidRow(
-        # Column selection
-        column(4,
-          selectInput(paste0("wf_", i, "_column"),
-                     "Select Column:",
-                     choices = c("None" = "", potential_cols),
-                     selected = if (i <= length(potential_cols)) potential_cols[i] else "")
+        column(6,
+               numericInput("n_wf_factors", "Number of which factors to use:",
+                            value = min(3, length(potential_wf_cols)),
+                            min = 0, max = length(potential_wf_cols), step = 1)
         ),
-
-        # Decision type
-        column(4,
-          conditionalPanel(
-            condition = paste0("input.wf_", i, "_column != ''"),
-            radioButtons(paste0("decision_wf_", i),
-                        "Decision Type:",
-                        choices = list(
-                          "Equivalent (E)" = "E",
-                          "Non-equivalent (N)" = "N",
-                          "Uncertain (U)" = "U",
-                          "Ignore" = "IGNORE"
-                        ),
-                        selected = "IGNORE",
-                        inline = TRUE)
-          )
-        ),
-
-        # Column preview
-        column(4,
-          conditionalPanel(
-            condition = paste0("input.wf_", i, "_column != ''"),
-            div(style = "margin-top: 10px;",
-              strong("Unique Values:"),
-              br(),
-              textOutput(paste0("wf_", i, "_preview"))
-            )
-          )
+        column(6,
+               br(),
+               actionButton("update_wf_mapping", "Update Configuration", class = "btn-primary")
         )
       ),
 
-      # Decision guide (shown when column is selected)
-      conditionalPanel(
-        condition = paste0("input.wf_", i, "_column != ''"),
-        div(class = "decision-guide", style = "font-size: 0.9em; margin-top: 10px;",
-            tags$strong("Decision Guide:"),
-            tags$ul(
-              tags$li(tags$strong("E (Equivalent):"), " Different ways of measuring the same construct"),
-              tags$li(tags$strong("N (Non-equivalent):"), " Fundamentally different approaches (creates separate multiverses)"),
-              tags$li(tags$strong("U (Uncertain):"), " Unclear equivalence (treated as E)"),
-              tags$li(tags$strong("Ignore:"), " Exclude from multiverse entirely")
-            )
-        )
-      )
+      hr(),
+
+      # Combined column mapping and decision UI
+      uiOutput("combined_wf_config")
     )
   })
-})
 
-# Generate column previews (same as before)
-observe({
-  req(values$data, input$n_wf_factors)
+  # Generate combined configuration inputs
+  output$combined_wf_config <- renderUI({
+    req(values$data, input$n_wf_factors)
 
-  for (i in 1:input$n_wf_factors) {
-    local({
-      ii <- i
-      output[[paste0("wf_", ii, "_preview")]] <- renderText({
-        col_name <- input[[paste0("wf_", ii, "_column")]]
-        if (!is.null(col_name) && col_name != "" && col_name %in% names(values$data)) {
-          unique_vals <- unique(values$data[[col_name]])
-          if (length(unique_vals) > 4) {
-            paste(c(head(unique_vals, 4), "..."), collapse = ", ")
-          } else {
-            paste(unique_vals, collapse = ", ")
-          }
-        } else {
-          ""
-        }
-      })
+    if (input$n_wf_factors == 0) {
+      return(div(
+        class = "alert alert-info",
+        p("No which factors selected. Multiverse analysis will only vary across meta-analysis methods and dependency handling.")
+      ))
+    }
+
+    required_cols <- c("study", "es_id", "yi", "vi")
+    potential_cols <- names(values$data)[!names(values$data) %in% required_cols]
+
+    # Create combined inputs for each which factor
+    lapply(1:input$n_wf_factors, function(i) {
+      div(
+        style = "border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;",
+
+        h5(paste("Which Factor", i)),
+
+        fluidRow(
+          # Column selection
+          column(4,
+                 selectInput(paste0("wf_", i, "_column"),
+                             "Select Column:",
+                             choices = c("None" = "", potential_cols),
+                             selected = if (i <= length(potential_cols)) potential_cols[i] else "")
+          ),
+
+          # Decision type
+          column(4,
+                 conditionalPanel(
+                   condition = paste0("input.wf_", i, "_column != ''"),
+                   radioButtons(paste0("decision_wf_", i),
+                                "Decision Type:",
+                                choices = list(
+                                  "Equivalent (E)" = "E",
+                                  "Non-equivalent (N)" = "N",
+                                  "Uncertain (U)" = "U",
+                                  "Ignore" = "IGNORE"
+                                ),
+                                selected = "IGNORE",
+                                inline = TRUE)
+                 )
+          ),
+
+          # Column preview
+          column(4,
+                 conditionalPanel(
+                   condition = paste0("input.wf_", i, "_column != ''"),
+                   div(style = "margin-top: 10px;",
+                       strong("Unique Values:"),
+                       br(),
+                       textOutput(paste0("wf_", i, "_preview"))
+                   )
+                 )
+          )
+        ),
+
+        # Decision guide (shown when column is selected)
+        conditionalPanel(
+          condition = paste0("input.wf_", i, "_column != ''"),
+          div(class = "decision-guide", style = "font-size: 0.9em; margin-top: 10px;",
+              tags$strong("Decision Guide:"),
+              tags$ul(
+                tags$li(tags$strong("E (Equivalent):"), " Different ways of measuring the same construct"),
+                tags$li(tags$strong("N (Non-equivalent):"), " Fundamentally different approaches (creates separate multiverses)"),
+                tags$li(tags$strong("U (Uncertain):"), " Unclear equivalence (treated as E)"),
+                tags$li(tags$strong("Ignore:"), " Exclude from multiverse entirely")
+              )
+          )
+        )
+      )
     })
-  }
-})
+  })
+
+  # Generate column previews (same as before)
+  observe({
+    req(values$data, input$n_wf_factors)
+
+    for (i in 1:input$n_wf_factors) {
+      local({
+        ii <- i
+        output[[paste0("wf_", ii, "_preview")]] <- renderText({
+          col_name <- input[[paste0("wf_", ii, "_column")]]
+          if (!is.null(col_name) && col_name != "" && col_name %in% names(values$data)) {
+            unique_vals <- unique(values$data[[col_name]])
+            if (length(unique_vals) > 4) {
+              paste(c(head(unique_vals, 4), "..."), collapse = ", ")
+            } else {
+              paste(unique_vals, collapse = ", ")
+            }
+          } else {
+            ""
+          }
+        })
+      })
+    }
+  })
 
 
   # Generate column mapping inputs
