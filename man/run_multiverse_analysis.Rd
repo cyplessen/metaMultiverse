@@ -4,10 +4,10 @@
 \alias{run_multiverse_analysis}
 \title{Run Multiverse Analysis}
 \usage{
-run_multiverse_analysis(data_multiverse, specifications)
+run_multiverse_analysis(data, specifications, verbose = F)
 }
 \arguments{
-\item{data_multiverse}{Data frame. Contains the dataset with all potential studies and factors
+\item{data}{Data frame. Contains the dataset with all potential studies and factors
 for the multiverse analysis.}
 
 \item{specifications}{Data frame. Specifications generated using
@@ -40,7 +40,7 @@ Steps:
 }
 \examples{
 # Example usage:
-data_multiverse <- data.frame(
+data <- data.frame(
  study = rep(paste0("S", 1:6), each = 2),
  es_id = 1:12,
  yi = rnorm(12, mean = 0.5),
@@ -54,7 +54,7 @@ specifications <- data.frame(
 )
 
 # Run function
-run_multiverse_analysis(data_multiverse, specifications)
+run_multiverse_analysis(data, specifications)
 
 }
 \seealso{

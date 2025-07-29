@@ -1,9 +1,9 @@
-#' Build a multiverse result (internal helper)
+#' Build a universe result (internal helper)
 #'
 #' @param b,ci.lb,ci.ub,pval Numeric scalars.
-#' @return An object of class \code{c("multiverse_result","list")}.
+#' @return An object of class \code{c("universe_result","list")}.
 #' @keywords internal
-new_multiverse_result <- function(b, ci.lb, ci.ub, pval) {
+new_universe_result <- function(b, ci.lb, ci.ub, pval) {
   structure(
     list(
       b     = as.numeric(b),
@@ -11,14 +11,14 @@ new_multiverse_result <- function(b, ci.lb, ci.ub, pval) {
       ci.ub = as.numeric(ci.ub),
       pval  = as.numeric(pval)
     ),
-    class = c("multiverse_result", "list")
+    class = c("universe_result", "list")
   )
 }
 
 # Friendly console output
-#' @method print multiverse_result
+#' @method print universe_result
 #' @export
-print.multiverse_result <- function(x, ...) {
+print.universe_result <- function(x, ...) {
   lab <- attr(x, "method", exact = TRUE)
   if (!is.null(lab)) cat("[", lab, "] ", sep = "")
   cat(sprintf(
@@ -30,11 +30,11 @@ print.multiverse_result <- function(x, ...) {
 }
 
 # reusable all-NA sentinel
-multiverse_NA <- new_multiverse_result(NA_real_, NA_real_, NA_real_, NA_real_)
+universe_NA <- new_universe_result(NA_real_, NA_real_, NA_real_, NA_real_)
 
-#' @method summary multiverse_result
+#' @method summary universe_result
 #' @export
-summary.multiverse_result <- function(object, ...) {
+summary.universe_result <- function(object, ...) {
   tibble::tibble(
     b      = object$b,
     ci.lb  = object$ci.lb,

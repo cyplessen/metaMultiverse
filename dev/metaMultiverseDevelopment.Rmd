@@ -87,21 +87,21 @@ ggplot(plot_dat,
            y      = y_row,
            colour = dependency,
            group  = dependency)) +
-
+  
   geom_vline(xintercept = 0, linetype = "dashed", linewidth = .3) +
-
+  
   geom_errorbarh(aes(xmin = ci.lb, xmax = ci.ub),
                  height = 0.25, linewidth = .7,
                  position = pd) +
-
+  
   geom_point(size = 3, shape = 18, position = pd) +
-
+  
   scale_colour_viridis_d(begin = .05, end = .85, option = "C") +
-
+  
   labs(x = "Effect size (g)",
        y = NULL,
        colour = "Dependency") +
-
+  
   theme_minimal(base_size = 13) +
   theme(
     panel.grid.major.y = element_blank(),
@@ -114,8 +114,8 @@ ggplot(plot_dat,
 ```{r}
 # 1) Focus on estimator comparison (facets = Which)
 ggplot(plot_dat, aes(x = b, y = ma_method, colour = dependency)) +
-    facet_grid(rows = vars(which_label), scales = "free_y", space = "free_y") +
- geom_vline(xintercept = 0, linetype = "dashed", linewidth = .3) +
+  facet_grid(rows = vars(which_label), scales = "free_y", space = "free_y") +
+  geom_vline(xintercept = 0, linetype = "dashed", linewidth = .3) +
   geom_errorbarh(aes(xmin = ci.lb, xmax = ci.ub),
                  height = .25, position = pd) +
   geom_point(size = 3, shape = 18, position = pd) +
@@ -128,8 +128,8 @@ ggplot(plot_dat, aes(x = b, y = ma_method, colour = dependency)) +
 
 # 2) Focus on Which-decision comparison (facets = estimator)
 ggplot(plot_dat, aes(x = b, y = which_label, colour = dependency)) +
-    facet_grid(rows = vars(ma_method), scales = "free_y", space = "free_y") +
- geom_vline(xintercept = 0, linetype = "dashed", linewidth = .3) +
+  facet_grid(rows = vars(ma_method), scales = "free_y", space = "free_y") +
+  geom_vline(xintercept = 0, linetype = "dashed", linewidth = .3) +
   geom_errorbarh(aes(xmin = ci.lb, xmax = ci.ub),
                  height = .25, position = pd) +
   geom_point(size = 3, shape = 18, position = pd) +
@@ -158,26 +158,70 @@ ggplot(plot_dat, aes(x = b, y = ma_method, colour = dependency, group = dependen
 
 # dev: principled ma
 
+# example
+
 ```{r}
+# Example usage:
+data_multiverse <- data.frame(
+  study = rep(paste0("S", 1:6), each = 2),
+  es_id = 1:12,
+  yi = rnorm(12, mean = 0.5),
+  vi = runif(12, min = 0.01, max = 0.1),
+  wf_1 = rep(c("A", "B"), times = 6),
+  wf_2 = rep(c("C", "D"), times = 6)
+)
 
-set.seed(1)
-data_tiny <- metaMultiverse::data_digDep |>
-  dplyr::slice_sample(n = 10)
-
-decision_map <- c(wf_1="E", wf_2="N", wf_3="N")
+decision_map <- c(wf_1="E"
+                  )
 
 out <- create_principled_multiverse_specifications(
-  data          = data_tiny,
-  wf_vars       = c("wf_1","wf_2","wf_3"),
-  ma_methods    = c("fe","reml","rve"),
-  dependencies  = c("aggregate","modeled","select_max"),
+  data          = data_multiverse,
+  wf_vars       = c("wf_1"),
+  ma_methods    = c("fe","reml"),
+  dependencies  = c("aggregate"),
   decision_map  = decision_map
 )
 
 specs <- out$specifications
 # ▶ specs$cluster_id shows which "N partition" each spec belongs to
 
+# Set globally for your session
+options(metaMultiverse.k_smallest_ma = 2)
+
+res <- run_multiverse_analysis(data_multiverse, specs, verbose = T) 
+
 ```
+
+
+```{r}
+set.seed(1)
+data_tiny <- metaMultiverse::data_digDep |>
+  dplyr::slice_sample(n = 100)
+
+decision_map <- c(wf_1="E", wf_2="N", wf_3="U")
+
+out <- create_principled_multiverse_specifications(
+  data          = data_tiny,
+  wf_vars       = c("wf_1","wf_2","wf_3"),
+  ma_methods    = c("fe","reml"),
+  dependencies  = c("aggregate"),
+  decision_map  = decision_map
+)
+
+specs <- out$specifications
+# ▶ specs$cluster_id shows which "N partition" each spec belongs to
+
+# Set globally for your session
+options(metaMultiverse.k_smallest_ma = 2)
+
+res <- run_multiverse_analysis(data_tiny, specs, verbose = T) 
+
+res$multiverse_warnings
+res$results %>% 
+  group_by(multiverse_id) %>%
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+```
+
 
 
 ```{r}
@@ -221,8 +265,8 @@ library(purrr)
 results <- specs2 %>%
   split(.$set_id) %>%
   map_dfr(~ run_multiverse_analysis(
-             data_multiverse = data_digDep,
-             specifications  = .x))
+    data_multiverse = data_digDep,
+    specifications  = .x))
 ```
 
 
