@@ -36,29 +36,6 @@ library(glue)
 ```{r}
 devtools::load_all()
 
-data("data_digDep", package = "metaMultiverse")
-
-ensemble <- list_ma_methods()
-# should show:     "bayesmeta"      "pet-peese-corr" "pet-peese"     
-# "uwls"           "waap"           "p-uniform"     
-# "3-level"        "fe"             "hk-sj"         
-# "paule-mandel"   "rve"            "reml"     
-
-specs <- create_multiverse_specifications(
-  data = data_tiny,              # use a small test frame
-  wf_vars         = c("wf_1"),
-  ma_methods      = ensemble,
-  dependencies    = c("select_min","aggregate", "modeled", "select_max")
-)$specifications
-
-res <- run_multiverse_analysis(data_digDep, specs)
-res
-```
-
-```{r}
-# Example usage:
-data_digDep
-
 decision_map <- c(wf_1="U", wf_7 = "N")
 
 ensemble <- list_ma_methods() 
@@ -83,6 +60,31 @@ res <- run_multiverse_analysis(data_tiny, specs, verbose = T)
 
 
 plotly_VoE(res$results, cutoff = 5)
+```
+
+
+```{r}
+# Generate full report
+report <- generate_multiverse_report(
+  results = res,
+  specifications = specs,
+  original_data = data_tiny,
+  output_format = "markdown",  # or "html", "text"
+  include_plots = TRUE,
+  plot_output_dir = "plots/"   # saves plots as PNG files
+)
+
+# Access components
+cat(report$report)                    # Print formatted report
+report$plots$overall_distribution     # View specific plot
+report$summary_stats                  # Raw statistics
+report$wf_analysis                    # Which factors analysis
+
+# Create interactive plots
+interactive_plots <- create_interactive_multiverse_plots(
+  results = res,
+  wf_columns = c("wf_population", "wf_measure")
+)
 ```
 
 
