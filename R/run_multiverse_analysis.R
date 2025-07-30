@@ -6,6 +6,8 @@
 #'   for the multiverse analysis.
 #' @param specifications Data frame. Specifications generated using
 #'   \code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.
+#' @param verbose Logical. If TRUE, prints progress messages and warnings summary.
+#' @param progress Logical. If TRUE, displays a progress bar (default: TRUE).
 #'
 #' @return A data frame containing the aggregated results of the multiverse analysis, including:
 #'   - Effect size estimate (\code{b}),
@@ -52,28 +54,92 @@
 #' run_multiverse_analysis(data, specifications)
 #'
 #' @export
-run_multiverse_analysis <- function(data, specifications, verbose = F) {
+run_multiverse_analysis <- function(data, specifications, verbose = FALSE, progress = TRUE) {
 
   multiverse_warnings <- character(0)
+  n_specs <- nrow(specifications)
 
-  # Step 1: Run multiverse analysis for each specification
-  results <- lapply(seq_len(nrow(specifications)), function(i) {
-    # })
-    tryCatch({
-      withCallingHandlers({
-        general_multiverse(i, data, specifications)
-      },
-      warning = function(w) {
-        multiverse_warnings <<- c(multiverse_warnings, w$message)
-        invokeRestart("muffleWarning")
+  # Initialize progress bar if requested
+  if (progress) {
+    # Check if we're in a Shiny environment
+    if (exists(".shiny_session", envir = .GlobalEnv) ||
+        !is.null(getOption("shiny.in.session")) ||
+        any(grepl("shiny", search()))) {
+
+      # In Shiny: use withProgress and incProgress
+      shiny::withProgress(message = 'Running multiverse analysis...', value = 0, {
+
+        # Step 1: Run multiverse analysis for each specification
+        results <- lapply(seq_len(n_specs), function(i) {
+          # Update progress
+          shiny::incProgress(1/n_specs, detail = paste("Processing specification", i, "of", n_specs))
+
+          tryCatch({
+            withCallingHandlers({
+              general_multiverse(i, data, specifications)
+            },
+            warning = function(w) {
+              multiverse_warnings <<- c(multiverse_warnings, w$message)
+              invokeRestart("muffleWarning")
+            })
+          },
+          error = function(e) {
+            multiverse_warnings <<- c(multiverse_warnings,
+                                      paste0("Specification ", i, " ERROR: ", e$message))
+            NULL
+          })
+        })
+
       })
-    },
-    error = function(e) {
-      multiverse_warnings <<- c(multiverse_warnings,
-                                paste0("Specification ", i, " ERROR: ", e$message))
-      NULL
+
+    } else {
+      # Not in Shiny: use txtProgressBar
+      pb <- txtProgressBar(min = 0, max = n_specs, style = 3, width = 50, char = "=")
+
+      # Step 1: Run multiverse analysis for each specification
+      results <- lapply(seq_len(n_specs), function(i) {
+        # Update progress bar
+        setTxtProgressBar(pb, i)
+
+        tryCatch({
+          withCallingHandlers({
+            general_multiverse(i, data, specifications)
+          },
+          warning = function(w) {
+            multiverse_warnings <<- c(multiverse_warnings, w$message)
+            invokeRestart("muffleWarning")
+          })
+        },
+        error = function(e) {
+          multiverse_warnings <<- c(multiverse_warnings,
+                                    paste0("Specification ", i, " ERROR: ", e$message))
+          NULL
+        })
+      })
+
+      close(pb)
+      cat("\n") # New line after progress bar
+    }
+
+  } else {
+    # No progress bar
+    results <- lapply(seq_len(n_specs), function(i) {
+      tryCatch({
+        withCallingHandlers({
+          general_multiverse(i, data, specifications)
+        },
+        warning = function(w) {
+          multiverse_warnings <<- c(multiverse_warnings, w$message)
+          invokeRestart("muffleWarning")
+        })
+      },
+      error = function(e) {
+        multiverse_warnings <<- c(multiverse_warnings,
+                                  paste0("Specification ", i, " ERROR: ", e$message))
+        NULL
+      })
     })
-  })
+  }
 
   # Remove NULL results (from skipped specifications)
   results <- results[!sapply(results, is.null)]
@@ -97,7 +163,7 @@ run_multiverse_analysis <- function(data, specifications, verbose = F) {
   final_results$full_set <- as.numeric(final_results$set == paste(1:nrow(data), collapse = ","))
 
   # Step 4: Remove missing values (except pval due to Bayesian methods)
-  final_results <- final_results[ complete.cases(final_results[ , !(names(final_results) %in% "pval") ]), ]
+  final_results <- final_results[complete.cases(final_results[, !(names(final_results) %in% "pval")]), ]
 
   # Step 5: Remove duplicates, keeping first occurrence (more specific which factors)
   final_results <- final_results[!duplicated(final_results[, c("b", "set", "ma_method")]), ]
@@ -115,6 +181,4 @@ run_multiverse_analysis <- function(data, specifications, verbose = F) {
 
   class(result) <- "multiverse_result"
   return(result)
-  # Return final results
- # return(final_results)
 }
