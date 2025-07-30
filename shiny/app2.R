@@ -961,30 +961,40 @@ server <- function(input, output, session) {
   outputOptions(output, "analysis_running", suspendWhenHidden = FALSE)
 
   # Run analysis
+
+
+  # Run analysis
   observeEvent(input$run_analysis, {
     req(values$data, values$specifications, input$k_smallest)
 
     values$analysis_running <- TRUE
     options(metaMultiverse.k_smallest_ma = input$k_smallest)
 
-    showNotification("Running multiverse analysis...", type = "message", duration = NULL, id = "analysis_msg")
+    withProgress(message = 'Running Multiverse Analysis', value = 0, {
 
-    tryCatch({
-      values$results <- run_multiverse_analysis(
-        data = values$data,
-        specifications = values$specifications,
-        verbose = TRUE
-      )
+      incProgress(0.1, detail = "Starting analysis...")
+      Sys.sleep(0.5)
 
-      values$analysis_running <- FALSE
-      removeNotification("analysis_msg")
-      showNotification("Analysis completed!", type = "message", duration = 3)
+      tryCatch({
+        values$results <- run_multiverse_analysis(
+          data = values$data,
+          specifications = values$specifications,
+          verbose = TRUE
+        )
 
-    }, error = function(e) {
-      values$analysis_running <- FALSE
-      removeNotification("analysis_msg")
-      showNotification(paste("Error running analysis:", e$message), type = "error", duration = 5)
+        incProgress(0.7, detail = "Analysis complete!")
+        values$analysis_running <- FALSE
+
+      }, error = function(e) {
+        values$analysis_running <- FALSE
+        showNotification(paste("Error running analysis:", e$message), type = "error", duration = 5)
+      })
+
+      incProgress(0.2, detail = "Done!")
+
     })
+
+    showNotification("Analysis completed!", type = "message", duration = 3)
   })
 
   # Analysis complete status
