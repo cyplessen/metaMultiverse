@@ -6,14 +6,17 @@
 #'
 #' @param data A data frame containing the dataset to validate.
 #'   It must include columns for study metadata, effect size, and variances.
-#' @return Logical. Returns `TRUE` if all checks pass; otherwise, an error or warning is thrown.
+#' @return Logical. Returns TRUE if all checks pass; otherwise, an error or warning is thrown.
 #' @details The function performs the following checks:
 #' \itemize{
-#'   \item Ensures all required columns (`study`, `es_id`, `yi`, `vi`, and `wf_*` columns) are present.
+#'   \item Ensures all required columns (study, es_id, yi, vi, and wf_* columns) are present.
 #'   \item Checks that columns have the correct data types.
-#'   \item Validates that `es_id` values are unique.
+#'   \item Validates that es_id values are unique.
 #'   \item Warns if any required column contains missing values.
-#'   \item Verifies that all `wf_*` columns are character variables.
+#'   \item Verifies that all wf_* columns are character variables.
+#'   \item Checks for reasonable effect size and variance values.
+#'   \item Validates that variances are positive.
+#'   \item Warns about potential outliers in effect sizes.
 #' }
 #' @examples
 #' # Example dataset
@@ -36,7 +39,7 @@ check_data_multiverse <- function(data) {
   )
 
   # Dynamically detect wf columns (e.g., wf_1, wf_2, ...)
-  wf_columns <- grep("^wf_", colnames(data), value = TRUE)
+  wf_columns <- grep("^wf", colnames(data), value = TRUE)
 
   # Combine required and dynamically detected wf columns
   all_required_columns <- c(required_columns, wf_columns)
@@ -55,25 +58,22 @@ check_data_multiverse <- function(data) {
     vi = "numeric"
   )
 
-  type_mismatches <- purrr::map_lgl(names(expected_types), function(col) {
-    if (!inherits(data[[col]], expected_types[[col]])) {
-      message(sprintf("Column '%s' has incorrect type. Expected: %s", col, expected_types[[col]]))
-      return(TRUE)
-    }
-    FALSE
-  })
+  type_errors <- c()
+  for (col in names(expected_types)) {
+    if (col %in% names(data)) {
+      actual_type <- class(data[[col]])[1]
+      expected_type <- expected_types[[col]]
 
-  if (any(type_mismatches)) {
-    stop("One or more columns have incorrect data types. See messages above.")
+      if (expected_type == "character" && !is.character(data[[col]])) {
+        type_errors <- c(type_errors, sprintf("Column '%s' is %s but should be character", col, actual_type))
+      } else if (expected_type == "numeric" && !is.numeric(data[[col]])) {
+        type_errors <- c(type_errors, sprintf("Column '%s' is %s but should be numeric", col, actual_type))
+      }
+    }
   }
 
-  # Check for missing values
-  missing_values <- colSums(is.na(data[all_required_columns]))
-  if (any(missing_values > 0)) {
-    warning("Some required columns contain missing values:\n",
-            paste(names(missing_values[missing_values > 0]),
-                  missing_values[missing_values > 0],
-                  sep = ": ", collapse = "\n"))
+  if (length(type_errors) > 0) {
+    stop(paste("Data type errors found:\n", paste(type_errors, collapse = "\n")))
   }
 
   # Check unique es_id
@@ -82,19 +82,78 @@ check_data_multiverse <- function(data) {
   }
 
   # Dynamic validation for wf variables (e.g., categorical levels)
-  wf_checks <- purrr::map(wf_columns, function(wf_col) {
+  wf_errors <- c()
+  for (wf_col in wf_columns) {
     if (!is.character(data[[wf_col]])) {
-      message(sprintf("Column '%s' should be a character variable.", wf_col))
-      return(FALSE)
+      actual_type <- class(data[[wf_col]])[1]
+      wf_errors <- c(wf_errors, sprintf("Column '%s' is %s but should be character", wf_col, actual_type))
     }
-    TRUE
-  })
+  }
 
-  if (!all(unlist(wf_checks))) {
-    stop("One or more 'wf_' columns have incorrect data types.")
+  if (length(wf_errors) > 0) {
+    stop(paste("Which factor column errors:\n", paste(wf_errors, collapse = "\n")))
+  }
+
+  # Additional validation checks
+
+  # Check for positive variances
+  if (any(data$vi <= 0, na.rm = TRUE)) {
+    negative_vi_count <- sum(data$vi <= 0, na.rm = TRUE)
+    stop(paste("Found", negative_vi_count, "non-positive variance values. All variances must be positive."))
+  }
+
+  # Check for extremely large effect sizes (potential data entry errors)
+  extreme_yi <- abs(data$yi) > 10
+  if (any(extreme_yi, na.rm = TRUE)) {
+    extreme_count <- sum(extreme_yi, na.rm = TRUE)
+    warning(paste("Found", extreme_count, "effect sizes with absolute value > 10. Please verify these are correct."))
+  }
+
+  # Check for extremely large variances (potential data entry errors)
+  extreme_vi <- data$vi > 100
+  if (any(extreme_vi, na.rm = TRUE)) {
+    extreme_var_count <- sum(extreme_vi, na.rm = TRUE)
+    warning(paste("Found", extreme_var_count, "variances > 100. Please verify these are correct."))
+  }
+
+  # Check for minimum number of studies
+  n_studies <- length(unique(data$study))
+  if (n_studies < 3) {
+    warning(paste("Only", n_studies, "unique studies found. Meta-analysis typically requires at least 3 studies."))
+  }
+
+  # Check for studies with only one effect size each
+  effects_per_study <- table(data$study)
+  single_effect_studies <- sum(effects_per_study == 1)
+  if (single_effect_studies == length(effects_per_study)) {
+    message("All studies contribute exactly one effect size. Dependency handling may not be necessary.")
+  } else if (single_effect_studies > 0) {
+    message(paste(single_effect_students, "studies contribute only one effect size,",
+                  length(effects_per_study) - single_effect_studies, "studies contribute multiple effect sizes."))
+  }
+
+  # Check for missing values in required columns
+  missing_values <- colSums(is.na(data[all_required_columns]))
+  if (any(missing_values > 0)) {
+    warning("Some required columns contain missing values:\n",
+            paste(names(missing_values[missing_values > 0]),
+                  missing_values[missing_values > 0],
+                  sep = ": ", collapse = "\n"))
+  }
+
+  # Check for consistency between yi and vi (rough sanity check)
+  if ("sei" %in% names(data)) {
+    # If standard error is available, check consistency with variance
+    sei_from_vi <- sqrt(data$vi)
+    sei_diff <- abs(data$sei - sei_from_vi)
+    large_diff <- sei_diff > 0.01 & !is.na(sei_diff)
+    if (any(large_diff, na.rm = TRUE)) {
+      warning(paste("Found", sum(large_diff, na.rm = TRUE),
+                    "cases where sei and sqrt(vi) differ substantially. Please verify data consistency."))
+    }
   }
 
   # Success message if all checks pass
-  message("Data check passed. Dataset is valid.")
+  message("Data validation passed. Dataset is ready for multiverse analysis.")
   return(TRUE)
 }
