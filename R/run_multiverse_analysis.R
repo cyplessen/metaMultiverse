@@ -120,48 +120,33 @@
 #'
 #' @export
 run_multiverse_analysis <- function(data, specifications, verbose = FALSE, progress = TRUE) {
-
   # Input validation
-  if (!inherits(data, "data.frame")) {
-    stop("'data' must be a data frame")
-  }
-  if (!inherits(specifications, "data.frame")) {
-    stop("'specifications' must be a data frame")
-  }
-  if (nrow(specifications) == 0) {
-    stop("'specifications' cannot be empty")
-  }
+  if (!inherits(data, "data.frame"))   stop("'data' must be a data frame")
+  if (!inherits(specifications, "data.frame")) stop("'specifications' must be a data frame")
+  if (nrow(specifications) == 0)       stop("'specifications' cannot be empty")
 
-  # Check for data validation
+  # Unvalidated-data warning
   if (is.null(attr(data, "multiverse_validated"))) {
     warning("Data appears unvalidated. Consider running check_data_multiverse() first.")
   }
 
-  # Initialize tracking variables
   multiverse_warnings <- character(0)
   n_specs <- nrow(specifications)
 
   if (verbose) {
     cat("🚀 Starting multiverse analysis...\n")
-    cat("   📊 Dataset:", nrow(data), "effect sizes from",
-        length(unique(data$study)), "studies\n")
-    cat("   🔬 Specifications:", n_specs, "unique analyses to run\n")
-    cat("   🎯 Multiverse groups:", length(unique(specifications$multiverse_id)), "\n\n")
   }
-
-  # Initialize progress bar
   if (progress) {
     pb <- txtProgressBar(min = 0, max = n_specs, style = 3, width = 60, char = "█")
   }
 
-  # Main analysis loop
   results <- lapply(seq_len(n_specs), function(i) {
-    # Update progress bar
-    if (progress) {
-      setTxtProgressBar(pb, i)
-    }
+    if (progress) setTxtProgressBar(pb, i)
 
-    # Run individual specification with error handling
+    # Grab this spec's info for context in warnings/errors
+    spec_i   <- specifications[i, , drop = FALSE]
+    spec_info <- paste0("[dep=", spec_i$dependency, ", method=", spec_i$ma_method, "]")
+
     tryCatch({
       withCallingHandlers({
         general_multiverse(i, data, specifications)
@@ -169,7 +154,7 @@ run_multiverse_analysis <- function(data, specifications, verbose = FALSE, progr
       warning = function(w) {
         multiverse_warnings <<- c(
           multiverse_warnings,
-          paste0("Spec ", i, ": ", w$message)
+          paste0("Spec ", i, " ", spec_info, ": warning: ", w$message)
         )
         invokeRestart("muffleWarning")
       })
@@ -177,90 +162,62 @@ run_multiverse_analysis <- function(data, specifications, verbose = FALSE, progr
     error = function(e) {
       multiverse_warnings <<- c(
         multiverse_warnings,
-        paste0("Spec ", i, " FAILED: ", e$message)
+        paste0("Spec ", i, " ", spec_info, ": FAILED: ", e$message)
       )
       if (verbose) {
-        cat("\n⚠️  Specification", i, "failed:", e$message, "\n")
+        cat(sprintf("\n⚠️  Specification %d %s failed: %s\n",
+                    i, spec_info, e$message))
       }
       NULL
     })
   })
 
-  # Clean up progress bar
-  if (progress) {
-    close(pb)
-    if (verbose) cat("\n")
-  }
+  if (progress) close(pb)
 
-  # Process results
-  results <- results[!sapply(results, is.null)]
-
-  if (length(results) == 0) {
-    warning("No specifications completed successfully. Check your data and specifications.")
-    result <- structure(
+  # Keep only the successful runs
+  successes <- results[!sapply(results, is.null)]
+  if (length(successes) == 0) {
+    warning(sprintf("All %d specifications failed. Check your data and specifications.", n_specs))
+    return(structure(
       list(
-        results = NULL,
+        results            = NULL,
         multiverse_warnings = multiverse_warnings,
-        n_warnings = length(multiverse_warnings),
-        n_attempted = n_specs,
-        n_successful = 0
+        n_warnings         = length(multiverse_warnings),
+        n_attempted        = n_specs,
+        n_successful       = 0
       ),
       class = "multiverse_result"
-    )
-    return(result)
+    ))
   }
 
-  # Combine all successful results
-  if (verbose) cat("📋 Combining results from", length(results), "successful analyses...\n")
+  # Combine, add full_set, clean, dedupe...
+  final_df <- do.call(rbind, successes)
+  full_set_val <- paste(seq_len(nrow(data)), collapse = ",")
+  final_df$full_set <- as.numeric(final_df$set == full_set_val)
 
-  final_results <- do.call(rbind, results)
-
-  # Add derived variables
-  final_results$full_set <- as.numeric(
-    final_results$set == paste(seq_len(nrow(data)), collapse = ",")
-  )
-
-  # Data cleaning
-  # Remove rows with missing core results (but allow missing p-values for Bayesian methods)
   core_vars <- c("b", "ci.lb", "ci.ub", "k", "set")
-  n_before_cleaning <- nrow(final_results)
-  final_results <- final_results[complete.cases(final_results[, core_vars]), ]
-  n_after_cleaning <- nrow(final_results)
+  final_df <- final_df[complete.cases(final_df[, core_vars]), ]
 
-  if (n_before_cleaning > n_after_cleaning && verbose) {
-    cat("🧹 Removed", n_before_cleaning - n_after_cleaning, "rows with missing core results\n")
-  }
+  dup_key <- c("b", "set", "ma_method", "dependency")
+  final_df <- final_df[!duplicated(final_df[, dup_key]), ]
 
-  # Remove duplicates (same estimate, study set, and method)
-  duplicate_key <- c("b", "set", "ma_method", "dependency")
-  n_before_dedup <- nrow(final_results)
-  final_results <- final_results[!duplicated(final_results[, duplicate_key]), ]
-  n_after_dedup <- nrow(final_results)
-
-  if (n_before_dedup > n_after_dedup && verbose) {
-    cat("🔄 Removed", n_before_dedup - n_after_dedup, "duplicate analyses\n")
-  }
-
-  # Create result object
   result <- structure(
     list(
-      results = final_results,
+      results            = final_df,
       multiverse_warnings = multiverse_warnings,
-      n_warnings = length(multiverse_warnings),
-      n_attempted = n_specs,
-      n_successful = length(results),
-      n_final = nrow(final_results)
+      n_warnings         = length(multiverse_warnings),
+      n_attempted        = n_specs,
+      n_successful       = length(successes),
+      n_final            = nrow(final_df)
     ),
     class = "multiverse_result"
   )
 
-  # Summary output
   if (verbose) {
     cat("\n✅ Multiverse analysis completed!\n")
-    cat("   📈 Results:", nrow(final_results), "unique meta-analyses\n")
+    cat("   📈 Results:", nrow(final_df), "unique meta-analyses\n")
     cat("   ⚠️  Warnings:", length(multiverse_warnings), "\n")
-    cat("   📊 Success rate:", round(100 * length(results) / n_specs, 1), "%\n")
-
+    cat("   📊 Success rate:", round(100 * length(successes) / n_specs, 1), "%\n")
     if (length(multiverse_warnings) > 0) {
       cat("\n💡 Access warnings with: result$multiverse_warnings\n")
     }

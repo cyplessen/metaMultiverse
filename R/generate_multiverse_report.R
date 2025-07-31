@@ -31,7 +31,7 @@ generate_multiverse_report <- function(results, specifications, original_data,
   }
 
   # Check required columns exist
-  required_cols <- c("b", "ci.lb", "ci.ub", "pval")
+  required_cols <- c("b", "ci.lb", "ci.ub")
   missing_cols <- setdiff(required_cols, names(results_df))
   if (length(missing_cols) > 0) {
     stop(paste("Missing required columns in results:", paste(missing_cols, collapse = ", ")))

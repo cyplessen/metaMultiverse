@@ -36,15 +36,17 @@ library(glue)
 ```{r}
 devtools::load_all()
 
-data_validated <- check_data_multiverse(data_tiny)
+data_validated <- check_data_multiverse(data_digDep)
 
 
 decision_map <- c(wf_1="U", wf_7 = "N")
 
+ensamble <- list_ma_methods()
+
 out <- create_principled_multiverse_specifications(
   data          = data_validated,
   wf_vars       = c("wf_1", "wf_7"),
-  ma_methods    = ensemble,
+  ma_methods    = ensamble,
   dependencies  = c("aggregate", "modeled"),
   decision_map  = decision_map
 )
@@ -53,10 +55,18 @@ specs <- out$specifications
 
 options(metaMultiverse.k_smallest_ma = 5)
 
-res <- run_multiverse_analysis(data_validated, specs, verbose = T) 
+res <- run_multiverse_analysis(data_validated, specs, progress = T, verbose = T) 
 
+
+report <- generate_multiverse_report_text(
+  results = res,
+  original_data = data_validated,
+  min_k = 5,
+  clin_g = 0.24
+)
 ```
 
+report removes bayes due to missing pvalues
 
 ```{r}
 # Generate full report
@@ -192,7 +202,7 @@ ggplot(plot_dat, aes(x = b, y = ma_method, colour = dependency, group = dependen
 data_digDep
 
 decision_map <- c(wf_1="E"
-                  )
+)
 ensamble <- makeMethodsList()
 out <- create_principled_multiverse_specifications(
   data          = data_digDep,

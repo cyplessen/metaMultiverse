@@ -1,0 +1,128 @@
+---
+title: "Principled Multiverse Analysis"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output:
+  html_vignette:
+    lib_dir: libs
+    self_contained: true
+vignette: >
+  %\VignetteIndexEntry{Principled Multiverse Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+library(dplyr)
+library(ggplot2)
+library(metaMultiverse)
+```  
+
+# Introduction
+This vignette demonstrates how to use the **Principled Multiverse** framework to systematically explore analytic decisions in meta-analysis. We cover:
+
+1. Supplying `decision_map` and `separate_by` arguments
+2. Illustrating Equivalent (E), Uncertain (U), and Non-equivalent (N) behavior
+3. Splitting into multiple multiverses and combining or plotting side-by-side
+
+# 1. Supplying decision_map and separate_by
+
+First, prepare a toy dataset and validate it:
+
+```{r toy-data}
+set.seed(123)
+# Toy data: three studies, two effect sizes each
+toy_data <- data_digDep %>% sample_n(50)
+validated <- check_data_multiverse(toy_data)
+```  
+
+Now, define the *Which* factors and decision map:
+
+```{r decision-map}
+decision_map <- c(
+  "wf_7" = "N",  # Non-equivalent: separate multiverses by population
+  "wf_1"    = "U"   # Uncertain: include total_ measure variation
+)
+```
+
+Generate specifications, grouping methods and dependencies:
+
+```{r create-specs}
+specs_list <- metaMultiverse::create_principled_multiverse_specifications(
+  data        = validated,
+  wf_vars     = c("wf_1", "wf_7"),
+  ma_methods  = c("reml", "rve"),
+  dependencies = c("aggregate", "modeled"),
+  decision_map = decision_map
+)
+specs <- specs_list$specifications
+specs_list$number_specs
+```  
+
+# 2. Illustrating E / U / N behavior
+
+- *N* (Non-equivalent) splits into separate multiverses for `adult` vs. `child`.  
+- *U* (Uncertain) appends `total_<factor>` option for measure.
+
+```{r show-specs}
+# Show first rows
+head(specs)
+# Unique multiverse IDs
+unique(specs$multiverse_id)
+```  
+
+Notice how `wf_population` values generate separate `multiverse_id`s, while `wf_measure` appears as both raw and `total_wf_measure` within each population group.
+
+# 3. Running and splitting multiverses
+
+Run the analysis once over all specs:
+
+```{r run-multiverse}
+res <- run_multiverse_analysis(
+  data           = validated,
+  specifications = specs,
+  verbose        = TRUE,
+  progress       = FALSE
+)
+```  
+
+Split results by multiverse and show side-by-side:
+
+```{r split-combine}
+library(purrr)
+multis <- split(res$results, res$results$multiverse_id)
+# Print summary for each
+walk2(names(multis), multis, ~{
+  cat("## Multiverse:", .x, "\n")
+  print(summary(.y$b))
+})
+```  
+
+Plot side-by-side effect distributions:
+
+```{r plot-side-by-side, fig.width=8, fig.height=4}
+combined <- res$results %>%
+  mutate(multiverse = factor(multiverse_id))
+
+ggplot(combined, aes(x = multiverse, y = b, fill = multiverse)) +
+  geom_violin(alpha = 0.6) +
+  geom_boxplot(width = 0.1, outlier.shape = NA) +
+  labs(title = "Effect Size Distribution by Risk-of-Bias Multiverse",
+       x = "Population (multiverse_id)", y = "Effect Size (b)") +
+  theme_minimal()
+```  
+
+# Conclusion
+This vignette demonstrated how to:
+
+- Supply **decision_map** and automatically handle E/U/N factors
+- Generate and inspect separate multiverses
+- Combine and visualize results side-by-side
+
+For more details, see the package reference and other vignettes.
