@@ -36,14 +36,13 @@ library(glue)
 ```{r}
 devtools::load_all()
 
+data_validated <- check_data_multiverse(data_tiny)
+
+
 decision_map <- c(wf_1="U", wf_7 = "N")
 
-ensemble <- list_ma_methods() 
-
-ensemble <- setdiff(ensemble, "bayesmeta")
-
 out <- create_principled_multiverse_specifications(
-  data          = data_tiny,
+  data          = data_validated,
   wf_vars       = c("wf_1", "wf_7"),
   ma_methods    = ensemble,
   dependencies  = c("aggregate", "modeled"),
@@ -51,15 +50,11 @@ out <- create_principled_multiverse_specifications(
 )
 
 specs <- out$specifications
-# ▶ specs$cluster_id shows which "N partition" each spec belongs to
 
-# Set globally for your session
-options(metaMultiverse.k_smallest_ma = 2)
+options(metaMultiverse.k_smallest_ma = 5)
 
-res <- run_multiverse_analysis(data_tiny, specs, verbose = T) 
+res <- run_multiverse_analysis(data_validated, specs, verbose = T) 
 
-
-plotly_VoE(res$results, cutoff = 5)
 ```
 
 

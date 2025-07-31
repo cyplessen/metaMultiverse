@@ -11,7 +11,7 @@ check_data_multiverse(data)
 It must include columns for study metadata, effect size, and variances.}
 }
 \value{
-Logical. Returns `TRUE` if all checks pass; otherwise, an error or warning is thrown.
+Logical. Returns TRUE if all checks pass; otherwise, an error or warning is thrown.
 }
 \description{
 This function validates a dataset to ensure it meets the requirements
@@ -21,11 +21,14 @@ correct data types, unique effect size IDs, and missing values.
 \details{
 The function performs the following checks:
 \itemize{
-  \item Ensures all required columns (`study`, `es_id`, `yi`, `vi`, and `wf_*` columns) are present.
+  \item Ensures all required columns (study, es_id, yi, vi, and wf_* columns) are present.
   \item Checks that columns have the correct data types.
-  \item Validates that `es_id` values are unique.
+  \item Validates that es_id values are unique.
   \item Warns if any required column contains missing values.
-  \item Verifies that all `wf_*` columns are character variables.
+  \item Verifies that all wf_* columns are character variables.
+  \item Checks for reasonable effect size and variance values.
+  \item Validates that variances are positive.
+  \item Warns about potential outliers in effect sizes.
 }
 }
 \examples{

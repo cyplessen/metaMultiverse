@@ -2,16 +2,43 @@
 % Please edit documentation in R/helpers_estimators.R
 \name{fit_puni_star}
 \alias{fit_puni_star}
-\title{Fit P-Uniform Star}
+\title{P-Uniform* Analysis}
 \usage{
-fit_puni_star(dat)
+fit_puni_star(data)
 }
 \arguments{
-\item{dat}{A data frame containing `yi` (effect size) and `vi` (variance).}
+\item{data}{Data frame containing yi (effect sizes) and vi (variances)}
 }
 \value{
-A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
+A universe_result object with p-uniform* estimate
 }
 \description{
-Computes the P-Uniform Star estimates for a dataset.
+Conducts p-uniform* analysis for publication bias correction and effect
+size estimation based on the distribution of significant p-values.
 }
+\details{
+P-uniform* method estimates effect size by examining the distribution of
+statistically significant p-values. It assumes that in the absence of
+publication bias, p-values should be uniformly distributed.
+
+The function automatically determines the appropriate testing direction (left vs. right)
+based on the inverse-variance weighted mean of effect sizes. This data-driven
+approach avoids arbitrary direction choices and is computationally efficient
+for multiverse analyses involving thousands of specifications.
+
+Direction selection:
+\itemize{
+  \item If weighted mean ≥ 0: uses right-sided testing (H1: θ > 0)
+  \item If weighted mean < 0: uses left-sided testing (H1: θ < 0)
+}
+}
+\references{
+van Aert, R. C., Wicherts, J. M., & van Assen, M. A. (2019).
+Publication bias examined in meta-analyses from psychology and medicine:
+A meta-meta-analysis. PLoS One, 14(4), e0215052.
+
+Aert, R. C. M. van, Wicherts, J. M., & Assen, M. A. L. M. van. (2022).
+puniform: Meta-Analysis Methods Correcting for Publication Bias.
+R package. https://cran.r-project.org/web/packages/puniform/index.html
+}
+\keyword{internal}

@@ -4,7 +4,7 @@
 \alias{run_multiverse_analysis}
 \title{Run Multiverse Analysis}
 \usage{
-run_multiverse_analysis(data, specifications, verbose = F)
+run_multiverse_analysis(data, specifications, verbose = FALSE, progress = TRUE)
 }
 \arguments{
 \item{data}{Data frame. Contains the dataset with all potential studies and factors
@@ -12,6 +12,10 @@ for the multiverse analysis.}
 
 \item{specifications}{Data frame. Specifications generated using
 \code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.}
+
+\item{verbose}{Logical. If TRUE, prints progress messages and warnings summary.}
+
+\item{progress}{Logical. If TRUE, displays a progress bar (default: TRUE).}
 }
 \value{
 A data frame containing the aggregated results of the multiverse analysis, including:

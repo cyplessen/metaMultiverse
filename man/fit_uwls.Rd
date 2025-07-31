@@ -2,16 +2,29 @@
 % Please edit documentation in R/helpers_estimators.R
 \name{fit_uwls}
 \alias{fit_uwls}
-\title{Fit UWLS Estimates}
+\title{Unweighted Least Squares (UWLS)}
 \usage{
-fit_uwls(dat)
+fit_uwls(data)
 }
 \arguments{
-\item{dat}{A data frame containing `yi` (effect size) and `vi` (variance).}
+\item{data}{Data frame containing yi (effect sizes) and vi (variances)}
 }
 \value{
-A list containing `b`, `ci.lb`, `ci.ub`, and `pval`.
+A universe_result object with UWLS estimate
 }
 \description{
-Performs Unweighted Least Squares (UWLS) estimation.
+Implements the Unweighted Least Squares approach for meta-analysis,
+which gives equal weight to all studies regardless of precision.
 }
+\details{
+UWLS can be more robust to publication bias than inverse-variance weighting
+when small studies are systematically biased. The method regresses
+standardized effect sizes on precision (1/SE).
+}
+\references{
+Stanley, T. D., Doucouliagos, H., & Ioannidis, J. P. A. (2022).
+Beyond random effects: When small-study findings are more heterogeneous.
+Advances in Methods and Practices in Psychological Science, 5(4).
+https://doi.org/10.1177/25152459221120427
+}
+\keyword{internal}

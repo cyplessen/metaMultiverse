@@ -7,7 +7,7 @@ library(purrr)
 # library(metaMultiverse)  # Uncomment if package is installed
 
 # Load package functions if available, otherwise use placeholder functions
-# devtools::load_all("..")  # Remove this line - causes the error
+devtools::load_all("..")  # Remove this line - causes the error
 
 # Add placeholder functions if metaMultiverse package functions aren't available
 if (!exists("create_principled_multiverse_specifications")) {
