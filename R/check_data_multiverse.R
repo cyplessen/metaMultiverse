@@ -33,6 +33,15 @@
 #' check_data_multiverse(example_data)
 #' @export
 check_data_multiverse <- function(data) {
+  # Input validation
+  if (!is.data.frame(data)) {
+    stop("Input 'data' must be a data.frame")
+  }
+
+  if (nrow(data) == 0) {
+    stop("Input data is empty (0 rows)")
+  }
+
   # Required columns
   required_columns <- c(
     "study", "es_id", "yi", "vi"
@@ -96,7 +105,16 @@ check_data_multiverse <- function(data) {
 
   # Additional validation checks
 
-  # Check for positive variances
+  # Check for non-finite values in numeric columns
+  numeric_cols <- c("yi", "vi")
+  for (col in numeric_cols) {
+    if (any(!is.finite(data[[col]]), na.rm = TRUE)) {
+      non_finite_count <- sum(!is.finite(data[[col]]), na.rm = TRUE)
+      stop(paste("Found", non_finite_count, "non-finite values (Inf, -Inf, NaN) in column", col))
+    }
+  }
+
+  # Check for positive variances - make this an error since negative variances are impossible
   if (any(data$vi <= 0, na.rm = TRUE)) {
     negative_vi_count <- sum(data$vi <= 0, na.rm = TRUE)
     stop(paste("Found", negative_vi_count, "non-positive variance values. All variances must be positive."))
@@ -107,6 +125,13 @@ check_data_multiverse <- function(data) {
   if (any(extreme_yi, na.rm = TRUE)) {
     extreme_count <- sum(extreme_yi, na.rm = TRUE)
     warning(paste("Found", extreme_count, "effect sizes with absolute value > 10. Please verify these are correct."))
+  }
+
+  # Check for unreasonably large Cohen's d (common calculation error)
+  large_d <- abs(data$yi) > 2.5
+  if (any(large_d, na.rm = TRUE)) {
+    large_d_count <- sum(large_d, na.rm = TRUE)
+    warning(paste("Found", large_d_count, "unreasonably large d detected (|d| > 2.5). Check if SD and SE were confused when calculating SMD."))
   }
 
   # Check for extremely large variances (potential data entry errors)
@@ -128,7 +153,7 @@ check_data_multiverse <- function(data) {
   if (single_effect_studies == length(effects_per_study)) {
     message("All studies contribute exactly one effect size. Dependency handling may not be necessary.")
   } else if (single_effect_studies > 0) {
-    message(paste(single_effect_students, "studies contribute only one effect size,",
+    message(paste(single_effect_studies, "studies contribute only one effect size,",
                   length(effects_per_study) - single_effect_studies, "studies contribute multiple effect sizes."))
   }
 
@@ -155,5 +180,7 @@ check_data_multiverse <- function(data) {
 
   # Success message if all checks pass
   message("Data validation passed. Dataset is ready for multiverse analysis.")
-  return(TRUE)
+  attr(data, "multiverse_validated") <- TRUE
+  attr(data, "validation_timestamp") <- Sys.time()
+  return(data)
 }

@@ -4,11 +4,12 @@
 #' Register a meta-analysis estimator
 #' @param name Character scalar (key used in `ma_methods`)
 #' @param fun  Function(dat) → list(b, ci.lb, ci.ub, pval)
-#' @param dependencies Character vector: "ignore", "aggregate", "modeled"
+#' @param dependencies Character vector: "select_min", "select_max", "aggregate", "modeled"
 #' @keywords internal
 register_ma_method <- function(name,
                                fun,
-                               dependencies = c("ignore",
+                               dependencies = c("select_min",
+                                                "select_max",
                                                 "aggregate",
                                                 "modeled")) {
   stopifnot(is.character(name), length(name) == 1, is.function(fun))
