@@ -8,18 +8,24 @@ general_multiverse(
   i,
   data_multiverse,
   specifications,
+  factor_groups = NULL,
   k_smallest_ma = getOption("metaMultiverse.k_smallest_ma", 5)
 )
 }
 \arguments{
-\item{i}{Integer. The row index in the `specifications` data frame, representing a single
+\item{i}{Integer. The row index in the \code{specifications} data frame, representing a single
 specification to be applied to the data.}
 
 \item{data_multiverse}{Data frame. The dataset containing all potential studies and factors
 for the multiverse analysis.}
 
 \item{specifications}{Data frame. Contains all specifications generated using
-\code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.}
+\code{\link{create_multiverse_specifications}}. Includes columns for "Which" and "How" factors.
+May contain custom group names that require mapping to actual data levels.}
+
+\item{factor_groups}{Optional list of custom factor groupings. When provided,
+enables mapping from group names in specifications to actual data levels.
+Structure: \code{list(wf_1 = list(group_name = c(level1, level2), ...), ...)}.}
 
 \item{k_smallest_ma}{Integer. The smallest number of unique studies required for a valid meta-analysis.
 Defaults to 5.}
@@ -32,33 +38,65 @@ A data frame containing the results of the specified meta-analysis, including th
   - Number of studies included in the subset (\code{k}),
   - Set of study IDs included in the analysis (\code{set}),
   - The corresponding specification parameters.
+  Returns \code{NULL} if insufficient studies remain after filtering.
 }
 \description{
 A core function for dynamically applying multiverse meta-analysis specifications to subsets
 of data, applying "Which" factors and "How" factors based on user-specified configurations.
+Supports both simple factor levels and custom factor groupings.
 }
 \details{
 This function dynamically filters the input data based on "Which" factors (e.g.,
 \code{wf_1}, \code{wf_2}, etc.) and applies "How" factors (\code{ma_method} and
 \code{dependency}). The analysis only proceeds if the subset contains at least
 \code{k_smallest_ma} unique studies. Supports both \code{aggregate} and \code{modeled} dependencies.
+
+When custom factor groupings are provided, the function maps group names in specifications
+to actual data levels before filtering. For example, if a specification contains
+"conservative" for \code{wf_1}, and the factor groups define
+\code{conservative = "low risk"}, the function filters for studies where
+\code{wf_1 == "low risk"}.
 }
+\section{Custom Factor Group Processing}{
+
+When custom factor groupings are provided:
+\enumerate{
+  \item Function examines each "Which factor" column in the specification
+  \item If a value matches a custom group name, maps it to corresponding data levels
+  \item Filters data to include only studies matching the mapped levels
+  \item Falls back to direct matching for non-grouped factors
+  \item Handles "total_*" values by including all levels (no filtering)
+}
+}
+
 \examples{
-# Example of applying a specification:
+# Standard usage without custom groupings
 data_multiverse <- data.frame(
   study = rep(paste0("S", 1:5), each = 2),
   es_id = 1:10,
   yi = rnorm(10, mean = 0.5),
   vi = runif(10, min = 0.01, max = 0.1),
   wf_1 = rep(c("A", "B"), times = 5)
-  )
+)
 specifications <- data.frame(
   wf_1 = c("A", "B"),
   dependency = "aggregate",
   ma_method = "reml"
 )
-result <- general_multiverse(1,
-   data_multiverse,
-   specifications)
+result <- general_multiverse(1, data_multiverse, specifications)
+
+# Usage with custom factor groupings
+factor_groups <- list(
+  wf_1 = list(
+    "low_risk" = "low risk",
+    "exclude_high" = c("low risk", "some concerns")
+  )
+)
+specifications <- data.frame(
+  wf_1 = "exclude_high",  # This will map to c("low risk", "some concerns")
+  dependency = "aggregate",
+  ma_method = "reml"
+)
+result <- general_multiverse(1, data_multiverse, specifications, factor_groups)
 
 }

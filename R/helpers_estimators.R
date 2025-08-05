@@ -458,7 +458,7 @@ fit_hk_sj <- function(data) safe_call({
 #' @keywords internal
 fit_three_level <- function(data) safe_call({
   mod <- metafor::rma.mv(data = data, yi = yi, V = vi,
-                         random = list(~1 | es_id, ~1 | study),
+                         random = ~ 1 | study/es_id,
                          method = "REML",
                          sparse = TRUE)
   out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
@@ -491,7 +491,7 @@ fit_three_level <- function(data) safe_call({
 #' @keywords internal
 fit_rve <- function(data) safe_call({
   mod <- metafor::rma.mv(data = data, yi = yi, V = vi,
-                         random = list(~1 | es_id, ~1 | study),
+                         random = ~ 1 | study/es_id,
                          method = "REML",
                          sparse = TRUE)
 

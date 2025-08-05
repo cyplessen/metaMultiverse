@@ -5,6 +5,7 @@ globalVariables(c("dependency"))
 #'
 #' This function generates a grid of specifications for multiverse meta-analysis based on "Which" and "How" factors.
 #' It ensures only valid combinations of meta-analytic methods and dependency handling strategies are included.
+#' Supports both simple factor definitions and advanced custom factor groupings.
 #' Data must be validated using \code{check_data_multiverse()} before using this function.
 #'
 #' @param data A data frame containing the dataset to base the specifications on.
@@ -21,74 +22,18 @@ globalVariables(c("dependency"))
 #'     \item \code{"N"} (Non-equivalent): Different levels represent distinct research questions -
 #'           creates separate multiverse analyses (different multiverse_id values)
 #'   }
-#'
-#' @importFrom dplyr filter mutate row_number inner_join
-#' @importFrom purrr map_dfr
-#' @importFrom tibble tibble
-#'
-#' @return A list with two elements:
-#' \itemize{
-#'   \item \code{specifications}: A data frame where each row represents one analysis specification.
-#'         Contains columns for each wf_var, plus \code{dependency}, \code{ma_method},
-#'         \code{multiverse_id}, and \code{row_id}.
-#'   \item \code{number_specs}: Integer. The total number of valid specifications created.
-#' }
-#'
-#' @section Multiverse ID Logic:
-#' The \code{multiverse_id} column groups specifications into separate multiverse analyses:
-#' \itemize{
-#'   \item Variables with decision_map = "N" create separate \code{multiverse_id} values
-#'   \item Variables with decision_map = "E" or "U" vary within each multiverse
-#'   \item Use \code{multiverse_id} to split results into separate analyses or plots
-#' }
-#'
-#' @details
-#' The function performs the following steps:
-#' \itemize{
-#'   \item Identifies all unique values for each "Which factor" in the dataset.
-#'   \item For "E" and "U" factors: Appends a "total" value (e.g., \code{total_wf_1}) to allow for combinations that include all levels.
-#'   \item For "N" factors: Uses only the raw levels (no "total" option) and creates separate multiverse_id values.
-#'   \item Dynamically creates a grid of all possible combinations of "Which factors," meta-analytic methods (\code{ma_methods}), and dependency strategies (\code{dependencies}).
-#'   \item Filters out invalid combinations based on the method registry (e.g., some methods only work with specific dependencies).
-#'   \item Adds a unique row ID to each specification.
-#' }
-#'
-#' @examples
-#' # Example dataset
-#' example_data <- data.frame(
-#'   study = paste0("Study_", 1:6),
-#'   es_id = 1:6,
-#'   yi = c(0.3, 0.5, 0.7, 0.2, 0.6, 0.4),
-#'   vi = c(0.02, 0.03, 0.01, 0.04, 0.02, 0.03),
-#'   wf_1 = c("A", "B", "A", "C", "B", "C"),  # Population type (Non-equivalent)
-#'   wf_2 = c("X", "Y", "X", "Y", "X", "Y")   # Measure type (Uncertain)
-#' )
-#'
-#' # First validate the data
-#' validated_data <- check_data_multiverse(example_data)
-#'
-#' # Decision map: wf_1 creates separate analyses, wf_2 creates multiverse options
-#' decision_map <- c("wf_1" = "N", "wf_2" = "U")
-#'
-#' # Create specifications
-#' specs <- create_principled_multiverse_specifications(
-#'   data = validated_data,
-#'   wf_vars = c("wf_1", "wf_2"),
-#'   ma_methods = c("reml", "fe"),
-#'   dependencies = c("aggregate"),
-#'   decision_map = decision_map
-#' )
-#'
-#' # Results: Multiple multiverse_id values for different wf_1 levels
-#' table(specs$specifications$multiverse_id)
-#' head(specs$specifications)
+#' @param factor_groups Optional list of custom factor groupings. When provided, uses custom group names
+#'   instead of raw data levels for specification creation. Structure:
+#'   \code{list(wf_1 = list(group_name = c(level1, level2), ...), ...)}.
+#'   Enables sophisticated study selection criteria beyond simple factor levels.
 #'
 #' @export
 create_principled_multiverse_specifications <- function(data,
                                                         wf_vars,
                                                         ma_methods,
                                                         dependencies,
-                                                        decision_map) {
+                                                        decision_map,
+                                                        factor_groups = NULL) {
 
   # Check if data has been validated (look for validation attribute)
   if (is.null(attr(data, "multiverse_validated"))) {
@@ -133,12 +78,20 @@ create_principled_multiverse_specifications <- function(data,
          "\nAvailable methods: ", paste(available_methods, collapse = ", "))
   }
 
-  # Split wf_vars by their decision type
-  type_N <- names(decision_map)[decision_map == "N"]
-  type_EU <- names(decision_map)[decision_map %in% c("E","U")]
-
-  # Build wf_factors differently for N vs E/U
+  # Build wf_factors with custom group support
   wf_factors <- lapply(wf_vars, function(wf) {
+
+    # Check if this factor has custom groups
+    if (!is.null(factor_groups) && wf %in% names(factor_groups)) {
+      # Use custom group names instead of data levels
+      group_names <- names(factor_groups[[wf]])
+      if (length(group_names) == 0) {
+        stop("Factor '", wf, "' has empty custom groups")
+      }
+      return(group_names)
+    }
+
+    # Standard processing: use actual data levels
     vals <- unique(data[[wf]])
 
     # Check for empty or NA values
@@ -166,6 +119,7 @@ create_principled_multiverse_specifications <- function(data,
   specs <- do.call(expand.grid, grid_args)
 
   # Create multiverse IDs based on N-type factors
+  type_N <- names(decision_map)[decision_map == "N"]
   if (length(type_N) > 0) {
     specs$multiverse_id <- apply(
       specs[ , type_N, drop = FALSE],
@@ -187,6 +141,11 @@ create_principled_multiverse_specifications <- function(data,
     dplyr::inner_join(dep_table, by = c("ma_method","dependency")) |>
     dplyr::mutate(row_id = dplyr::row_number())
 
+  # Store factor_groups as attribute for downstream processing
+  if (!is.null(factor_groups)) {
+    attr(specs, "factor_groups") <- factor_groups
+  }
+
   # Informative messages
   n_multiverses <- length(unique(specs$multiverse_id))
   message("Created ", nrow(specs), " specifications across ", n_multiverses, " multiverse(s)")
@@ -196,9 +155,14 @@ create_principled_multiverse_specifications <- function(data,
             ") created ", n_multiverses, " separate multiverse analyses")
   }
 
+  type_EU <- names(decision_map)[decision_map %in% c("E", "U")]
   if (length(type_EU) > 0) {
     message("Equivalent/Uncertain factors (", paste(type_EU, collapse = ", "),
             ") vary within each multiverse")
+  }
+
+  if (!is.null(factor_groups)) {
+    message("Using custom factor groupings for ", length(factor_groups), " factor(s)")
   }
 
   list(
