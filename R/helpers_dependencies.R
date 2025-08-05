@@ -187,14 +187,21 @@ run_modeled_dependency <- function(dat, ma_method) {
 collapse_one <- function(dat, rule = c("max", "min"), abs_cols = "yi") {
   rule <- match.arg(rule)
 
-  dat |>
-    dplyr::group_by(study) |>
+  # Check if data is empty
+  if (nrow(dat) == 0) {
+    warning("Empty dataset provided to collapse_one")
+    return(dat)
+  }
+
+  # Check if required column exists
+  if (!abs_cols[1] %in% names(dat)) {
+    stop("Column '", abs_cols[1], "' not found in data")
+  }
+
+  dplyr::group_by(dat, study) |>
     dplyr::slice({
-      if (rule == "max") {
-        which.max(abs(.data[[abs_cols[1]]]))
-      } else {
-        which.min(abs(.data[[abs_cols[1]]]))
-      }
+      if (rule == "max") which.max(abs(.data[[abs_cols[1]]]))
+      else               which.min(abs(.data[[abs_cols[1]]]))
     }) |>
     dplyr::ungroup()
 }

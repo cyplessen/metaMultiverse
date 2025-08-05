@@ -2,16 +2,22 @@
 title: "Multiverse Meta-Analysis with metaMultiverse"
 author: "Constantin Yves Plessen"
 date: "`r Sys.Date()`"
-output:
-  html_document:
+execute:
+  cache: true
+  warning: false
+  message: false
+format:
+  html:
+    minimal: true
+    theme: none
+    css: modern-styles.css
     toc: true
-    toc_float: true
-    code_folding: show
-    theme: flatly
-    highlight: tango
+    toc-location: left
+    code-fold: true
+    code-tools: true
 vignette: >
   %\VignetteIndexEntry{Multiverse Meta-Analysis with metaMultiverse}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 ---
 
@@ -27,22 +33,31 @@ knitr::opts_chunk$set(
 )
 ```
 
-## Introduction to Multiverse Meta-Analysis
+# Introduction 
 
-Multiverse meta-analysis is an approach that addresses the analytical flexibility inherent in meta-analysis by exploring multiple reasonable analytical choices simultaneously. This package provides tools for conducting multiverse pairwise meta-analyses with standardized mean differences.
+Meta-analyses, like primary studies, involve numerous analytical decisions that can substantially impact conclusions. The metaMultiverse package extends multiverse analysis principles to meta-analysis, helping researchers navigate these "researcher degrees of freedom" while avoiding the creation of analytical "black holes" where true effects are obscured by unjustified analytical choices.
 
-> **What is a multiverse analysis?**
-> 
-> A multiverse analysis considers all reasonable analytical choices simultaneously, rather than committing to a single analytical path. This approach acknowledges the potential impact of researcher decisions on results and provides a more complete picture of possible outcomes.
+> Core Principle: A multiverse analysis should explore all reasonable analytical paths, not all possible paths. The key challenge is distinguishing between arbitrary choices (where alternatives are equally justified) and principled decisions (where some choices are objectively better).
 
-### Package Philosophy
+## Theoretical Foundation
+Building on Del Giudice & Gangestad's (2021) framework, we distinguish three types of nonequivalence among analytical alternatives:
 
-The `metaMultiverse` package is designed to:
+1. *Measurement nonequivalence*: Different measures or indicators vary in validity and reliability
+2. *Effect nonequivalence*: Different specifications estimate fundamentally different effects
+3. *Power/precision nonequivalence*: Alternatives yield predictably different statistical precision
 
-1. **User-friendly factor definitions**: Use intuitive, researcher-friendly terminology instead of generic `wf_*` column names
-2. **Custom factor groupings**: Support sophisticated groupings like "low_risk_only", "exclude_high_risk", and "all_studies"
-3. **Principled decision types**: Distinguish between equivalent (E), uncertain (U), and non-equivalent (N) analytical choices
-4. **Robust visualization**: Assess the impact of analytical choices on effect size estimates
+These lead to three decision scenarios that guide multiverse construction:
+
+- Type E (Equivalence): Alternatives are effectively equivalent → include in multiverse
+- Type N (Nonequivalence): Some alternatives are objectively better → exclude inferior options
+- Type U (Uncertainty): Unclear which alternative is best → explore separately
+
+## Why This Matters
+As Voracek et al. (2019) demonstrate, even multiple meta-analyses can fail to resolve contentious issues when they make different analytical choices. The metaMultiverse package provides a systematic framework to:
+
+1. Make analytical decisions transparent and reproducible
+2. Assess the robustness of conclusions across reasonable specifications
+3. Avoid both overly narrow analyses (single specification) and overly broad ones (all possible specifications)
 
 ## Installation
 
@@ -51,30 +66,23 @@ You can install the development version of `metaMultiverse` from GitHub:
 ```{r installation, eval=FALSE}
 # install.packages("devtools")
 #devtools::install_github("cyplessen/metaMultiverse")
-devtools::load_all()
+library(metaMultiverse)
 ```
 
-## Enhanced Workflow Overview
+## Core Workflow
+The metaMultiverse workflow consists of four main steps:
 
-The enhanced workflow for multiverse meta-analysis consists of four main steps, now with user-friendly factor definitions and custom groupings:
+### Step 1: Data Preparation and Validation
 
-### 1. Data Preparation with User-Friendly Names
-Prepare your dataset with meaningful column names that researchers actually use.
+First, prepare your meta-analytic dataset with required columns:
 
-### 2. Define Factors with Custom Groupings
-Use the new `define_factors()` function to create sophisticated factor groupings with clear decision types.
-
-### 3. Create Principled Specifications
-Generate specifications that respect the logical structure of your analytical choices.
-
-### 4. Run Analysis and Visualize Results
-Execute the multiverse analysis and explore results through comprehensive visualizations.
+- `study`: Study identifier (e.g., "Author, Year")
+- `es_id`: Unique effect size ID
+- `yi`: Effect size (following metafor conventions)
+- `vi`: Sampling variance
+- Factor columns: Variables representing analytical choices
 
 This tutorial walks through each step with a practical example using digital depression intervention data.
-
-## Example Dataset
-
-For this tutorial, we'll use a dataset of digital depression interventions with user-friendly column names:
 
 ```{r load-data}
 # Load required packages
@@ -107,7 +115,7 @@ create_user_friendly_digDep <- function(data_digDep) {
 # Create user-friendly dataset
 depression_data <- create_user_friendly_digDep(data_digDep)
 
-# Examine the structure with meaningful names
+# Examine the structure 
 depression_data %>%
   select(study, es_id, yi, vi, technology_type, guidance_level, population, 
          therapy_approach, risk_of_bias) %>%
@@ -121,14 +129,12 @@ depression_data %>%
   scroll_box(width = "100%", height = "300px")
 ```
 
-## Step 1: Data Validation
 
-Before proceeding with multiverse analysis, validate your data to ensure it meets requirements:
-
-```{r validate-data}
-# Check if data meets requirements for multiverse analysis
+### Validate data structure
+```{r}
 depression_data_validated <- check_data_multiverse(depression_data)
 ```
+
 
 > **What the validator checks**
 > 
@@ -139,16 +145,16 @@ depression_data_validated <- check_data_multiverse(depression_data)
 > - No critical missing values
 > - Reasonable effect size and variance values
 
-## Step 2: Define Factors with Custom Groupings
+## Step 2: Define Factors with Principled Decision Framework
+The crucial step is defining which analytical choices to explore. Following Del Giudice & Gangestad's framework:
 
-The new `define_factors()` function allows you to create sophisticated factor groupings using researcher-friendly terminology:
 
 ```{r define-factors}
 # Define factors with custom groups and decision types
 setup <- define_factors(
   depression_data_validated,
   
-  # Risk of bias with custom hierarchical groupings
+  # Type U: Genuine uncertainty about best approach
   Risk_of_Bias = list("risk_of_bias", 
                       decision = "U",  # Uncertain which inclusion criteria is best
                       groups = list(
@@ -158,31 +164,27 @@ setup <- define_factors(
                       )
   ),
   
-  # Technology type with standard multiverse (each level + total)
-  Technology = list("technology_type", 
-                    decision = "U",    # Uncertain which technology is best
-                    type = "binary"),  # Each level individually + all combined
+  # Type E: Theoretically equivalent subgroups
+  Technology = list(
+    Technology = "technology_type", 
+    decision = "E"),  # Each level individually + all combined
   
-  # Population as equivalent levels (standard multiverse)
-  Population = "population|E",  # Equivalent - creates multiverse options
-  
-  # Therapy approach as separate analyses
-  Therapy_Approach = "therapy_approach|N"  # Non-equivalent - separate analyses
+  # Type N: Non-equivalent - analyze separately
+  Therapy_Approach = list(
+    Therapy = "therapy_approach",
+    decision = "N"  # CBT vs non-CBT are different interventions
+  )
 )
 
 # The setup object contains everything we need
 names(setup)
 ```
 
-> **Understanding Decision Types**
-> 
-> - **U (Uncertain)**: "Which inclusion criteria should I use?" → creates multiverse options
-> - **E (Equivalent)**: "These measure the same thing" → creates multiverse options  
-> - **N (Non-equivalent)**: "These are different research questions" → separate analyses
+>Key Insight: The decision type determines how factors are handled:
+> - Type E/U → Create multiverse specifications
+> - Type N → Create separate analyses for each level
 
-## Step 3: Create Principled Specifications
-
-Now we create specifications that respect the logical structure of our analytical choices:
+## Step 3: Create and Run Multiverse Specifications
 
 ```{r create-specs}
 # Define meta-analytical methods and dependency handling
@@ -214,18 +216,6 @@ custom_specs$specifications %>%
     bootstrap_options = c("striped", "hover", "condensed"),
     full_width = FALSE
   )
-```
-
-> **Understanding Custom Groups**
-> 
-> Each row in the specifications represents a unique analytical path through the multiverse. Custom groups like "exclude_high_risk" automatically map to the appropriate data levels (e.g., c("low risk", "some concerns")) during analysis.
-
-## Step 4: Run Multiverse Analysis
-
-With our specifications defined, we can now run the comprehensive multiverse analysis:
-
-```{r run-multiverse}
-#| warning: false
 
 # Run the multiverse analysis
 results <- run_multiverse_analysis(
@@ -276,7 +266,7 @@ summary_stats %>%
   row_spec(row = 0, bold = TRUE, color = "white", background = "#2c3e50")
 ```
 
-## Step 5: Visualize Results
+## Step 4: Visualize Results
 
 The `metaMultiverse` package provides several visualization options to explore and interpret your results.
 
@@ -313,9 +303,6 @@ The specification curve consists of two panels:
 1. **Top panel**: Shows the effect size estimates with confidence intervals, ordered by effect size magnitude
 2. **Bottom panel**: Shows which analytical choices were made for each specification, including custom groupings
 
-> **Interpreting Custom Groupings**
-> 
-> Notice how the bottom panel shows your custom group names (like "exclude_high_risk", "all_studies") rather than raw data levels. This makes it much easier to understand which inclusion criteria were applied in each analysis.
 
 ### Effect Size Distribution by Custom Groups
 

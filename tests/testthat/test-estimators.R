@@ -201,7 +201,7 @@ test_that("estimators handle extreme values", {
 
 test_that("PET-PEESE returns appropriate method labels", {
   test_data <- create_estimator_test_data()
-  res <- metaMultiverse:::fit_pet.peese(test_data)
+  res <- metaMultiverse::fit_pet.peese(test_data)
 
   method_attr <- attr(res, "method")
   expect_true(method_attr %in% c("PET", "PEESE", "PET (failed)", "PEESE (failed)"),
@@ -217,8 +217,8 @@ test_that("PET-PEESE corrected handles negative estimates", {
     vi = c(0.01, 0.02, 0.08, 0.09, 0.07, 0.10, 0.01, 0.12)  # Small studies negative
   )
 
-  res_regular <- metaMultiverse:::fit_pet.peese(negative_data)
-  res_corrected <- metaMultiverse:::fit_pet.peese_corrected(negative_data)
+  res_regular <- metaMultiverse::fit_pet.peese(negative_data)
+  res_corrected <- metaMultiverse::fit_pet.peese_corrected(negative_data)
 
   expect_s3_class(res_regular, "universe_result")
   expect_s3_class(res_corrected, "universe_result")
@@ -239,7 +239,7 @@ test_that("p-uniform* uses appropriate direction", {
     vi = c(0.02, 0.03, 0.01, 0.04, 0.02, 0.01)
   )
 
-  res_pos <- metaMultiverse:::fit_puni_star(positive_data)
+  res_pos <- metaMultiverse::fit_puni_star(positive_data)
   expect_s3_class(res_pos, "universe_result")
   method_attr <- attr(res_pos, "method")
   if (!grepl("failed", method_attr)) {
@@ -255,7 +255,7 @@ test_that("p-uniform* uses appropriate direction", {
     vi = c(0.02, 0.03, 0.01, 0.04, 0.02, 0.01)
   )
 
-  res_neg <- metaMultiverse:::fit_puni_star(negative_data)
+  res_neg <- metaMultiverse::fit_puni_star(negative_data)
   expect_s3_class(res_neg, "universe_result")
   method_attr <- attr(res_neg, "method")
   if (!grepl("failed", method_attr)) {
@@ -266,7 +266,7 @@ test_that("p-uniform* uses appropriate direction", {
 
 test_that("WAAP reports powered study information", {
   test_data <- create_estimator_test_data()
-  res <- metaMultiverse:::fit_waap(test_data)
+  res <- metaMultiverse::fit_waap(test_data)
 
   expect_s3_class(res, "universe_result")
   method_attr <- attr(res, "method")
@@ -283,7 +283,7 @@ test_that("WAAP reports powered study information", {
 
 test_that("Bayesian methods handle p-values correctly", {
   test_data <- create_estimator_test_data()
-  res <- metaMultiverse:::fit_bayesmeta(test_data)
+  res <- metaMultiverse::fit_bayesmeta(test_data)
 
   expect_s3_class(res, "universe_result")
   # Bayesian methods should return NA for p-value

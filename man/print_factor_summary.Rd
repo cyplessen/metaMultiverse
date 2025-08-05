@@ -2,11 +2,11 @@
 % Please edit documentation in R/define_factors.R
 \name{print_factor_summary}
 \alias{print_factor_summary}
-\title{Print user-friendly summary of factor setup}
+\title{Print factor summary (internal)}
 \usage{
-print_factor_summary(factor_info, factor_groups, data)
+print_factor_summary(setup)
 }
 \description{
-Print user-friendly summary of factor setup
+Print factor summary (internal)
 }
 \keyword{internal}

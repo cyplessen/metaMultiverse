@@ -2,46 +2,65 @@
 % Please edit documentation in R/check_data_multiverse.R
 \name{check_data_multiverse}
 \alias{check_data_multiverse}
-\title{Check Data for Multiverse Analysis}
+\title{Validate Data for Multiverse Meta-Analysis}
 \usage{
 check_data_multiverse(data)
 }
 \arguments{
-\item{data}{A data frame containing the dataset to validate.
-It must include columns for study metadata, effect size, and variances.}
+\item{data}{Data frame to validate. Must contain study-level and effect size data.}
 }
 \value{
-Logical. Returns TRUE if all checks pass; otherwise, an error or warning is thrown.
+The input data frame (invisibly) with validation attributes added.
+  Compatible with pipe operations.
 }
 \description{
-This function validates a dataset to ensure it meets the requirements
-for multiverse analysis. It checks for the presence of required columns,
-correct data types, unique effect size IDs, and missing values.
+Validates dataset structure and content for multiverse analysis compatibility.
+Checks required columns, data types, unique identifiers, and data quality.
 }
 \details{
-The function performs the following checks:
+Performs comprehensive validation:
+
+\strong{Required columns:}
 \itemize{
-  \item Ensures all required columns (study, es_id, yi, vi, and wf_* columns) are present.
-  \item Checks that columns have the correct data types.
-  \item Validates that es_id values are unique.
-  \item Warns if any required column contains missing values.
-  \item Verifies that all wf_* columns are character variables.
-  \item Checks for reasonable effect size and variance values.
-  \item Validates that variances are positive.
-  \item Warns about potential outliers in effect sizes.
+  \item \code{study}: Study identifier (character)
+  \item \code{es_id}: Unique effect size ID (numeric)
+  \item \code{yi}: Effect size estimate (numeric)
+  \item \code{vi}: Sampling variance (numeric)
+  \item \code{wf_*}: Which factor columns (character)
+}
+
+\strong{Data quality checks:}
+\itemize{
+  \item Unique \code{es_id} values
+  \item Positive variances
+  \item Finite numeric values
+  \item Reasonable effect size ranges
+  \item Consistency between \code{vi} and \code{sei} (if present)
+}
+
+\strong{Warnings issued for:}
+\itemize{
+  \item Missing values in required columns
+  \item Extreme effect sizes (|d| > 10)
+  \item Unreasonably large Cohen's d (|d| > 2.5)
+  \item Very large variances (> 100)
+  \item Fewer than 3 studies
 }
 }
 \examples{
-# Example dataset
-   example_data <-  data.frame(
-              study = as.character(c("Study 1", "Study 2")),
-              es_id = as.numeric(1:2),
-              yi = as.numeric(c(0.5, 0.6)),
-              vi = as.numeric(c(0.02, 0.03)),
-              sei = as.numeric(c(0.14, 0.17)),
-              wf_1 = as.character(c("A", "B"))
-              )
+\dontrun{
+# Direct validation
+validated_data <- check_data_multiverse(meta_data)
 
-# Run the check
-check_data_multiverse(example_data)
+# Pipeline usage
+results <- meta_data \%>\%
+  check_data_multiverse() \%>\%
+  define_factors(Population = "wf_1") \%>\%
+  create_multiverse_specifications() \%>\%
+  run_multiverse_analysis()
+}
+
+}
+\seealso{
+\code{\link{define_factors}} for next step in pipeline
 }

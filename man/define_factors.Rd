@@ -2,73 +2,91 @@
 % Please edit documentation in R/define_factors.R
 \name{define_factors}
 \alias{define_factors}
-\title{Define Which Factors with Advanced Grouping Options}
+\title{Define Which Factors for Multiverse Analysis}
 \usage{
 define_factors(data, ...)
 }
 \arguments{
-\item{data}{Your dataset}
+\item{data}{Data frame containing meta-analysis data with which factor columns}
 
-\item{...}{Factor definitions using flexible syntax (see details and examples)}
+\item{...}{Factor definitions using either simple or custom syntax (see Details)}
+}
+\value{
+Object of class \code{multiverse_factor_setup} containing:
+\describe{
+  \item{data}{Original data with added wf_* columns}
+  \item{factors}{Data frame describing each factor:
+    \itemize{
+      \item \code{label}: User-provided factor name
+      \item \code{column}: Original data column
+      \item \code{decision}: Decision type (E/U/N)
+      \item \code{wf_internal}: Internal wf_* column name
+      \item \code{grouping_type}: "simple" or "custom"
+    }
+  }
+  \item{decision_map}{Named vector mapping wf_* columns to decision types}
+  \item{factor_groups}{List of custom group definitions (if any)}
+}
 }
 \description{
-Enhanced function for setting up which factors with sophisticated control over
-how factor levels are grouped and analyzed in multiverse meta-analysis.
+Defines study selection criteria ("which factors") with automatic detection
+of simple vs. custom factor specifications. Creates the foundation for
+multiverse analysis by mapping data columns to analytical choices.
 }
 \details{
-Each factor can be defined using several approaches:
+\strong{Simple factors} (string):
+\itemize{
+  \item \code{"column_name"} - Uses each unique level + "all combined"
+  \item \code{"column_name|E"} - Adds decision type (E/U/N)
+}
 
-**Simple factors:**
-- `Population = "pop_column"` (multiverse with individual levels + all combined)
-- `Population = "pop_column|U"` (same as above, U = uncertain which is best)
-- `Population = "pop_column|N"` (separate analyses for each level)
-- `Population = "pop_column|E"` (equivalent levels, includes all combined option)
+\strong{Custom factors} (list):
+\preformatted{list(
+  "column_name",
+  decision = "U",  # Optional, default: "U"
+  groups = list(
+    group_name = c("level1", "level2"),
+    ...
+  )
+)}
 
-**Custom groupings with decision types:**
-- `Risk_of_Bias = list("risk_column", decision = "U", groups = list(...))`
-- `Risk_of_Bias = list("risk_column", decision = "N", groups = list(...))`
+\strong{Decision types:}
+\itemize{
+  \item \code{E} (Equivalent): All options theoretically equivalent
+  \item \code{U} (Uncertain): Unclear which option is best (default)
+  \item \code{N} (Non-equivalent): Options represent different research questions
+}
 
-  Where decision types mean:
-  - **U** (Uncertain): "Which inclusion criteria should I use?" → creates multiverse
-  - **N** (Non-equivalent): "These are different research questions" → separate analyses
-  - **E** (Equivalent): "These measure the same thing" → creates multiverse (rare for custom groups)
-
-**Ordered factors with decision types:**
-- `Study_Quality = list("quality_column", type = "ordered", decision = "U", levels = c("high", "medium", "low"))`
-
-**Binary combinations with decision types:**
-- `Guidance = list("guidance_column", type = "binary", decision = "N")`
-  Each level + all combined, with decision type controlling analysis structure
+Type N factors create separate multiverses; types E and U vary within multiverses.
 }
 \examples{
-# Simple usage
-setup <- define_factors(data,
-  Population = "population_type",
-  Design = "study_design|N"
+\dontrun{
+# Simple factors
+setup <- define_factors(
+  data,
+  Population = "population_type",      # Default: U
+  Measure = "outcome_measure|E"        # Explicit: E
 )
 
-# Advanced usage with custom groupings
-setup <- define_factors(data,
-  # Custom risk of bias combinations
-  Risk_of_Bias = list("risk_of_bias",
+# Mixed simple and custom
+setup <- define_factors(
+  data,
+  Population = "population_type|E",
+  Risk_of_Bias = list(
+    "rob_rating",
+    decision = "U",
     groups = list(
-      "low_risk_only" = "low risk",
-      "exclude_high_risk" = c("low risk", "some concerns"),
-      "all_studies" = c("low risk", "some concerns", "high risk")
+      low_only = "low",
+      low_moderate = c("low", "moderate"),
+      all_studies = c("low", "moderate", "high")
     )
   ),
-
-  # Ordered quality levels (cumulative)
-  Study_Quality = list("methodological_quality",
-    type = "ordered",
-    levels = c("high", "medium", "low")
-  ),
-
-  # Separate analyses for different populations
-  Population = "population_type|N",
-
-  # Standard multiverse for guidance
-  Guidance = "guidance_level"
+  Study_Design = "design_type|N"  # Creates separate multiverses
 )
+}
 
+}
+\seealso{
+\code{\link{create_multiverse_specifications}} for next pipeline step
+\code{\link{check_data_multiverse}} for data validation
 }

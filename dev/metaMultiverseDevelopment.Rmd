@@ -34,34 +34,34 @@ library(glue)
 
 # Quick test run
 
-#v1.0
 ```{r}
+devtools::document()
 devtools::load_all()
+multiverse <- data_digDep %>%
+  check_data_multiverse() %>%
+  define_factors(
+    Population = "wf_3|U",
+    Technology = "wf_2|N",
+    Risk_of_Bias = list(
+      "wf_7",
+      decision = "U",
+      groups = list( 
+        "low_risk_only" = "low risk",
+        "exclude_high_risk" = c("low risk", "some concerns"),
+        "all_studies" = c("low risk", "some concerns", "high risk")
+      )
+    )
+  ) %>%
+  create_multiverse_specifications(ma_methods = "reml") %>% 
+  run_multiverse_analysis()
 
-data_validated <- check_data_multiverse(data_tiny)
+#viz
+plot_spec_curve(multiverse,
+         interactive = F)
 
-
-decision_map <- c(wf_1="U", wf_7 = "N")
-
-ensamble <- list_ma_methods()
-
-out <- create_principled_multiverse_specifications(
-  data          = data_validated,
-  wf_vars       = c("wf_1", "wf_7"),
-  ma_methods    = ensamble,
-  dependencies  = c("aggregate", "modeled"),
-  decision_map  = decision_map
-)
-
-specs <- out$specifications
-
-options(metaMultiverse.k_smallest_ma = 5)
-
-res <- run_multiverse_analysis(data_validated, specs, progress = T, verbose = T)
+plot_voe(multiverse)
 ```
 
-
-## create which factors
 
 #2.0 Worflow
 
