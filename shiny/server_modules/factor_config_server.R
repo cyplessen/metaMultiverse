@@ -10,6 +10,30 @@ factor_config_server <- function(input, output, session, values) {
     create_minimal_factor_ui(values$data)
   })
 
+  # Dynamically render custom groups UI for each factor
+  observe({
+    req(values$data)
+    required_cols <- c("study", "es_id", "yi", "vi")
+    potential_cols <- names(values$data)[!names(values$data) %in% required_cols]
+    potential_cols <- potential_cols[!sapply(potential_cols, function(col) is.numeric(values$data[[col]]))]
+
+    for (col_name in potential_cols) {
+      local({
+        col <- col_name
+        output[[paste0("groups_ui_", col)]] <- renderUI({
+          req(input[[paste0("grouping_", col)]] == "custom")
+          n_groups <- input[[paste0("n_groups_", col)]]
+          if (is.null(n_groups)) n_groups <- 2
+
+          unique_vals <- unique(values$data[[col]])
+          unique_vals <- unique_vals[!is.na(unique_vals)]
+
+          create_group_inputs(col, unique_vals, n_groups)
+        })
+      })
+    }
+  })
+
   # Create specifications
   observeEvent(input$create_specs, {
     create_define_factors_specs(input, values, session)
@@ -98,23 +122,54 @@ create_single_factor_ui <- function(col_name, unique_vals) {
 }
 
 create_custom_groups_ui <- function(col_name, unique_vals) {
+  # Create up to 5 group slots
+  max_groups <- 5
+
   div(style = "background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px;",
       h5("Custom Groups"),
-      p(paste("Available levels:", paste(unique_vals, collapse = ", ")),
+      p("Create custom groups by selecting levels for each group:",
         style = "color: #666; font-style: italic;"),
-      p("Define groups with one group per line in format: group_name = level1, level2, ...",
-        style = "color: #999; font-size: 0.9em; font-style: italic;"),
 
-      # Simple text area for group definitions
-      textAreaInput(
-        paste0("custom_groups_", col_name),
-        "Group Definitions:",
-        value = "",
-        rows = 5,
-        width = "100%",
-        placeholder = "Example:\nconservative = low risk\nmoderate = low risk, some concerns\nliberal = low risk, some concerns, high risk"
-      )
+      # Number of groups to show
+      numericInput(
+        paste0("n_groups_", col_name),
+        "Number of groups:",
+        value = 2,
+        min = 1,
+        max = max_groups,
+        step = 1,
+        width = "150px"
+      ),
+
+      # Dynamic group UIs
+      uiOutput(paste0("groups_ui_", col_name))
   )
+}
+
+create_group_inputs <- function(col_name, unique_vals, n_groups) {
+  lapply(1:n_groups, function(i) {
+    div(style = "border: 1px solid #ddd; padding: 12px; margin: 10px 0; border-radius: 8px; background: white;",
+        fluidRow(
+          column(4,
+                 textInput(
+                   paste0("group_", col_name, "_name_", i),
+                   "Group Name:",
+                   value = "",
+                   placeholder = paste0("Group ", i)
+                 )
+          ),
+          column(8,
+                 checkboxGroupInput(
+                   paste0("group_", col_name, "_levels_", i),
+                   "Select Levels:",
+                   choices = setNames(unique_vals, unique_vals),
+                   selected = NULL,
+                   inline = TRUE
+                 )
+          )
+        )
+    )
+  })
 }
 
 # ==============================================================================
@@ -232,37 +287,28 @@ render_minimal_specs_summary <- function(factor_setup, spec_output) {
 # ==============================================================================
 
 collect_dynamic_groups <- function(col_name, session) {
-  # Read groups text from text area
-  groups_text <- session$input[[paste0("custom_groups_", col_name)]]
-
   cat("DEBUG collect_dynamic_groups for", col_name, "\n")
-  cat("  groups_text:", groups_text, "\n")
 
-  if (is.null(groups_text) || nchar(trimws(groups_text)) == 0) {
-    cat("  -> No groups (empty)\n")
-    return(list())
-  }
+  # Check how many groups to look for
+  n_groups <- session$input[[paste0("n_groups_", col_name)]]
+  if (is.null(n_groups)) n_groups <- 5  # Default max
 
-  # Parse text format: group_name = level1, level2
   groups <- list()
-  lines <- strsplit(groups_text, "\n")[[1]]
 
-  for (line in lines) {
-    line <- trimws(line)
-    if (nchar(line) == 0 || !grepl("=", line)) next
+  # Collect each group
+  for (i in 1:n_groups) {
+    group_name <- session$input[[paste0("group_", col_name, "_name_", i)]]
+    group_levels <- session$input[[paste0("group_", col_name, "_levels_", i)]]
 
-    parts <- strsplit(line, "=")[[1]]
-    if (length(parts) != 2) next
+    cat("  Group", i, ": name =", group_name, ", levels =", paste(group_levels, collapse = ", "), "\n")
 
-    group_name <- trimws(parts[1])
-    levels_str <- trimws(parts[2])
-    levels <- trimws(strsplit(levels_str, ",")[[1]])
-
-    if (nchar(group_name) > 0 && length(levels) > 0) {
-      groups[[group_name]] <- levels
+    # Only add if both name and levels exist
+    if (!is.null(group_name) && nchar(trimws(group_name)) > 0 &&
+        !is.null(group_levels) && length(group_levels) > 0) {
+      groups[[group_name]] <- group_levels
     }
   }
 
-  cat("  -> Parsed", length(groups), "groups:", paste(names(groups), collapse = ", "), "\n")
+  cat("  -> Collected", length(groups), "groups:", paste(names(groups), collapse = ", "), "\n")
   return(groups)
 }
