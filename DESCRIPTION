@@ -10,7 +10,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
-Imports: 
+Imports:
     tibble,
     RColorBrewer,
     metafor,
@@ -19,7 +19,6 @@ Imports:
     purrr,
     tidyr,
     cowplot,
-    data.table,
     dplyr,
     ggplot2,
     glue,
@@ -28,7 +27,7 @@ Imports:
     scales,
     stringr,
     viridis
-Suggests: 
+Suggests:
     testthat (>= 3.0.0),
     withr,
     KernSmooth,
@@ -36,7 +35,8 @@ Suggests:
     knitr,
     rmarkdown,
     quarto,
-    kableExtra
+    kableExtra,
+    markdown
 Config/testthat/edition: 3
 Depends: 
     R (>= 3.5)

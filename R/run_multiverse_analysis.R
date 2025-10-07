@@ -115,14 +115,14 @@ run_multiverse_analysis <- function(spec_output, verbose = FALSE, progress = TRU
   n_specs <- nrow(specifications)
 
   if (verbose) {
-    cat("🚀 Starting multiverse analysis...\n")
+    cat("[*] Starting multiverse analysis...\n")
     if (!is.null(factor_groups) && length(factor_groups) > 0) {
       cat("   Using custom factor groupings for", length(factor_groups), "factors\n")
     }
   }
 
   if (progress) {
-    pb <- txtProgressBar(min = 0, max = n_specs, style = 3, width = 60, char = "█")
+    pb <- txtProgressBar(min = 0, max = n_specs, style = 3, width = 60, char = "=")
   }
 
   # Main analysis loop
@@ -150,7 +150,7 @@ run_multiverse_analysis <- function(spec_output, verbose = FALSE, progress = TRU
         paste0("Spec ", i, " ", spec_info, ": FAILED: ", e$message)
       )
       if (verbose) {
-        cat(sprintf("\n⚠️  Specification %d %s failed: %s\n",
+        cat(sprintf("\n[!] Specification %d %s failed: %s\n",
                     i, spec_info, e$message))
       }
       NULL
@@ -207,12 +207,12 @@ run_multiverse_analysis <- function(spec_output, verbose = FALSE, progress = TRU
   )
 
   if (verbose) {
-    cat("\n✅ Multiverse analysis completed!\n")
-    cat("   📈 Results:", nrow(final_df), "unique meta-analyses\n")
-    cat("   ⚠️  Warnings:", length(multiverse_warnings), "\n")
-    cat("   📊 Success rate:", round(100 * length(successes) / n_specs, 1), "%\n")
+    cat("\n[OK] Multiverse analysis completed!\n")
+    cat("   Results:", nrow(final_df), "unique meta-analyses\n")
+    cat("   Warnings:", length(multiverse_warnings), "\n")
+    cat("   Success rate:", round(100 * length(successes) / n_specs, 1), "%\n")
     if (length(multiverse_warnings) > 0) {
-      cat("\n💡 Access warnings with: result$multiverse_warnings\n")
+      cat("\n[i] Access warnings with: result$multiverse_warnings\n")
     }
   }
 

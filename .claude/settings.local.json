@@ -3,7 +3,10 @@
     "allow": [
       "Bash(R:*)",
       "Bash(Rscript:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

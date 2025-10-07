@@ -160,20 +160,20 @@ create_multiverse_specifications <- function(factor_setup,
   n_multiverses <- length(unique(specs$multiverse_id))
   n_factors <- length(wf_vars)
 
-  cat("\n📊 Multiverse Specifications Created\n")
-  cat("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-  cat(sprintf("✓ %d specifications\n", n_specs))
-  cat(sprintf("✓ %d multiverse(s)\n", n_multiverses))
-  cat(sprintf("✓ %d factors included\n", n_factors))
-  cat(sprintf("✓ %d methods × %d dependencies\n",
+  cat("\n[*] Multiverse Specifications Created\n")
+  cat("========================================================\n")
+  cat(sprintf("  %d specifications\n", n_specs))
+  cat(sprintf("  %d multiverse(s)\n", n_multiverses))
+  cat(sprintf("  %d factors included\n", n_factors))
+  cat(sprintf("  %d methods x %d dependencies\n",
               length(ma_methods), length(dependencies)))
 
   if (length(type_N) > 0) {
-    cat(sprintf("\n⚠️  Non-equivalent factors creating separate analyses:\n"))
+    cat(sprintf("\n[!] Non-equivalent factors creating separate analyses:\n"))
     for (f in type_N) {
       idx <- which(factor_setup$factors$wf_internal == f)
       label <- factor_setup$factors$label[idx]
-      cat(sprintf("   • %s\n", label))
+      cat(sprintf("   - %s\n", label))
     }
   }
 

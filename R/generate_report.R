@@ -6,6 +6,12 @@
 #' @param original_data Original dataset used for multiverse (used for k thresholds)
 #' @param min_k Integer. Minimum k for main analyses (e.g., 10).
 #' @param clin_g Numeric. Clinically relevant effect size threshold (e.g., 0.24).
+#' @param heterogeneity_stats Optional list with heterogeneity statistics (mean_I2, min_I2, max_I2, mean_tau2).
+#' @param pubbias_stats Optional list with publication bias statistics (pct_asym, median_ppe, median_uncorrected).
+#' @param moderator_stats Optional list with moderator statistics (mean_beta, sd_beta, pct_sig_regs).
+#' @param var_explained Optional list with variance explained statistics.
+#' @param extremes Optional list with extreme case statistics.
+#' @param consistency Optional list with consistency thresholds.
 #'
 #' @return Character vector: a multi-paragraph report ready for markdown.
 #' @import dplyr glue
@@ -79,7 +85,7 @@ generate_multiverse_report_text <- function(
       "The 10th percentile ES was {round(p10,3)}, and the 90th percentile was {round(p90,3)}."
     ),
     glue::glue(
-      "About {k_exact_perc}% (n = {k_exact}) of analyses had exactly {min_k} studies; {k_thresh[[1]]$pct}% (n = {k_thresh[[1]]$n}) had ≥ {k_thresh[[1]]$th}, and {k_thresh[[2]]$pct}% (n = {k_thresh[[2]]$n}) had ≥ {k_thresh[[2]]$th} studies."
+      "About {k_exact_perc}% (n = {k_exact}) of analyses had exactly {min_k} studies; {k_thresh[[1]]$pct}% (n = {k_thresh[[1]]$n}) had >= {k_thresh[[1]]$th}, and {k_thresh[[2]]$pct}% (n = {k_thresh[[2]]$n}) had >= {k_thresh[[2]]$th} studies."
     ),
     "### Descriptive Specification Curve & Vibration of Effects",
     glue::glue(
@@ -98,8 +104,8 @@ generate_multiverse_report_text <- function(
     report <- c(report,
                 "### Heterogeneity Across Analyses",
                 glue::glue(
-                  "Average I² = {round(heterogeneity_stats$mean_I2,1)}% (range {round(heterogeneity_stats$min_I2,1)}–{round(heterogeneity_stats$max_I2,1)}%); ",
-                  "Average τ² = {round(heterogeneity_stats$mean_tau2,3)}."
+                  "Average I^2 = {round(heterogeneity_stats$mean_I2,1)}% (range {round(heterogeneity_stats$min_I2,1)}-{round(heterogeneity_stats$max_I2,1)}%); ",
+                  "Average tau^2 = {round(heterogeneity_stats$mean_tau2,3)}."
                 )
     )
   }
@@ -120,7 +126,7 @@ generate_multiverse_report_text <- function(
     report <- c(report,
                 "### Moderator Sensitivity",
                 glue::glue(
-                  "Meta-regression slopes averaged β = {round(moderator_stats$mean_beta,3)} (SD = {round(moderator_stats$sd_beta,3)}), ",
+                  "Meta-regression slopes averaged beta = {round(moderator_stats$mean_beta,3)} (SD = {round(moderator_stats$sd_beta,3)}), ",
                   "significant in {moderator_stats$pct_sig_regs}% of analyses."
                 )
     )
@@ -164,7 +170,7 @@ generate_multiverse_report_text <- function(
               glue::glue("- Effect sizes remained positive in {pct_mean_over_zero}% of paths."),
               "- Dependency strategy choice was the largest source of uncertainty.",
               glue::glue("- Publication-bias adjustments changed median g by {round(pubbias_stats$median_uncorrected - pubbias_stats$median_ppe,3)}."),
-              glue::glue("- Results were robust up to k ≥ {max(consistency$thresholds)} studies.")
+              glue::glue("- Results were robust up to k >= {max(consistency$thresholds)} studies.")
   )
 
   return(report)

@@ -16,11 +16,6 @@ generate_multiverse_report <- function(results, specifications, original_data,
                                        include_plots = TRUE,
                                        plot_output_dir = NULL) {
 
-  # Load required packages
-  require(dplyr)
-  require(ggplot2)
-  require(plotly)
-
   # Handle different result formats
   if (is.list(results) && "results" %in% names(results)) {
     results_df <- results$results
@@ -289,8 +284,6 @@ generate_multiverse_plots <- function(results_clean, wf_columns, plot_output_dir
 #' @return List of interactive plotly objects
 #' @export
 create_interactive_multiverse_plots <- function(results, wf_columns = NULL) {
-
-  require(plotly)
 
   # Handle different result formats
   if (is.list(results) && "results" %in% names(results)) {

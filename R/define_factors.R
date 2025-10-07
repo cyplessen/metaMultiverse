@@ -248,14 +248,14 @@ process_custom_factor <- function(factor_def, factor_name, data, index) {
 #' Print factor summary (internal)
 #' @keywords internal
 print_factor_summary <- function(setup) {
-  cat("\n✅ Factor setup complete\n")
-  cat("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+  cat("\n[OK] Factor setup complete\n")
+  cat("========================================================\n")
 
   for (i in seq_len(nrow(setup$factors))) {
     factor <- setup$factors[i, ]
 
     # Factor name and type
-    cat(sprintf("📊 %s (%s)\n", factor$label, factor$grouping_type))
+    cat(sprintf("[*] %s (%s)\n", factor$label, factor$grouping_type))
 
     # Column and decision
     cat(sprintf("   Column: %s | Decision: %s %s\n",
@@ -271,7 +271,7 @@ print_factor_summary <- function(setup) {
       groups <- setup$factor_groups[[factor$wf_internal]]
       cat("   Groups:\n")
       for (g in names(groups)) {
-        cat(sprintf("     • %s: %s\n", g, paste(groups[[g]], collapse = ", ")))
+        cat(sprintf("     - %s: %s\n", g, paste(groups[[g]], collapse = ", ")))
       }
     } else if (factor$grouping_type == "simple") {
       levels <- unique(setup$data[[factor$column]])
@@ -286,7 +286,7 @@ print_factor_summary <- function(setup) {
   n_simple <- sum(setup$factors$grouping_type == "simple")
   n_custom <- sum(setup$factors$grouping_type == "custom")
 
-  cat("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+  cat("========================================================\n")
   cat(sprintf("Total: %d factors (%d simple, %d custom)\n\n",
               nrow(setup$factors), n_simple, n_custom))
 }

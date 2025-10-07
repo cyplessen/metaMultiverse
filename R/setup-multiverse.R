@@ -4,9 +4,7 @@
 #' Create Which-Factor Mapping (DEPRECATED)
 #'
 #' @description
-#' \lifecycle{deprecated}
-#'
-#' This function is deprecated. Please use \code{\link{define_factors}} instead,
+#' **Deprecated:** This function is deprecated. Please use \code{\link{define_factors}} instead,
 #' which provides more functionality including decision type specification (E/U/N)
 #' and custom factor groupings.
 #'
@@ -111,9 +109,7 @@ setup_which_factors <- function(data, which_factors = NULL, auto_detect = TRUE) 
 #' Get Original Variable Names for Display (DEPRECATED)
 #'
 #' @description
-#' \lifecycle{deprecated}
-#'
-#' This function is deprecated. Factor labels are now automatically managed
+#' **Deprecated:** This function is deprecated. Factor labels are now automatically managed
 #' by the \code{\link{define_factors}} pipeline and stored in factor_setup objects.
 #'
 #' @param wf_mapping Data frame created by setup_which_factors
@@ -144,9 +140,7 @@ get_display_labels <- function(wf_mapping, wf_internal = NULL) {
 #' Get Original Column Names (DEPRECATED)
 #'
 #' @description
-#' \lifecycle{deprecated}
-#'
-#' This function is deprecated. Factor column information is now automatically
+#' **Deprecated:** This function is deprecated. Factor column information is now automatically
 #' managed by the \code{\link{define_factors}} pipeline.
 #'
 #' @param wf_mapping Data frame created by setup_which_factors
@@ -177,7 +171,7 @@ get_original_names <- function(wf_mapping, wf_internal = NULL) {
 #' Enhanced Data Validation for Multiverse Analysis (DEPRECATED)
 #'
 #' @description
-#' \lifecycle{deprecated}
+#' **Deprecated:** Use \code{\link{check_data_multiverse}} instead.
 #'
 #' This function is deprecated. Please use \code{\link{check_data_multiverse}} instead,
 #' which now handles all validation needs.
@@ -245,9 +239,7 @@ check_data_multiverse_enhanced <- function(data, wf_setup = NULL) {
 #' Enhanced General Multiverse Function (DEPRECATED)
 #'
 #' @description
-#' \lifecycle{deprecated}
-#'
-#' This function is deprecated. Please use \code{\link{general_multiverse}} instead,
+#' **Deprecated:** This function is deprecated. Please use \code{\link{general_multiverse}} instead,
 #' which now includes all enhanced functionality.
 #'
 #' @inheritParams general_multiverse
