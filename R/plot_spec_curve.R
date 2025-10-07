@@ -111,6 +111,7 @@ plot_spec_curve <- function(x,
   }
 
   # Create levels for the y-axis by combining labels with data values
+  # Enhanced: Show custom group details if factor_groups exists
   factor_levels <- lapply(all_factors, function(col) {
     unique_values <- unique(data[[col]])
     unique_values <- unique_values[!is.na(unique_values)]
@@ -119,7 +120,26 @@ plot_spec_curve <- function(x,
       if (grepl("^total_", val)) {
         "Combined"
       } else {
-        stringr::str_to_sentence(as.character(val))
+        val_display <- stringr::str_to_sentence(as.character(val))
+
+        # Check if this is a custom group and add details
+        if (!is.null(x$factor_groups) && col %in% names(x$factor_groups)) {
+          groups <- x$factor_groups[[col]]
+          if (val %in% names(groups)) {
+            # This is a custom group - add the levels it includes
+            levels_included <- groups[[val]]
+            if (length(levels_included) <= 3) {
+              # Show all levels if 3 or fewer
+              levels_str <- paste(levels_included, collapse = ", ")
+              val_display <- paste0(val_display, " (", levels_str, ")")
+            } else {
+              # Show count if more than 3 levels
+              val_display <- paste0(val_display, " (", length(levels_included), " levels)")
+            }
+          }
+        }
+
+        val_display
       }
     })
 
@@ -150,7 +170,23 @@ plot_spec_curve <- function(x,
       if (grepl("^total_", value)) {
         paste0(factor_labels[[col]], ": Combined")
       } else {
-        paste0(factor_labels[[col]], ": ", stringr::str_to_sentence(value))
+        val_display <- stringr::str_to_sentence(value)
+
+        # Check if this is a custom group and add details (same logic as above)
+        if (!is.null(x$factor_groups) && col %in% names(x$factor_groups)) {
+          groups <- x$factor_groups[[col]]
+          if (value %in% names(groups)) {
+            levels_included <- groups[[value]]
+            if (length(levels_included) <= 3) {
+              levels_str <- paste(levels_included, collapse = ", ")
+              val_display <- paste0(val_display, " (", levels_str, ")")
+            } else {
+              val_display <- paste0(val_display, " (", length(levels_included), " levels)")
+            }
+          }
+        }
+
+        paste0(factor_labels[[col]], ": ", val_display)
       }
     }))
 
