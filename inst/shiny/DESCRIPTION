@@ -8,6 +8,7 @@ Imports:
     DT,
     plotly,
     dplyr,
-    purrr
+    purrr,
+    metaMultiverse
 Remotes:
-    github::cyplessen/metaMultiverse
+    cyplessen/metaMultiverse
