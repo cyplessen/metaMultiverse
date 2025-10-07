@@ -58,6 +58,7 @@
 #'   wf_1 = rep(c("A", "B"), times = 5)
 #' )
 #' specifications <- data.frame(
+#'   multiverse_id = 1:2,
 #'   wf_1 = c("A", "B"),
 #'   dependency = "aggregate",
 #'   ma_method = "reml"
@@ -72,6 +73,7 @@
 #'   )
 #' )
 #' specifications <- data.frame(
+#'   multiverse_id = 1,
 #'   wf_1 = "exclude_high",  # This will map to c("low risk", "some concerns")
 #'   dependency = "aggregate",
 #'   ma_method = "reml"

@@ -13,3 +13,14 @@ tutorials/
 ^shiny$
 
 ^example code$
+^publications$
+^references$
+^\.claude$
+^AUDIT_REPORT\.md$
+^DEPRECATION_CLEANUP\.md$
+^HOW_TO_TEST\.md$
+^INTEGRATION_TESTS\.md$
+^PHASE1_SUMMARY\.md$
+^TEST_FIXES\.md$
+^VIGNETTE_IMPROVEMENTS\.md$
+^package_instructions\.md$
