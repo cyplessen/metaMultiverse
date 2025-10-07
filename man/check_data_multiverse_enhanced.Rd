@@ -2,7 +2,7 @@
 % Please edit documentation in R/setup-multiverse.R
 \name{check_data_multiverse_enhanced}
 \alias{check_data_multiverse_enhanced}
-\title{Enhanced Data Validation for Multiverse Analysis}
+\title{Enhanced Data Validation for Multiverse Analysis (DEPRECATED)}
 \usage{
 check_data_multiverse_enhanced(data, wf_setup = NULL)
 }
@@ -15,5 +15,9 @@ check_data_multiverse_enhanced(data, wf_setup = NULL)
 Validated data with metadata
 }
 \description{
-Updated version of check_data_multiverse that works with the new which-factor system
+\lifecycle{deprecated}
+
+This function is deprecated. Please use \code{\link{check_data_multiverse}} instead,
+which now handles all validation needs.
 }
+\keyword{internal}

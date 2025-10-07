@@ -2,7 +2,7 @@
 % Please edit documentation in R/setup-multiverse.R
 \name{general_multiverse_enhanced}
 \alias{general_multiverse_enhanced}
-\title{Enhanced General Multiverse Function}
+\title{Enhanced General Multiverse Function (DEPRECATED)}
 \usage{
 general_multiverse_enhanced(
   i,
@@ -26,5 +26,9 @@ May contain custom group names that require mapping to actual data levels.}
 Defaults to 5.}
 }
 \description{
-Updated to work with the enhanced which-factor system
+\lifecycle{deprecated}
+
+This function is deprecated. Please use \code{\link{general_multiverse}} instead,
+which now includes all enhanced functionality.
 }
+\keyword{internal}

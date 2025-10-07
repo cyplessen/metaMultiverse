@@ -2,7 +2,7 @@
 % Please edit documentation in R/setup-multiverse.R
 \name{get_display_labels}
 \alias{get_display_labels}
-\title{Get Original Variable Names for Display}
+\title{Get Original Variable Names for Display (DEPRECATED)}
 \usage{
 get_display_labels(wf_mapping, wf_internal = NULL)
 }
@@ -15,5 +15,9 @@ get_display_labels(wf_mapping, wf_internal = NULL)
 Named character vector for display purposes
 }
 \description{
-Retrieves original variable names and labels for use in plots and reports
+\lifecycle{deprecated}
+
+This function is deprecated. Factor labels are now automatically managed
+by the \code{\link{define_factors}} pipeline and stored in factor_setup objects.
 }
+\keyword{internal}

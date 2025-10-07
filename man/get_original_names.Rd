@@ -2,7 +2,7 @@
 % Please edit documentation in R/setup-multiverse.R
 \name{get_original_names}
 \alias{get_original_names}
-\title{Get Original Column Names}
+\title{Get Original Column Names (DEPRECATED)}
 \usage{
 get_original_names(wf_mapping, wf_internal = NULL)
 }
@@ -15,5 +15,9 @@ get_original_names(wf_mapping, wf_internal = NULL)
 Named character vector of original column names
 }
 \description{
-Retrieves original column names for reference
+\lifecycle{deprecated}
+
+This function is deprecated. Factor column information is now automatically
+managed by the \code{\link{define_factors}} pipeline.
 }
+\keyword{internal}

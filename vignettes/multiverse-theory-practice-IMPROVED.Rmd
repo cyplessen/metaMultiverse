@@ -1,0 +1,730 @@
+---
+title: "Multiverse Meta-Analysis: Theory and Practice"
+author: "Constantin Yves Plessen"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+    fig_width: 10
+    fig_height: 7
+vignette: >
+  %\VignetteIndexEntry{Multiverse Meta-Analysis: Theory and Practice}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 10,
+  fig.height = 7,
+  fig.retina = 2,
+  warning = FALSE,
+  message = FALSE,
+  cache = TRUE
+)
+
+library(metaMultiverse)
+library(dplyr)
+library(ggplot2)
+```
+
+# Introduction
+
+Meta-analysis synthesizes research findings but requires many analytical decisions. Which studies to include? How to handle multiple effect sizes? Which statistical model? These **researcher degrees of freedom** can substantially impact conclusions.
+
+The **multiverse approach** (Steegen et al., 2016; Voracek et al., 2019) addresses this by systematically exploring the "garden of forking paths"—all reasonable analytical combinations—to assess robustness and identify influential choices.
+
+This vignette covers:
+
+1. **Theoretical framework**: The E/U/N decision typology
+2. **Practical implementation**: Complete workflow with examples
+3. **Interpretation**: Making sense of multiverse results
+4. **Reporting**: Communicating findings transparently
+
+---
+
+# Theoretical Framework
+
+## The Decision Space
+
+Meta-analytic decisions fall into two categories:
+
+### 1. "Which" Decisions: Data Inclusion Criteria
+
+-   Study quality thresholds (e.g., only RCTs vs. all designs)
+-   Population characteristics (adults vs. mixed ages)
+-   Measurement approaches (self-report vs. clinical interview)
+-   Time points (post-treatment vs. follow-up)
+-   Publication status (published only vs. including grey literature)
+
+### 2. "How" Decisions: Analytical Methods
+
+-   Statistical models (fixed vs. random effects, robust methods)
+-   Dependency handling (aggregate, select one, model structure)
+-   Publication bias correction (PET-PEESE, p-uniform\*, trim-and-fill)
+-   Effect size metric (when multiple options available)
+
+## The E/U/N Typology
+
+Not all decisions are equivalent. Del Giudice & Gangestad (2021) distinguish three types:
+
+### Type E: Equivalent Decisions
+
+**Definition:** Options are theoretically interchangeable for the research question.
+
+**Example:** Including studies from USA vs. Europe when studying a universal psychological phenomenon.
+
+**Implication:** Create variations *within* a single multiverse. All options included in the analysis space.
+
+**When to use:**
+
+-   Arbitrary thresholds (e.g., cutoff for "large" sample size)
+-   Geographic boundaries for universal phenomena
+-   Different but equally valid measurements of the same construct
+
+### Type U: Uncertain Decisions
+
+**Definition:** Unclear which option is "correct" or best.
+
+**Example:** Quality threshold for inclusion—should we exclude only high-risk studies, or also those with "some concerns"?
+
+**Implication:** Create variations *within* a multiverse. Exploring uncertainty.
+
+**When to use:**
+
+-   Debated methodological standards
+-   Subjective quality judgments
+-   Unclear optimal thresholds
+-   When literature provides no clear guidance
+
+### Type N: Non-equivalent Decisions
+
+**Definition:** Options address *different* research questions.
+
+**Example:** Children vs. adults—if developmental differences are expected, these are distinct questions.
+
+**Implication:** Create *separate* multiverses. Should be analyzed and reported separately.
+
+**When to use:**
+
+-   Theoretically distinct populations
+-   Fundamentally different interventions
+-   Different outcomes that shouldn't be pooled
+-   Different time points that represent different constructs
+
+## Principled vs. Full Multiverse
+
+-   **Principled multiverse** (E + U only): Variations in how you answer *one* research question
+-   **Full multiverse** (E + U + N): Including different research questions
+
+Most papers should report principled multiverses, with Type N creating separate analyses.
+
+---
+
+# Implementation
+
+## The metaMultiverse Pipeline
+
+Every analysis follows this pattern:
+
+```{r pipeline-code, eval=FALSE}
+results <- your_data %>%
+  check_data_multiverse() %>%
+  define_factors(...) %>%
+  create_multiverse_specifications(...) %>%
+  run_multiverse_analysis()
+```
+
+Let's walk through each step.
+
+---
+
+# Example: Digital Mental Health Interventions
+
+We'll analyze the `data_digDep` dataset: technology-assisted interventions for depression.
+
+## Load and Explore Data
+
+```{r load-data}
+data("data_digDep")
+
+cat("Dataset overview:\n")
+cat("  Effect sizes:", nrow(data_digDep), "\n")
+cat("  Studies:", length(unique(data_digDep$study)), "\n")
+cat("  Mean effect size:", round(mean(data_digDep$yi), 3), "\n")
+
+# Available factors
+wf_cols <- grep("^wf_", names(data_digDep), value = TRUE)
+cat("\nWhich factors available:", length(wf_cols), "\n")
+
+# Show what each factor represents
+cat("\nFactor descriptions:\n")
+cat("  wf_1: Technology type (website, mobile app, etc.)\n")
+cat("  wf_2: Guidance level (guided, unguided, etc.)\n")
+cat("  wf_3: Population (adult, mixed, etc.)\n")
+cat("  wf_4: Therapy type (CBT-based, other)\n")
+cat("  wf_5: Control group type (waitlist, other)\n")
+cat("  wf_6: Diagnosis (cut-off based, diagnosed)\n")
+cat("  wf_7: Risk of bias (low, some concerns, high)\n")
+cat("  wf_8: Time point (post-treatment, follow-up)\n")
+```
+
+## Step 1: Validate Data
+
+```{r validate}
+data_validated <- data_digDep %>%
+  check_data_multiverse()
+```
+
+The validation checks:
+
+-   ✅ Required columns present
+-   ✅ Correct data types
+-   ✅ No non-finite values
+-   ✅ Positive variances
+-   ✅ Unique effect size IDs
+
+---
+
+## Step 2: Define Analytical Choices
+
+Now we specify our multiverse. Let's consider decisions a researcher faces:
+
+### Research Questions
+
+1.  **Primary:** What is the effectiveness of digital interventions for depression?
+2.  **Secondary:** Does this differ at follow-up vs. post-treatment?
+
+### Analytical Decisions
+
+```{r define-factors}
+factor_setup <- data_validated %>%
+  define_factors(
+    # TYPE E: Theoretically equivalent for our question
+    Population = "wf_3|E",
+    Technology = "wf_1|E",
+
+    # TYPE U: Uncertain which threshold is best
+    Quality = "wf_7|U",
+    Guidance = "wf_2|U",
+
+    # TYPE N: Different research questions (timing)
+    TimePoint = "wf_8|N"
+  )
+
+# Examine the setup
+cat("\nFactor configuration:\n")
+print(factor_setup$factors)
+
+cat("\n\nDecision type distribution:\n")
+print(table(factor_setup$factors$type))
+```
+
+**Interpretation:**
+
+-   **Type E factors** (Population, Technology): All levels will be explored, plus "total" (all combined)
+-   **Type U factors** (Quality, Guidance): Exploring uncertainty about optimal thresholds
+-   **Type N factor** (TimePoint): Creates separate multiverses for post vs. follow-up
+
+### Advanced: Custom Groupings
+
+Instead of treating each level separately, we can create theoretically motivated groups:
+
+```{r custom-groupings}
+factor_setup_custom <- data_validated %>%
+  define_factors(
+    # Simple factors
+    Population = "wf_3|E",
+
+    # Custom grouped factor: Combine related levels
+    Guidance = "wf_2|U|high={guided}|low={unguided,minimal_guidance,no_guidance}",
+
+    # Custom quality groupings
+    Quality = list(
+      column = "wf_7",
+      decision_type = "U",
+      groups = list(
+        strict = "low risk",
+        moderate = c("low risk", "some concerns"),
+        permissive = c("low risk", "some concerns", "high risk")
+      )
+    ),
+
+    # Type N (separate multiverses)
+    TimePoint = "wf_8|N"
+  )
+
+cat("\nCustom groupings created:\n")
+print(factor_setup_custom$factor_groups)
+```
+
+**Use cases for custom groupings:**
+
+-   Combining rare categories for statistical power
+-   Testing sensitivity to different quality thresholds
+-   Creating theory-driven comparisons
+
+---
+
+## Step 3: Generate All Specifications
+
+Now we create the full specification grid:
+
+```{r create-specs}
+specs <- factor_setup %>%
+  create_multiverse_specifications(
+    # Meta-analytic methods to compare
+    ma_methods = c(
+      "fe",           # Fixed effects
+      "reml",         # Random effects (REML)
+      "pm",           # Paule-Mandel
+      "pet-peese",    # Publication bias correction
+      "uwls"          # Unweighted least squares
+    ),
+
+    # Dependency handling strategies
+    dependencies = c(
+      "aggregate",    # Aggregate within studies
+      "select_max",   # Select largest effect per study
+      "select_min"    # Select smallest effect per study
+    )
+  )
+
+cat("\nSpecification grid created:\n")
+cat("  Total specifications:", specs$number_specs, "\n")
+cat("  Unique multiverses:",
+    length(unique(specs$specifications$multiverse_id)), "\n")
+
+# Show first few specifications
+cat("\nExample specifications:\n")
+print(head(specs$specifications[, 1:8]))
+```
+
+**What happened:**
+
+-   Each E/U factor creates N levels + 1 "total" option
+-   Type N factor creates separate multiverse_id values
+-   Methods × dependencies × factors = full grid
+-   Invalid combinations automatically filtered (e.g., some methods don't work with some dependencies)
+
+### Check Available Methods
+
+```{r show-methods}
+cat("All available meta-analytic methods:\n")
+methods <- list_ma_methods()
+for (method in methods) {
+  cat("  -", method, "\n")
+}
+```
+
+---
+
+## Step 4: Run All Analyses
+
+Now we execute every specification:
+
+```{r run-analyses}
+results <- specs %>%
+  run_multiverse_analysis(
+    verbose = FALSE,  # Set TRUE for detailed progress
+    progress = TRUE   # Show progress bar
+  )
+
+# Summary
+cat("\nMultiverse analysis complete!\n")
+cat("  Specifications attempted:", results$n_attempted, "\n")
+cat("  Successful analyses:", results$n_successful, "\n")
+cat("  Failed analyses:", results$n_attempted - results$n_successful, "\n")
+cat("  Success rate:",
+    round(100 * results$n_successful / results$n_attempted, 1), "%\n")
+
+# Effect size distribution
+cat("\nEffect size summary:\n")
+print(summary(results$results$b))
+
+cat("\nStudies per analysis (k):\n")
+print(summary(results$results$k))
+```
+
+### Examine Results Table
+
+```{r examine-results}
+# Show structure
+cat("Results columns:\n")
+cat(" ", paste(names(results$results), collapse = ", "), "\n")
+
+# Sample results
+cat("\nSample results (first 10 specifications):\n")
+print(head(results$results[, c("b", "ci.lb", "ci.ub", "pval", "k",
+                               "ma_method", "dependency", "multiverse_id")], 10))
+```
+
+---
+
+## Step 5: Visualize the Multiverse
+
+### Specification Curve
+
+The specification curve shows all results sorted by effect size:
+
+```{r spec-curve, fig.width=12, fig.height=8}
+plot_spec_curve(results, interactive = FALSE)
+```
+
+**How to read this:**
+
+-   **Top panel**: Effect sizes (dots) with 95% CIs (vertical lines), sorted by magnitude
+-   **Bottom panels**: Specification choices for each result
+    -   Each row shows which level was used for that factor
+    -   Colors indicate number of studies (darker = more studies)
+-   **Horizontal line**: Zero effect
+
+**What to look for:**
+
+-   Consistency across specifications
+-   Influential factors (which choices cause big shifts?)
+-   Outlier specifications
+
+### Vibration of Effects Plot
+
+Shows relationship between effect size and statistical significance:
+
+```{r voe-plot, fig.width=10, fig.height=7}
+plot_voe(results, interactive = FALSE)
+```
+
+**How to read this:**
+
+-   **X-axis**: Effect size
+-   **Y-axis**: P-value (log scale)
+-   **Color density**: Concentration of results
+-   **Red line**: p = 0.05 threshold
+
+**What to look for:**
+
+-   Clustering of results
+-   Results near the significance boundary (potential fragility)
+-   Outliers in either direction
+
+---
+
+# Interpreting the Multiverse
+
+## Consistency Analysis
+
+### Overall Robustness
+
+```{r consistency}
+cat("=== ROBUSTNESS ANALYSIS ===\n\n")
+
+# Direction consistency
+pos_prop <- mean(results$results$b > 0, na.rm = TRUE)
+cat("Positive effects:",
+    round(100 * pos_prop, 1), "%\n")
+
+# Statistical significance
+sig_prop <- mean(results$results$pval < 0.05, na.rm = TRUE)
+cat("Significant (p < .05):",
+    round(100 * sig_prop, 1), "%\n")
+
+# Clinically meaningful (e.g., g > 0.2)
+clin_prop <- mean(results$results$b > 0.2, na.rm = TRUE)
+cat("Clinically meaningful (g > 0.2):",
+    round(100 * clin_prop, 1), "%\n")
+
+# Effect size stability
+cat("\nEffect size range:\n")
+cat("  Min:", round(min(results$results$b, na.rm = TRUE), 3), "\n")
+cat("  Q1:", round(quantile(results$results$b, 0.25, na.rm = TRUE), 3), "\n")
+cat("  Median:", round(median(results$results$b, na.rm = TRUE), 3), "\n")
+cat("  Q3:", round(quantile(results$results$b, 0.75, na.rm = TRUE), 3), "\n")
+cat("  Max:", round(max(results$results$b, na.rm = TRUE), 3), "\n")
+```
+
+### Variability by Choice
+
+Which analytical decisions matter most?
+
+```{r variability-by-method}
+cat("\n=== VARIABILITY BY METHOD ===\n")
+results$results %>%
+  group_by(ma_method) %>%
+  summarise(
+    n = n(),
+    mean_g = mean(b, na.rm = TRUE),
+    sd_g = sd(b, na.rm = TRUE),
+    median_g = median(b, na.rm = TRUE),
+    prop_sig = mean(pval < 0.05, na.rm = TRUE)
+  ) %>%
+  arrange(desc(mean_g)) %>%
+  print()
+```
+
+```{r variability-by-dependency}
+cat("\n=== VARIABILITY BY DEPENDENCY STRATEGY ===\n")
+results$results %>%
+  group_by(dependency) %>%
+  summarise(
+    n = n(),
+    mean_g = mean(b, na.rm = TRUE),
+    sd_g = sd(b, na.rm = TRUE),
+    range_g = paste0("[",
+                     round(min(b, na.rm = TRUE), 3), ", ",
+                     round(max(b, na.rm = TRUE), 3), "]")
+  ) %>%
+  arrange(desc(mean_g)) %>%
+  print()
+```
+
+**Interpretation guide:**
+
+-   Large differences between methods → method choice is influential
+-   Small standard deviations → robust to that choice
+-   Different `prop_sig` rates → decisions affect inference
+
+## Comparing Multiverses (Type N)
+
+Remember TimePoint was Type N, creating separate multiverses:
+
+```{r compare-multiverses}
+cat("\n=== MULTIVERSE COMPARISON ===\n")
+cat("(Post-treatment vs. Follow-up)\n\n")
+
+multiverse_comparison <- results$results %>%
+  group_by(multiverse_id) %>%
+  summarise(
+    n_specs = n(),
+    mean_g = mean(b, na.rm = TRUE),
+    median_g = median(b, na.rm = TRUE),
+    sd_g = sd(b, na.rm = TRUE),
+    min_g = min(b, na.rm = TRUE),
+    max_g = max(b, na.rm = TRUE),
+    prop_sig = mean(pval < 0.05, na.rm = TRUE),
+    mean_k = mean(k, na.rm = TRUE)
+  )
+
+print(multiverse_comparison)
+
+cat("\nInterpretation:\n")
+cat("These should be reported as SEPARATE findings,\n")
+cat("not combined, because they answer different questions.\n")
+```
+
+## Visualizing Variability
+
+```{r variability-plots, fig.width=12, fig.height=6}
+# Effect sizes by method
+p1 <- ggplot(results$results, aes(x = ma_method, y = b, fill = ma_method)) +
+  geom_violin(alpha = 0.6) +
+  geom_boxplot(width = 0.2, outlier.shape = NA) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(
+    title = "Effect Size Distribution by Meta-Analytic Method",
+    x = "Method",
+    y = "Hedges' g",
+    subtitle = paste0("N = ", results$n_successful, " specifications")
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  coord_flip()
+
+print(p1)
+```
+
+```{r dependency-plot, fig.width=10, fig.height=5}
+# Effect sizes by dependency strategy
+p2 <- ggplot(results$results, aes(x = dependency, y = b, fill = dependency)) +
+  geom_violin(alpha = 0.6) +
+  geom_boxplot(width = 0.2, outlier.shape = NA) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(
+    title = "Effect Size Distribution by Dependency Handling",
+    x = "Dependency Strategy",
+    y = "Hedges' g"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+print(p2)
+```
+
+---
+
+# Reporting Your Multiverse
+
+## Essential Components
+
+### 1. Decision Justification
+
+**Example text:**
+
+> We conducted a multiverse meta-analysis to assess robustness across analytical decisions. We specified five factors:
+>
+> -   **Population** (Type E): Adult vs. mixed age samples—considered equivalent for our research question about general effectiveness.
+> -   **Technology** (Type E): Website, mobile app, computer program—all valid digital delivery modes.
+> -   **Quality** (Type U): Risk of bias thresholds—uncertain whether to exclude high-risk studies only, or also those with "some concerns."
+> -   **Guidance** (Type U): Therapist guidance level—unclear optimal threshold.
+> -   **Time Point** (Type N): Post-treatment vs. follow-up—fundamentally different questions about immediate vs. sustained effects.
+
+### 2. Specification Summary
+
+```{r reporting-summary}
+cat("MULTIVERSE SUMMARY FOR PAPER:\n\n")
+cat("Total specifications:", results$n_successful, "\n")
+cat("Multiverses analyzed:", length(unique(results$results$multiverse_id)), "\n")
+cat("Meta-analytic methods:", length(unique(results$results$ma_method)), "\n")
+cat("Dependency strategies:", length(unique(results$results$dependency)), "\n")
+cat("\nEffect size summary:\n")
+cat("  Range: g = ", round(min(results$results$b), 2), " to ",
+    round(max(results$results$b), 2), "\n", sep = "")
+cat("  Median: g = ", round(median(results$results$b), 2), "\n", sep = "")
+cat("  IQR: [", round(quantile(results$results$b, 0.25), 2), ", ",
+    round(quantile(results$results$b, 0.75), 2), "]\n", sep = "")
+cat("\nInferential statistics:\n")
+cat("  Significant (p < .05): ",
+    round(100 * mean(results$results$pval < 0.05), 0), "%\n", sep = "")
+cat("  Positive direction: ",
+    round(100 * mean(results$results$b > 0), 0), "%\n", sep = "")
+```
+
+### 3. Key Findings
+
+**Example paragraph:**
+
+```{r reporting-text, results='asis', echo=FALSE}
+cat(sprintf(
+  "> Across %d specifications, effect sizes ranged from g = %.2f to g = %.2f (Mdn = %.2f, IQR = [%.2f, %.2f]). Results were statistically significant (p < .05) in %d%% of specifications, and all effect sizes were positive, suggesting robust evidence for effectiveness. The choice of dependency handling strategy had the largest impact on results, with aggregated analyses (M = %.2f) yielding larger effects than max-selection (M = %.2f) or min-selection (M = %.2f) approaches.",
+  results$n_successful,
+  min(results$results$b),
+  max(results$results$b),
+  median(results$results$b),
+  quantile(results$results$b, 0.25),
+  quantile(results$results$b, 0.75),
+  round(100 * mean(results$results$pval < 0.05)),
+  results$results %>% filter(dependency == "aggregate") %>% summarise(m = mean(b)) %>% pull(m) %>% round(2),
+  results$results %>% filter(dependency == "select_max") %>% summarise(m = mean(b)) %>% pull(m) %>% round(2),
+  results$results %>% filter(dependency == "select_min") %>% summarise(m = mean(b)) %>% pull(m) %>% round(2)
+))
+```
+
+### 4. Specification Curve Figure
+
+Include the specification curve plot in your paper with caption:
+
+> **Figure X.** Specification curve showing effect sizes (top) and analytical choices (bottom) across all `r results$n_successful` specifications. Each point represents one unique combination of meta-analytic method, dependency handling, and inclusion criteria. Vertical lines show 95% confidence intervals. Bottom panels indicate which levels of each factor were used for each specification. Color indicates number of studies included. All specifications yielded positive effects, with effect sizes ranging from g = `r round(min(results$results$b), 2)` to g = `r round(max(results$results$b), 2)`.
+
+---
+
+# Best Practices
+
+## Do's ✅
+
+1.  **Pre-register your multiverse** when possible
+2.  **Justify all decisions** - why each choice was included
+3.  **Use E/U/N typology** - helps readers understand your reasoning
+4.  **Report full range** - don't just report the median
+5.  **Identify influential choices** - which decisions matter most?
+6.  **Separate Type N** - different questions = different reports
+7.  **Show specification curve** - transparency about all results
+
+## Don'ts ❌
+
+1.  **Don't cherry-pick** - report the full multiverse, not just favorable specs
+2.  **Don't ignore Type N** - these are separate research questions
+3.  **Don't overinterpret** - multiverse shows robustness, not "truth"
+4.  **Don't include obviously invalid choices** - only defensible options
+5.  **Don't use multiverse to hide p-hacking** - be transparent about choices
+6.  **Don't forget to discuss** - what do the results mean?
+
+---
+
+# Advanced: Extending the Package
+
+## Custom Meta-Analytic Methods
+
+You can add your own methods (requires understanding the internals):
+
+```{r custom-method-example, eval=FALSE}
+# Your custom method
+my_custom_method <- function(data) {
+  # Must return a list with: b, ci.lb, ci.ub, pval
+  # Example: trimmed mean
+  trimmed_yi <- mean(data$yi, trim = 0.1)
+  se <- sd(data$yi) / sqrt(nrow(data))
+
+  list(
+    b = trimmed_yi,
+    ci.lb = trimmed_yi - 1.96 * se,
+    ci.ub = trimmed_yi + 1.96 * se,
+    pval = 2 * pnorm(-abs(trimmed_yi / se))
+  )
+}
+
+# Register it (advanced - requires package internals)
+# metaMultiverse:::register_ma_method("my_method", my_custom_method)
+```
+
+## Filtering Specifications Post-Hoc
+
+Sometimes you want to subset results:
+
+```{r filtering-example}
+# Only well-powered analyses
+well_powered <- results$results %>%
+  filter(k >= 20)
+
+cat("Well-powered specs (k >= 20):", nrow(well_powered), "\n")
+cat("Effect size range:", round(range(well_powered$b), 2), "\n")
+
+# Only standard methods (no bias correction)
+standard_methods <- results$results %>%
+  filter(ma_method %in% c("fe", "reml", "pm"))
+
+cat("\nStandard methods only:", nrow(standard_methods), "\n")
+cat("Effect size range:", round(range(standard_methods$b), 2), "\n")
+```
+
+---
+
+# Conclusion
+
+Multiverse meta-analysis transforms analytical flexibility from a threat to validity into a tool for understanding robustness. Key principles:
+
+1.  **Transparency**: Show all reasonable paths, not just one
+2.  **Theory**: Use E/U/N framework to guide choices
+3.  **Interpretation**: Focus on consistency and influential factors
+4.  **Reporting**: Full disclosure builds credibility
+
+The `metaMultiverse` package makes this approach accessible through a clean, pipeable workflow that handles computational complexity while preserving theoretical clarity.
+
+---
+
+# References
+
+**Core papers on multiverse analysis:**
+
+Steegen, S., Tuerlinckx, F., Gelman, A., & Vanpaemel, W. (2016). Increasing transparency through a multiverse analysis. *Perspectives on Psychological Science*, 11(5), 702-712. https://doi.org/10.1177/1745691616658637
+
+Voracek, M., Kossmeier, M., & Tran, U. S. (2019). Which data to meta-analyze, and how? A specification-curve and multiverse-analysis approach to meta-analysis. *Zeitschrift für Psychologie*, 227(1), 64-82. https://doi.org/10.1027/2151-2604/a000357
+
+Del Giudice, M., & Gangestad, S. W. (2021). A traveler's guide to the multiverse: Promises, pitfalls, and a framework for the evaluation of analytic decisions. *Advances in Methods and Practices in Psychological Science*, 4(1), 1-15. https://doi.org/10.1177/2515245920954925
+
+**Meta-analysis methodology:**
+
+Harrer, M., Cuijpers, P., Furukawa, T.A., & Ebert, D.D. (2021). *Doing Meta-Analysis with R: A Hands-On Guide*. Chapman & Hall/CRC Press. https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/
+
+Viechtbauer, W. (2010). Conducting meta-analyses in R with the metafor package. *Journal of Statistical Software*, 36(3), 1-48. https://doi.org/10.18637/jss.v036.i03
+
+---
+
+# Session Information
+
+```{r session-info}
+sessionInfo()
+```

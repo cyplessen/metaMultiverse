@@ -2,7 +2,7 @@
 % Please edit documentation in R/setup-multiverse.R
 \name{setup_which_factors}
 \alias{setup_which_factors}
-\title{Create Which-Factor Mapping}
+\title{Create Which-Factor Mapping (DEPRECATED)}
 \usage{
 setup_which_factors(data, which_factors = NULL, auto_detect = TRUE)
 }
@@ -18,25 +18,10 @@ e.g., c("Population Type" = "pop_type", "Study Design" = "design")}
 A list containing the prepared data and mapping information
 }
 \description{
-Creates a mapping between user's original variable names and internal wf_* columns,
-preserving original names for display purposes while standardizing for analysis.
-}
-\examples{
-# User has their own column names
-data <- data.frame(
-  study = c("Study1", "Study2"),
-  es_id = 1:2,
-  yi = c(0.5, 0.3),
-  vi = c(0.02, 0.03),
-  population = c("Adults", "Children"),
-  study_design = c("RCT", "Observational")
-)
+\lifecycle{deprecated}
 
-# Map to which factors with meaningful labels
-wf_setup <- setup_which_factors(
-  data,
-  which_factors = c("Population Type" = "population",
-                    "Study Design" = "study_design")
-)
-
+This function is deprecated. Please use \code{\link{define_factors}} instead,
+which provides more functionality including decision type specification (E/U/N)
+and custom factor groupings.
 }
+\keyword{internal}

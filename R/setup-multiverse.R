@@ -1,7 +1,14 @@
-#' Create Which-Factor Mapping
+# ABOUTME: This file contains deprecated functions from an earlier API design.
+# ABOUTME: All functions here issue deprecation warnings and will be removed in v1.0.
+
+#' Create Which-Factor Mapping (DEPRECATED)
 #'
-#' Creates a mapping between user's original variable names and internal wf_* columns,
-#' preserving original names for display purposes while standardizing for analysis.
+#' @description
+#' \lifecycle{deprecated}
+#'
+#' This function is deprecated. Please use \code{\link{define_factors}} instead,
+#' which provides more functionality including decision type specification (E/U/N)
+#' and custom factor groupings.
 #'
 #' @param data Data frame containing the dataset
 #' @param which_factors Named character vector mapping display labels to column names,
@@ -9,26 +16,22 @@
 #' @param auto_detect Logical. If TRUE, automatically detects existing wf_* columns
 #' @return A list containing the prepared data and mapping information
 #'
-#' @examples
-#' # User has their own column names
-#' data <- data.frame(
-#'   study = c("Study1", "Study2"),
-#'   es_id = 1:2,
-#'   yi = c(0.5, 0.3),
-#'   vi = c(0.02, 0.03),
-#'   population = c("Adults", "Children"),
-#'   study_design = c("RCT", "Observational")
-#' )
-#'
-#' # Map to which factors with meaningful labels
-#' wf_setup <- setup_which_factors(
-#'   data,
-#'   which_factors = c("Population Type" = "population",
-#'                     "Study Design" = "study_design")
-#' )
-#'
+#' @keywords internal
 #' @export
 setup_which_factors <- function(data, which_factors = NULL, auto_detect = TRUE) {
+
+  .Deprecated(
+    new = "define_factors",
+    msg = paste(
+      "setup_which_factors() is deprecated and will be removed in a future version.",
+      "Please use define_factors() instead, which provides:",
+      "  - Decision type specification (E/U/N)",
+      "  - Custom factor groupings",
+      "  - Better integration with the multiverse pipeline",
+      "\nSee ?define_factors for details.",
+      sep = "\n"
+    )
+  )
 
   # Input validation
   if (!is.data.frame(data)) {
@@ -105,16 +108,30 @@ setup_which_factors <- function(data, which_factors = NULL, auto_detect = TRUE) 
   ))
 }
 
-#' Get Original Variable Names for Display
+#' Get Original Variable Names for Display (DEPRECATED)
 #'
-#' Retrieves original variable names and labels for use in plots and reports
+#' @description
+#' \lifecycle{deprecated}
+#'
+#' This function is deprecated. Factor labels are now automatically managed
+#' by the \code{\link{define_factors}} pipeline and stored in factor_setup objects.
 #'
 #' @param wf_mapping Data frame created by setup_which_factors
 #' @param wf_internal Character vector of internal wf_* column names
 #' @return Named character vector for display purposes
 #'
+#' @keywords internal
 #' @export
 get_display_labels <- function(wf_mapping, wf_internal = NULL) {
+
+  .Deprecated(
+    msg = paste(
+      "get_display_labels() is deprecated.",
+      "Factor labels are now automatically managed by define_factors().",
+      "Access them via: factor_setup$factors$label",
+      sep = "\n"
+    )
+  )
   if (is.null(wf_internal)) {
     wf_internal <- wf_mapping$wf_internal
   }
@@ -124,16 +141,30 @@ get_display_labels <- function(wf_mapping, wf_internal = NULL) {
   return(labels)
 }
 
-#' Get Original Column Names
+#' Get Original Column Names (DEPRECATED)
 #'
-#' Retrieves original column names for reference
+#' @description
+#' \lifecycle{deprecated}
+#'
+#' This function is deprecated. Factor column information is now automatically
+#' managed by the \code{\link{define_factors}} pipeline.
 #'
 #' @param wf_mapping Data frame created by setup_which_factors
 #' @param wf_internal Character vector of internal wf_* column names
 #' @return Named character vector of original column names
 #'
+#' @keywords internal
 #' @export
 get_original_names <- function(wf_mapping, wf_internal = NULL) {
+
+  .Deprecated(
+    msg = paste(
+      "get_original_names() is deprecated.",
+      "Factor column information is now managed by define_factors().",
+      "Access it via: factor_setup$factors$column",
+      sep = "\n"
+    )
+  )
   if (is.null(wf_internal)) {
     wf_internal <- wf_mapping$wf_internal
   }
@@ -143,16 +174,30 @@ get_original_names <- function(wf_mapping, wf_internal = NULL) {
   return(original)
 }
 
-#' Enhanced Data Validation for Multiverse Analysis
+#' Enhanced Data Validation for Multiverse Analysis (DEPRECATED)
 #'
-#' Updated version of check_data_multiverse that works with the new which-factor system
+#' @description
+#' \lifecycle{deprecated}
+#'
+#' This function is deprecated. Please use \code{\link{check_data_multiverse}} instead,
+#' which now handles all validation needs.
 #'
 #' @param data Data frame to validate
 #' @param wf_setup List returned from setup_which_factors (optional)
 #' @return Validated data with metadata
 #'
+#' @keywords internal
 #' @export
 check_data_multiverse_enhanced <- function(data, wf_setup = NULL) {
+
+  .Deprecated(
+    new = "check_data_multiverse",
+    msg = paste(
+      "check_data_multiverse_enhanced() is deprecated.",
+      "Please use check_data_multiverse() instead.",
+      sep = "\n"
+    )
+  )
 
   # Use the wf_setup if provided, otherwise fall back to original validation
   if (!is.null(wf_setup)) {
@@ -197,13 +242,27 @@ check_data_multiverse_enhanced <- function(data, wf_setup = NULL) {
   return(data)
 }
 
-#' Enhanced General Multiverse Function
+#' Enhanced General Multiverse Function (DEPRECATED)
 #'
-#' Updated to work with the enhanced which-factor system
+#' @description
+#' \lifecycle{deprecated}
+#'
+#' This function is deprecated. Please use \code{\link{general_multiverse}} instead,
+#' which now includes all enhanced functionality.
 #'
 #' @inheritParams general_multiverse
+#' @keywords internal
 #' @export
 general_multiverse_enhanced <- function(i, data_multiverse, specifications, k_smallest_ma = getOption("metaMultiverse.k_smallest_ma", 5)) {
+
+  .Deprecated(
+    new = "general_multiverse",
+    msg = paste(
+      "general_multiverse_enhanced() is deprecated.",
+      "Please use general_multiverse() instead.",
+      sep = "\n"
+    )
+  )
 
   # Get the wf_mapping if available
   wf_mapping <- attr(data_multiverse, "wf_mapping")
@@ -242,42 +301,22 @@ general_multiverse_enhanced <- function(i, data_multiverse, specifications, k_sm
   return(out)
 }
 
-# Example usage workflow:
-example_usage <- function() {
-  # 1. User provides data with their own column names
-  user_data <- data.frame(
-    study = c("Smith2020", "Jones2021", "Brown2019"),
-    es_id = 1:3,
-    yi = c(0.5, 0.3, 0.7),
-    vi = c(0.02, 0.03, 0.025),
-    population_type = c("Adults", "Children", "Adults"),
-    study_design = c("RCT", "Observational", "RCT"),
-    stringsAsFactors = FALSE
-  )
-
-  # 2. Setup which factors with meaningful labels
-  wf_setup <- setup_which_factors(
-    user_data,
-    which_factors = c(
-      "Population Type" = "population_type",
-      "Study Design" = "study_design"
-    )
-  )
-
-  # 3. Validate the data
-  validated_data <- check_data_multiverse_enhanced(user_data, wf_setup)
-
-  # 4. For plotting/reporting, get display labels
-  display_labels <- get_display_labels(wf_setup$wf_mapping)
-  # Returns: c(wf_1 = "Population Type", wf_2 = "Study Design")
-
-  # 5. Get original column names if needed
-  original_names <- get_original_names(wf_setup$wf_mapping)
-  # Returns: c(wf_1 = "population_type", wf_2 = "study_design")
-
-  return(list(
-    data = validated_data,
-    display_labels = display_labels,
-    original_names = original_names
-  ))
-}
+# ==============================================================================
+# DEPRECATION NOTE
+# ==============================================================================
+#
+# All functions in this file are deprecated and will be removed in v1.0.
+# They are kept for backward compatibility only.
+#
+# Modern workflow using define_factors():
+#
+# data %>%
+#   check_data_multiverse() %>%
+#   define_factors(
+#     Population = "population_type|E",
+#     Design = "study_design|U"
+#   ) %>%
+#   create_multiverse_specifications() %>%
+#   run_multiverse_analysis()
+#
+# ==============================================================================

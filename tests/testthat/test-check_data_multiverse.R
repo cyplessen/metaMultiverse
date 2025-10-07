@@ -16,13 +16,21 @@ create_valid_data <- function() {
 }
 
 # Test successful validation
-test_that("valid data passes and returns TRUE", {
+test_that("valid data passes and returns validated data frame", {
   valid_data <- create_valid_data()
   expect_message(
     result <- metaMultiverse::check_data_multiverse(valid_data),
     regexp = "Data validation passed"
   )
-  expect_true(result)
+
+  # Check return type and validation attributes
+  expect_s3_class(result, "data.frame")
+  expect_true(attr(result, "multiverse_validated"))
+  expect_true(!is.null(attr(result, "validation_timestamp")))
+
+  # Check data integrity
+  expect_equal(nrow(result), nrow(valid_data))
+  expect_equal(ncol(result), ncol(valid_data))
 })
 
 # Test input validation errors
@@ -208,7 +216,7 @@ test_that("extreme effect sizes trigger warnings but pass", {
     result <- metaMultiverse::check_data_multiverse(bad_data),
     regexp = "Found 1 effect sizes with absolute value > 10"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
 
 test_that("large Cohen's d triggers SD/SE confusion warning", {
@@ -220,7 +228,7 @@ test_that("large Cohen's d triggers SD/SE confusion warning", {
     result <- metaMultiverse::check_data_multiverse(bad_data),
     regexp = "unreasonably large d detected.*Check if SD and SE were confused"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
 
 test_that("multiple large Cohen's d values are detected", {
@@ -232,7 +240,7 @@ test_that("multiple large Cohen's d values are detected", {
     result <- metaMultiverse::check_data_multiverse(bad_data),
     regexp = "Found 2 unreasonably large d detected"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
 
 test_that("extreme variances trigger warnings but pass", {
@@ -246,7 +254,7 @@ test_that("extreme variances trigger warnings but pass", {
     result <- metaMultiverse::check_data_multiverse(bad_data),
     regexp = "Found 1 variances > 100"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
 
 # Test study count warnings
@@ -265,7 +273,7 @@ test_that("few studies trigger warnings", {
     result <- metaMultiverse::check_data_multiverse(few_studies_data),
     regexp = "Only 2 unique studies found"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
 
 # Test missing value warnings
@@ -280,7 +288,7 @@ test_that("missing values trigger warnings but pass", {
     result <- metaMultiverse::check_data_multiverse(bad_data),
     regexp = "Some required columns contain missing values"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
 
 # Test sei/vi consistency warnings
@@ -293,7 +301,7 @@ test_that("sei/vi inconsistency triggers warnings", {
     result <- metaMultiverse::check_data_multiverse(bad_data),
     regexp = "cases where sei and sqrt\\(vi\\) differ substantially"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
 
 # Test study effect size distribution messages
@@ -344,7 +352,7 @@ test_that("edge cases are handled correctly", {
     result <- metaMultiverse::check_data_multiverse(minimal_data),
     regexp = "Data validation passed"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 
   # Data without sei column (should not trigger sei/vi consistency check)
   no_sei_data <- create_valid_data() |> dplyr::select(-sei)
@@ -352,7 +360,7 @@ test_that("edge cases are handled correctly", {
     result <- metaMultiverse::check_data_multiverse(no_sei_data),
     regexp = "Data validation passed"
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
 
 # Test multiple simultaneous issues
@@ -370,5 +378,5 @@ test_that("multiple issues are reported appropriately", {
   expect_warning(
     result <- metaMultiverse::check_data_multiverse(multi_warning_data)
   )
-  expect_true(result)
+  expect_s3_class(result, "data.frame")
 })
