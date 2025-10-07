@@ -260,7 +260,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Built with ❤️ by [Constantin Yves Plessen](https://constantinplessen.com)
+- Built with ❤️ by [Constantin Yves Plessen](https://constantinyvesplessen.com)
 - Developed as part of PhD research at Vrije Universiteit Amsterdam
 - Thanks to all contributors and users providing feedback
 
@@ -269,7 +269,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 📬 Contact
 
 - **Author:** Constantin Yves Plessen
-- **Website:** [constantinplessen.com](https://constantinplessen.com)
+- **Website:** [constantinyvesplessen.com](https://constantinyvesplessen.com)
 - **GitHub:** [@cyplessen](https://github.com/cyplessen)
 
 ---
