@@ -96,7 +96,10 @@ results_display_ui <- function() {
         # Tab switching JavaScript
         tags$script(HTML("
           $(document).ready(function() {
+            console.log('Tab switching JavaScript loaded');
+
             $('#tab_spec_curve').click(function() {
+              console.log('Spec curve tab clicked');
               $('.btn-ghost').css('border-bottom', 'none');
               $(this).css('border-bottom', '3px solid var(--cosmic-accent)');
               $('#panel_spec_curve, #panel_voe, #panel_table, #panel_warnings').hide();
@@ -104,6 +107,7 @@ results_display_ui <- function() {
             });
 
             $('#tab_voe').click(function() {
+              console.log('VoE tab clicked');
               $('.btn-ghost').css('border-bottom', 'none');
               $(this).css('border-bottom', '3px solid var(--cosmic-accent)');
               $('#panel_spec_curve, #panel_voe, #panel_table, #panel_warnings').hide();
@@ -111,6 +115,7 @@ results_display_ui <- function() {
             });
 
             $('#tab_table').click(function() {
+              console.log('Table tab clicked');
               $('.btn-ghost').css('border-bottom', 'none');
               $(this).css('border-bottom', '3px solid var(--cosmic-accent)');
               $('#panel_spec_curve, #panel_voe, #panel_table, #panel_warnings').hide();
@@ -118,6 +123,7 @@ results_display_ui <- function() {
             });
 
             $('#tab_warnings').click(function() {
+              console.log('Warnings tab clicked');
               $('.btn-ghost').css('border-bottom', 'none');
               $(this).css('border-bottom', '3px solid var(--cosmic-accent)');
               $('#panel_spec_curve, #panel_voe, #panel_table, #panel_warnings').hide();
