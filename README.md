@@ -290,14 +290,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## ⭐ Star History
-
-If you find this package useful, please consider giving it a star on GitHub!
-
-[![Star History](https://api.star-history.com/svg?repos=cyplessen/metaMultiverse&type=Date)](https://star-history.com/#cyplessen/metaMultiverse&Date)
-
----
-
 <div align="center">
 
 **[Documentation](https://github.com/cyplessen/metaMultiverse)** •
