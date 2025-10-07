@@ -226,11 +226,15 @@ create_define_factors_specs <- function(input, values, session) {
         # v0.2.0 Custom factor: list(column, decision = X, groups = list(...))
         groups <- collect_dynamic_groups(col_name, session)
 
+        cat("DEBUG: For factor", label, "(", col_name, ") collected", length(groups), "custom groups\n")
+
         if (length(groups) > 0) {
           factor_definitions[[label]] <- list(col_name, decision = decision, groups = groups)
+          cat("  -> Added as CUSTOM factor\n")
         } else {
           # If no groups defined, fall back to simple
           factor_definitions[[label]] <- paste0(col_name, "|", decision)
+          cat("  -> Fell back to SIMPLE factor (no groups found)\n")
         }
       }
     }
@@ -307,13 +311,18 @@ collect_dynamic_groups <- function(col_name, session) {
   # Read groups data from hidden input
   groups_json <- session$input[[paste0("groups_data_", col_name)]]
 
+  cat("DEBUG collect_dynamic_groups for", col_name, "\n")
+  cat("  groups_json:", groups_json, "\n")
+
   if (is.null(groups_json) || groups_json == "{}") {
+    cat("  -> No groups (empty or null)\n")
     return(list())
   }
 
   # Parse JSON
   tryCatch({
     groups <- jsonlite::fromJSON(groups_json, simplifyVector = FALSE)
+    cat("  -> Parsed groups:", paste(names(groups), collapse = ", "), "\n")
     return(groups)
   }, error = function(e) {
     warning("Failed to parse groups JSON for column ", col_name, ": ", e$message)
