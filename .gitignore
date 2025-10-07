@@ -51,7 +51,6 @@ rsconnect/
 # Mac OS specific
 .DS_Store
 
-
 # Package specific
 *.html
 /doc/
@@ -59,3 +58,4 @@ rsconnect/
 /example code
 /package_instructions.md
 /publications/
+/references
