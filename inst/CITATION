@@ -1,0 +1,16 @@
+citHeader("To cite metaMultiverse in publications use:")
+
+bibentry(
+  bibtype  = "Manual",
+  title    = "metaMultiverse: Principled Multiverse Meta-Analysis in R",
+  author   = "Constantin Yves Plessen",
+  year     = "2024",
+  note     = "R package version 0.2.0",
+  url      = "https://github.com/cyplessen/metaMultiverse",
+  textVersion = paste(
+    "Plessen, C.Y. (2024).",
+    "metaMultiverse: Principled Multiverse Meta-Analysis in R.",
+    "R package version 0.2.0.",
+    "https://github.com/cyplessen/metaMultiverse"
+  )
+)

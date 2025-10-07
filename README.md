@@ -32,6 +32,22 @@
 devtools::install_github("cyplessen/metaMultiverse")
 ```
 
+### 🎨 Interactive Shiny App
+
+The package includes a beautiful web-based interface for point-and-click multiverse analysis:
+
+```r
+# Run the Shiny app locally
+shiny::runApp(system.file("shiny", package = "metaMultiverse"))
+```
+
+**Features:**
+- 🎯 Drag-and-drop data upload
+- 🎨 Cosmic minimalism design
+- 📊 Interactive specification curves and VoE plots
+- ✨ Custom factor groupings with checkbox interface
+- 📈 Real-time results table and warnings
+
 ---
 
 ## 🚀 Quick Start

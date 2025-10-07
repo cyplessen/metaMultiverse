@@ -36,7 +36,10 @@ Suggests:
     rmarkdown,
     quarto,
     kableExtra,
-    markdown
+    markdown,
+    shiny,
+    DT,
+    jsonlite
 Config/testthat/edition: 3
 Depends: 
     R (>= 3.5)
