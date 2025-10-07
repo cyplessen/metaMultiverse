@@ -15,9 +15,7 @@ get_display_labels(wf_mapping, wf_internal = NULL)
 Named character vector for display purposes
 }
 \description{
-\lifecycle{deprecated}
-
-This function is deprecated. Factor labels are now automatically managed
+**Deprecated:** This function is deprecated. Factor labels are now automatically managed
 by the \code{\link{define_factors}} pipeline and stored in factor_setup objects.
 }
 \keyword{internal}

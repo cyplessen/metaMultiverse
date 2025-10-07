@@ -15,9 +15,7 @@ get_original_names(wf_mapping, wf_internal = NULL)
 Named character vector of original column names
 }
 \description{
-\lifecycle{deprecated}
-
-This function is deprecated. Factor column information is now automatically
+**Deprecated:** This function is deprecated. Factor column information is now automatically
 managed by the \code{\link{define_factors}} pipeline.
 }
 \keyword{internal}

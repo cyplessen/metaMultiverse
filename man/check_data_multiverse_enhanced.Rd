@@ -15,7 +15,7 @@ check_data_multiverse_enhanced(data, wf_setup = NULL)
 Validated data with metadata
 }
 \description{
-\lifecycle{deprecated}
+**Deprecated:** Use \code{\link{check_data_multiverse}} instead.
 
 This function is deprecated. Please use \code{\link{check_data_multiverse}} instead,
 which now handles all validation needs.

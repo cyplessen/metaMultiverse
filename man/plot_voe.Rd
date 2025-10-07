@@ -46,8 +46,7 @@ Default: c(1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 0.001, 0.01, 0.05, 
 \item{hline_value}{Y-value for horizontal reference line. Default: 0.05}
 
 \item{title_template}{Character string with glue syntax for plot title.
-Available variables: k (number of analyses), cutoff.
-Default: "{k} meta-analyses with at least {cutoff} studies"}
+Available variables: k (number of analyses), cutoff.}
 
 \item{interactive}{Logical. Return interactive plotly (TRUE) or static ggplot2 (FALSE). Default: TRUE}
 }

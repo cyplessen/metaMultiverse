@@ -25,6 +25,18 @@ generate_multiverse_report_text(
 \item{min_k}{Integer. Minimum k for main analyses (e.g., 10).}
 
 \item{clin_g}{Numeric. Clinically relevant effect size threshold (e.g., 0.24).}
+
+\item{heterogeneity_stats}{Optional list with heterogeneity statistics (mean_I2, min_I2, max_I2, mean_tau2).}
+
+\item{pubbias_stats}{Optional list with publication bias statistics (pct_asym, median_ppe, median_uncorrected).}
+
+\item{moderator_stats}{Optional list with moderator statistics (mean_beta, sd_beta, pct_sig_regs).}
+
+\item{var_explained}{Optional list with variance explained statistics.}
+
+\item{extremes}{Optional list with extreme case statistics.}
+
+\item{consistency}{Optional list with consistency thresholds.}
 }
 \value{
 Character vector: a multi-paragraph report ready for markdown.

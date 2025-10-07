@@ -18,9 +18,7 @@ e.g., c("Population Type" = "pop_type", "Study Design" = "design")}
 A list containing the prepared data and mapping information
 }
 \description{
-\lifecycle{deprecated}
-
-This function is deprecated. Please use \code{\link{define_factors}} instead,
+**Deprecated:** This function is deprecated. Please use \code{\link{define_factors}} instead,
 which provides more functionality including decision type specification (E/U/N)
 and custom factor groupings.
 }

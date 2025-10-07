@@ -26,9 +26,7 @@ May contain custom group names that require mapping to actual data levels.}
 Defaults to 5.}
 }
 \description{
-\lifecycle{deprecated}
-
-This function is deprecated. Please use \code{\link{general_multiverse}} instead,
+**Deprecated:** This function is deprecated. Please use \code{\link{general_multiverse}} instead,
 which now includes all enhanced functionality.
 }
 \keyword{internal}
