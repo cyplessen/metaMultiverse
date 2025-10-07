@@ -635,6 +635,38 @@ get_app_css <- function() {
       word-wrap: break-word;
     }
 
+    /* Shiny tabset styling to match cosmic design */
+    .nav-pills {
+      border-bottom: 2px solid rgba(0,0,0,0.06);
+      margin-bottom: var(--space-xl);
+      padding-bottom: 0;
+    }
+
+    .nav-pills .nav-link {
+      background: none !important;
+      border: none !important;
+      border-radius: 8px 8px 0 0 !important;
+      color: var(--concrete) !important;
+      padding: var(--space-sm) var(--space-lg) !important;
+      margin-bottom: -2px;
+      border-bottom: 3px solid transparent !important;
+      transition: all 0.2s ease;
+    }
+
+    .nav-pills .nav-link:hover {
+      color: var(--cosmic-accent) !important;
+    }
+
+    .nav-pills .nav-link.active {
+      background: none !important;
+      color: var(--cosmic-accent) !important;
+      border-bottom: 3px solid var(--cosmic-accent) !important;
+    }
+
+    .tab-content {
+      border: none !important;
+    }
+
     /* === ALERTS === */
     .alert {
       padding: var(--space-md);
