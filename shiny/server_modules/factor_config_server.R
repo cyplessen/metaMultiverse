@@ -12,7 +12,7 @@ factor_config_server <- function(input, output, session, values) {
 
   # Create specifications
   observeEvent(input$create_specs, {
-    create_define_factors_specs(input, values)
+    create_define_factors_specs(input, values, session)
   })
 
   # Specs created status (v0.2.0: use spec_output)
@@ -197,7 +197,7 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
 # Specification Creation
 # ==============================================================================
 
-create_define_factors_specs <- function(input, values) {
+create_define_factors_specs <- function(input, values, session) {
   req(values$data, input$dependency_strategy)
 
   # Get included factors

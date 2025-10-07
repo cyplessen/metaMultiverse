@@ -1,0 +1,13 @@
+Package: metamultiverseapp
+Type: ShinyApp
+Title: metaMultiverse Interactive App
+Version: 0.1.0
+Imports:
+    shiny,
+    shinydashboard,
+    DT,
+    plotly,
+    dplyr,
+    purrr
+Remotes:
+    github::cyplessen/metaMultiverse
