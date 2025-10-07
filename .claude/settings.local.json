@@ -6,7 +6,12 @@
       "Bash(find:*)",
       "Bash(git push:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git tag:*)",
+      "Read(//Users/cyp/Documents/Work/1_Projects/TMI-Measurement-Paper/Paper 1 - IRT Parameter/TMI-network/**)",
+      "Bash(git rm:*)",
+      "Bash(tr:*)",
+      "Read(//Users/cyp/Documents/Work/1_Projects/multiverse-package/**)"
     ],
     "deny": [],
     "ask": []
