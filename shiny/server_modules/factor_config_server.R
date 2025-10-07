@@ -104,7 +104,10 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
         style = "color: #666; font-style: italic;"),
 
       # Hidden input to store groups data as JSON
-      tags$input(type = "hidden", id = paste0("groups_data_", col_name), class = "shiny-bound-input", value = "{}"),
+      textInput(paste0("groups_data_", col_name), NULL, value = "{}",
+                width = "0px",
+                placeholder = NULL),
+      tags$style(HTML(paste0("#groups_data_", col_name, " { display: none; }"))),
 
       # Dynamic groups container
       div(id = paste0("groups_container_", col_name)),
@@ -122,11 +125,13 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
         var groupCount_", gsub("[^A-Za-z0-9]", "_", col_name), " = 0;
 
         function updateGroupsData(colName) {
+          console.log('updateGroupsData called for:', colName);
           var container = document.getElementById('groups_container_' + colName);
           var groups = {};
 
           // Find all group divs
           var groupDivs = container.querySelectorAll('[id^=\"group_' + colName + '_\"]');
+          console.log('Found', groupDivs.length, 'group divs');
 
           groupDivs.forEach(function(groupDiv) {
             var groupNum = groupDiv.getAttribute('data-groupnum');
@@ -146,11 +151,17 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
             }
           });
 
-          // Update hidden input
-          var hiddenInput = document.getElementById('groups_data_' + colName);
-          if (hiddenInput) {
-            hiddenInput.value = JSON.stringify(groups);
-            $(hiddenInput).trigger('change');
+          // Update hidden input (Shiny textInput)
+          var hiddenInputId = 'groups_data_' + colName;
+          var $hiddenInput = $('#' + hiddenInputId);
+          console.log('Updating hidden input:', hiddenInputId, 'with groups:', groups);
+          if ($hiddenInput.length > 0) {
+            var jsonStr = JSON.stringify(groups);
+            console.log('Setting value:', jsonStr);
+            $hiddenInput.val(jsonStr);
+            $hiddenInput.trigger('change');
+          } else {
+            console.error('Hidden input not found:', hiddenInputId);
           }
         }
 

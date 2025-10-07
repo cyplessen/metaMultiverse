@@ -8,6 +8,6 @@ Imports:
     DT,
     plotly,
     dplyr,
-    purrr,
-    metafor,
-    ggplot2
+    purrr
+Remotes:
+    github::cyplessen/metaMultiverse
