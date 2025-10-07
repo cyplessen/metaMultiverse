@@ -258,13 +258,20 @@ print_factor_summary <- function(setup) {
     cat(sprintf("[*] %s (%s)\n", factor$label, factor$grouping_type))
 
     # Column and decision
+    decision_desc <- if (factor$decision == "E") {
+      "(Equivalent - will include multiverse options)"
+    } else if (factor$decision == "U") {
+      "(Uncertain - will create multiverse options)"
+    } else if (factor$decision == "N") {
+      "(Non-equivalent - will create separate analyses)"
+    } else {
+      ""
+    }
+
     cat(sprintf("   Column: %s | Decision: %s %s\n",
                 factor$column,
                 factor$decision,
-                switch(factor$decision,
-                       E = "(Equivalent - will include multiverse options)",
-                       U = "(Uncertain - will create multiverse options)",
-                       N = "(Non-equivalent - will create separate analyses)")))
+                decision_desc))
 
     # Show groups if custom
     if (factor$grouping_type == "custom" && !is.null(setup$factor_groups[[factor$wf_internal]])) {

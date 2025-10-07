@@ -3,7 +3,6 @@
 
 #' @importFrom stats as.formula complete.cases density median sd setNames
 #' @importFrom utils setTxtProgressBar txtProgressBar
-#' @importFrom graphics layout
 #' @importFrom ggplot2 aes aes_string geom_violin geom_boxplot geom_hline geom_histogram geom_vline labs theme_minimal theme element_text ggsave ggplot
 #' @importFrom plotly plot_ly add_markers add_lines layout
 NULL
