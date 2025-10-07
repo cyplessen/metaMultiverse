@@ -18,7 +18,6 @@
 #' @param hline_value Y-value for horizontal reference line. Default: 0.05
 #' @param title_template Character string with glue syntax for plot title.
 #'   Available variables: k (number of analyses), cutoff.
-#'   Default: "\{k\} meta-analyses with at least \{cutoff\} studies"
 #' @param interactive Logical. Return interactive plotly (TRUE) or static ggplot2 (FALSE). Default: TRUE
 #'
 #' @return A plotly object if interactive = TRUE, otherwise a ggplot2 object
