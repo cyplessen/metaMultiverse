@@ -102,105 +102,18 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
       h5("Custom Groups"),
       p(paste("Available levels:", paste(unique_vals, collapse = ", ")),
         style = "color: #666; font-style: italic;"),
+      p("Define groups with one group per line in format: group_name = level1, level2, ...",
+        style = "color: #999; font-size: 0.9em; font-style: italic;"),
 
-      # Hidden input to store groups data as JSON
-      textInput(paste0("groups_data_", col_name), NULL, value = "{}",
-                width = "0px",
-                placeholder = NULL),
-      tags$style(HTML(paste0("#groups_data_", col_name, " { display: none; }"))),
-
-      # Dynamic groups container
-      div(id = paste0("groups_container_", col_name)),
-
-      # Add group button
-      div(style = "margin-top: 10px;",
-          actionButton(paste0("add_group_", col_name), "Add Group",
-                       class = "btn-sm btn-primary",
-                       onclick = paste0("addGroup('", col_name, "', ",
-                                        jsonlite::toJSON(unique_vals), ")"))
-      ),
-
-      # JavaScript for dynamic group management
-      tags$script(HTML(paste0("
-        var groupCount_", gsub("[^A-Za-z0-9]", "_", col_name), " = 0;
-
-        function updateGroupsData(colName) {
-          console.log('updateGroupsData called for:', colName);
-          var container = document.getElementById('groups_container_' + colName);
-          var groups = {};
-
-          // Find all group divs
-          var groupDivs = container.querySelectorAll('[id^=\"group_' + colName + '_\"]');
-          console.log('Found', groupDivs.length, 'group divs');
-
-          groupDivs.forEach(function(groupDiv) {
-            var groupNum = groupDiv.getAttribute('data-groupnum');
-            var nameInput = document.getElementById('group' + groupNum + '_name_' + colName);
-            var groupName = nameInput ? nameInput.value : '';
-
-            if (groupName) {
-              var checkboxes = groupDiv.querySelectorAll('.group-level-checkbox:checked');
-              var levels = [];
-              checkboxes.forEach(function(cb) {
-                levels.push(cb.value);
-              });
-
-              if (levels.length > 0) {
-                groups[groupName] = levels;
-              }
-            }
-          });
-
-          // Update hidden input (Shiny textInput)
-          var hiddenInputId = 'groups_data_' + colName;
-          var $hiddenInput = $('#' + hiddenInputId);
-          console.log('Updating hidden input:', hiddenInputId, 'with groups:', groups);
-          if ($hiddenInput.length > 0) {
-            var jsonStr = JSON.stringify(groups);
-            console.log('Setting value:', jsonStr);
-            $hiddenInput.val(jsonStr);
-            $hiddenInput.trigger('change');
-          } else {
-            console.error('Hidden input not found:', hiddenInputId);
-          }
-        }
-
-        function addGroup(colName, availableLevels) {
-          var cleanColName = colName.replace(/[^A-Za-z0-9]/g, '_');
-          var groupNum = window['groupCount_' + cleanColName] + 1;
-          window['groupCount_' + cleanColName] = groupNum;
-
-          var container = document.getElementById('groups_container_' + colName);
-
-          var groupDiv = document.createElement('div');
-          groupDiv.style = 'border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 5px;';
-          groupDiv.id = 'group_' + colName + '_' + groupNum;
-          groupDiv.setAttribute('data-col', colName);
-          groupDiv.setAttribute('data-groupnum', groupNum);
-
-          var nameInput = '<label>Group Name:</label><input type=\"text\" id=\"group' + groupNum + '_name_' + colName + '\" placeholder=\"e.g., conservative\" style=\"width: 100%; margin: 5px 0;\" onchange=\"updateGroupsData(\\'' + colName + '\\')\">';
-
-          var levelsHtml = '<label>Select Levels:</label><div style=\"margin: 5px 0;\">';
-          for (var i = 0; i < availableLevels.length; i++) {
-            var level = availableLevels[i];
-            levelsHtml += '<label style=\"margin-right: 15px;\"><input type=\"checkbox\" class=\"group-level-checkbox\" value=\"' + level + '\" onchange=\"updateGroupsData(\\'' + colName + '\\')\">' + level + '</label>';
-          }
-          levelsHtml += '</div>';
-
-          var removeBtn = '<button type=\"button\" onclick=\"removeGroup(\\'' + colName + '\\', ' + groupNum + ')\" style=\"background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; margin-top: 10px;\">Remove Group</button>';
-
-          groupDiv.innerHTML = nameInput + levelsHtml + removeBtn;
-          container.appendChild(groupDiv);
-        }
-
-        function removeGroup(colName, groupNum) {
-          var groupDiv = document.getElementById('group_' + colName + '_' + groupNum);
-          if (groupDiv) {
-            groupDiv.remove();
-            updateGroupsData(colName);
-          }
-        }
-      ")))
+      # Simple text area for group definitions
+      textAreaInput(
+        paste0("custom_groups_", col_name),
+        "Group Definitions:",
+        value = "",
+        rows = 5,
+        width = "100%",
+        placeholder = "Example:\nconservative = low risk\nmoderate = low risk, some concerns\nliberal = low risk, some concerns, high risk"
+      )
   )
 }
 
@@ -319,24 +232,37 @@ render_minimal_specs_summary <- function(factor_setup, spec_output) {
 # ==============================================================================
 
 collect_dynamic_groups <- function(col_name, session) {
-  # Read groups data from hidden input
-  groups_json <- session$input[[paste0("groups_data_", col_name)]]
+  # Read groups text from text area
+  groups_text <- session$input[[paste0("custom_groups_", col_name)]]
 
   cat("DEBUG collect_dynamic_groups for", col_name, "\n")
-  cat("  groups_json:", groups_json, "\n")
+  cat("  groups_text:", groups_text, "\n")
 
-  if (is.null(groups_json) || groups_json == "{}") {
-    cat("  -> No groups (empty or null)\n")
+  if (is.null(groups_text) || nchar(trimws(groups_text)) == 0) {
+    cat("  -> No groups (empty)\n")
     return(list())
   }
 
-  # Parse JSON
-  tryCatch({
-    groups <- jsonlite::fromJSON(groups_json, simplifyVector = FALSE)
-    cat("  -> Parsed groups:", paste(names(groups), collapse = ", "), "\n")
-    return(groups)
-  }, error = function(e) {
-    warning("Failed to parse groups JSON for column ", col_name, ": ", e$message)
-    return(list())
-  })
+  # Parse text format: group_name = level1, level2
+  groups <- list()
+  lines <- strsplit(groups_text, "\n")[[1]]
+
+  for (line in lines) {
+    line <- trimws(line)
+    if (nchar(line) == 0 || !grepl("=", line)) next
+
+    parts <- strsplit(line, "=")[[1]]
+    if (length(parts) != 2) next
+
+    group_name <- trimws(parts[1])
+    levels_str <- trimws(parts[2])
+    levels <- trimws(strsplit(levels_str, ",")[[1]])
+
+    if (nchar(group_name) > 0 && length(levels) > 0) {
+      groups[[group_name]] <- levels
+    }
+  }
+
+  cat("  -> Parsed", length(groups), "groups:", paste(names(groups), collapse = ", "), "\n")
+  return(groups)
 }
