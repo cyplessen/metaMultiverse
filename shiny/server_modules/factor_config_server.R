@@ -103,6 +103,9 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
       p(paste("Available levels:", paste(unique_vals, collapse = ", ")),
         style = "color: #666; font-style: italic;"),
 
+      # Hidden input to store groups data as JSON
+      tags$input(type = "hidden", id = paste0("groups_data_", col_name), class = "shiny-bound-input", value = "{}"),
+
       # Dynamic groups container
       div(id = paste0("groups_container_", col_name)),
 
@@ -118,6 +121,39 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
       tags$script(HTML(paste0("
         var groupCount_", gsub("[^A-Za-z0-9]", "_", col_name), " = 0;
 
+        function updateGroupsData(colName) {
+          var container = document.getElementById('groups_container_' + colName);
+          var groups = {};
+
+          // Find all group divs
+          var groupDivs = container.querySelectorAll('[id^=\"group_' + colName + '_\"]');
+
+          groupDivs.forEach(function(groupDiv) {
+            var groupNum = groupDiv.getAttribute('data-groupnum');
+            var nameInput = document.getElementById('group' + groupNum + '_name_' + colName);
+            var groupName = nameInput ? nameInput.value : '';
+
+            if (groupName) {
+              var checkboxes = groupDiv.querySelectorAll('.group-level-checkbox:checked');
+              var levels = [];
+              checkboxes.forEach(function(cb) {
+                levels.push(cb.value);
+              });
+
+              if (levels.length > 0) {
+                groups[groupName] = levels;
+              }
+            }
+          });
+
+          // Update hidden input
+          var hiddenInput = document.getElementById('groups_data_' + colName);
+          if (hiddenInput) {
+            hiddenInput.value = JSON.stringify(groups);
+            $(hiddenInput).trigger('change');
+          }
+        }
+
         function addGroup(colName, availableLevels) {
           var cleanColName = colName.replace(/[^A-Za-z0-9]/g, '_');
           var groupNum = window['groupCount_' + cleanColName] + 1;
@@ -128,13 +164,15 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
           var groupDiv = document.createElement('div');
           groupDiv.style = 'border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 5px;';
           groupDiv.id = 'group_' + colName + '_' + groupNum;
+          groupDiv.setAttribute('data-col', colName);
+          groupDiv.setAttribute('data-groupnum', groupNum);
 
-          var nameInput = '<label>Group Name:</label><input type=\"text\" id=\"group' + groupNum + '_name_' + colName + '\" placeholder=\"e.g., conservative\" style=\"width: 100%; margin: 5px 0;\">';
+          var nameInput = '<label>Group Name:</label><input type=\"text\" id=\"group' + groupNum + '_name_' + colName + '\" placeholder=\"e.g., conservative\" style=\"width: 100%; margin: 5px 0;\" onchange=\"updateGroupsData(\\'' + colName + '\\')\">';
 
           var levelsHtml = '<label>Select Levels:</label><div style=\"margin: 5px 0;\">';
           for (var i = 0; i < availableLevels.length; i++) {
             var level = availableLevels[i];
-            levelsHtml += '<label style=\"margin-right: 15px;\"><input type=\"checkbox\" value=\"' + level + '\" name=\"group' + groupNum + '_levels_' + colName + '\"> ' + level + '</label>';
+            levelsHtml += '<label style=\"margin-right: 15px;\"><input type=\"checkbox\" class=\"group-level-checkbox\" value=\"' + level + '\" onchange=\"updateGroupsData(\\'' + colName + '\\')\">' + level + '</label>';
           }
           levelsHtml += '</div>';
 
@@ -148,6 +186,7 @@ create_custom_groups_ui <- function(col_name, unique_vals) {
           var groupDiv = document.getElementById('group_' + colName + '_' + groupNum);
           if (groupDiv) {
             groupDiv.remove();
+            updateGroupsData(colName);
           }
         }
       ")))
@@ -265,14 +304,19 @@ render_minimal_specs_summary <- function(factor_setup, spec_output) {
 # ==============================================================================
 
 collect_dynamic_groups <- function(col_name, session) {
-  # This function would need to collect the dynamically created groups
-  # For now, return empty list - this needs JavaScript integration
-  groups <- list()
+  # Read groups data from hidden input
+  groups_json <- session$input[[paste0("groups_data_", col_name)]]
 
-  # This is a placeholder - in a real implementation, you'd need to:
-  # 1. Use JavaScript to collect all dynamically created group names and levels
-  # 2. Send them back to Shiny via custom messages
-  # 3. Parse them here
+  if (is.null(groups_json) || groups_json == "{}") {
+    return(list())
+  }
 
-  return(groups)
+  # Parse JSON
+  tryCatch({
+    groups <- jsonlite::fromJSON(groups_json, simplifyVector = FALSE)
+    return(groups)
+  }, error = function(e) {
+    warning("Failed to parse groups JSON for column ", col_name, ": ", e$message)
+    return(list())
+  })
 }
