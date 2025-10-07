@@ -34,11 +34,16 @@ results_server <- function(input, output, session, values) {
 
   # Results table
   output$results_table <- DT::renderDataTable({
+    cat("DEBUG: Rendering results table, results is null?", is.null(values$results), "\n")
+    if (!is.null(values$results)) {
+      cat("  Results has", nrow(values$results$results), "rows\n")
+    }
     create_results_table(values$results)
   })
 
   # Warnings output
   output$warnings_output <- renderText({
+    cat("DEBUG: Rendering warnings, results is null?", is.null(values$results), "\n")
     get_warnings_text(values$results)
   })
 }

@@ -58,45 +58,29 @@ get_enhanced_factor_selection_ui <- function() {
 
 #' Get Enhanced Decision Framework Guide
 get_enhanced_decision_framework_guide <- function() {
-  div(style = "background: #f8f9fa; padding: 2rem; border-radius: 12px; border-left: 4px solid #667eea; margin-bottom: 2rem;",
-      h5("Enhanced Decision Framework", style = "margin-bottom: 1.5rem; color: #2c3e50;"),
-
-      div(style = "display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;",
+  div(style = "margin-bottom: 3rem;",
+      # Simple, clean grid
+      div(style = "display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2rem;",
 
           # Equivalent
-          div(style = "background: white; padding: 1.5rem; border-radius: 8px; border-left: 3px solid #2196F3;",
-              h6(tags$span("E", style = "background: #2196F3; color: white; padding: 0.3rem 0.6rem; border-radius: 50%; margin-right: 0.5rem; font-weight: 600;"),
-                 "Equivalent", style = "color: #2196F3; margin-bottom: 1rem;"),
-              p("Different ways of measuring the same construct", style = "color: #6c757d; font-size: 0.85rem; margin-bottom: 0.5rem;"),
-              p("→ Creates multiverse options within analysis", style = "color: #2196F3; font-size: 0.8rem; font-weight: 500; margin: 0;")
+          div(style = "text-align: center;",
+              div(style = "width: 48px; height: 48px; background: #2196F3; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 300; margin: 0 auto 1rem;", "E"),
+              h6("Equivalent", style = "color: #2c3e50; margin-bottom: 0.5rem; font-weight: 400;"),
+              p("Same construct, different measures", style = "color: #64748b; font-size: 0.875rem; line-height: 1.4; margin: 0;")
           ),
 
           # Uncertain
-          div(style = "background: white; padding: 1.5rem; border-radius: 8px; border-left: 3px solid #FF9800;",
-              h6(tags$span("U", style = "background: #FF9800; color: white; padding: 0.3rem 0.6rem; border-radius: 50%; margin-right: 0.5rem; font-weight: 600;"),
-                 "Uncertain", style = "color: #FF9800; margin-bottom: 1rem;"),
-              p("Unclear which inclusion criteria is best", style = "color: #6c757d; font-size: 0.85rem; margin-bottom: 0.5rem;"),
-              p("→ Creates multiverse options to explore choices", style = "color: #FF9800; font-size: 0.8rem; font-weight: 500; margin: 0;")
+          div(style = "text-align: center;",
+              div(style = "width: 48px; height: 48px; background: #FF9800; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 300; margin: 0 auto 1rem;", "U"),
+              h6("Uncertain", style = "color: #2c3e50; margin-bottom: 0.5rem; font-weight: 400;"),
+              p("Explore reasonable alternatives", style = "color: #64748b; font-size: 0.875rem; line-height: 1.4; margin: 0;")
           ),
 
           # Non-equivalent
-          div(style = "background: white; padding: 1.5rem; border-radius: 8px; border-left: 3px solid #9C27B0;",
-              h6(tags$span("N", style = "background: #9C27B0; color: white; padding: 0.3rem 0.6rem; border-radius: 50%; margin-right: 0.5rem; font-weight: 600;"),
-                 "Non-equivalent", style = "color: #9C27B0; margin-bottom: 1rem;"),
-              p("Fundamentally different research questions", style = "color: #6c757d; font-size: 0.85rem; margin-bottom: 0.5rem;"),
-              p("→ Creates separate analyses", style = "color: #9C27B0; font-size: 0.8rem; font-weight: 500; margin: 0;")
-          )
-      ),
-
-      # Example callout
-      div(style = "background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #ffc107;",
-          h6("💡 Example: Risk of Bias", style = "color: #856404; margin-bottom: 1rem;"),
-          p("For a 'risk_of_bias' column with levels 'low risk', 'some concerns', 'high risk':",
-            style = "color: #856404; font-size: 0.9rem; margin-bottom: 0.5rem;"),
-          tags$ul(style = "color: #856404; font-size: 0.85rem; margin: 0;",
-                  tags$li("Conservative: Only 'low risk' studies"),
-                  tags$li("Moderate: 'low risk' + 'some concerns'"),
-                  tags$li("Liberal: All studies included")
+          div(style = "text-align: center;",
+              div(style = "width: 48px; height: 48px; background: #9C27B0; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 300; margin: 0 auto 1rem;", "N"),
+              h6("Non-equivalent", style = "color: #2c3e50; margin-bottom: 0.5rem; font-weight: 400;"),
+              p("Different research questions", style = "color: #64748b; font-size: 0.875rem; line-height: 1.4; margin: 0;")
           )
       )
   )

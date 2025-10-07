@@ -49,26 +49,51 @@ get_navigation_ui <- function() {
 #' Setup Navigation Server Logic
 setup_navigation_server <- function(input, output, session, values) {
 
+  # Helper to scroll to top
+  scroll_to_top <- function() {
+    session$sendCustomMessage("scrollToTop", list())
+  }
+
   # Navigation observers
-  observeEvent(input$goto_step1, { values$current_step <- 1 })
-  observeEvent(input$goto_step2, { values$current_step <- 2 })
-  observeEvent(input$goto_step3, { values$current_step <- 3 })
-  observeEvent(input$goto_step4, { values$current_step <- 4 })
-  observeEvent(input$goto_about, { values$current_step <- 5 })
+  observeEvent(input$goto_step1, {
+    values$current_step <- 1
+    scroll_to_top()
+  })
+  observeEvent(input$goto_step2, {
+    values$current_step <- 2
+    scroll_to_top()
+  })
+  observeEvent(input$goto_step3, {
+    values$current_step <- 3
+    scroll_to_top()
+  })
+  observeEvent(input$goto_step4, {
+    values$current_step <- 4
+    scroll_to_top()
+  })
+  observeEvent(input$goto_about, {
+    values$current_step <- 5
+    scroll_to_top()
+  })
 
   # Landing page CTA
-  observeEvent(input$start_analysis, { values$current_step <- 2 })
+  observeEvent(input$start_analysis, {
+    values$current_step <- 2
+    scroll_to_top()
+  })
 
   # Step navigation
   observeEvent(input$next_step, {
     if (values$current_step < 4) {
       values$current_step <- values$current_step + 1
+      scroll_to_top()
     }
   })
 
   observeEvent(input$prev_step, {
     if (values$current_step > 1) {
       values$current_step <- values$current_step - 1
+      scroll_to_top()
     }
   })
 

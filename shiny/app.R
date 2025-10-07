@@ -36,6 +36,13 @@ ui <- fluidPage(
   # Load CSS styles
   get_app_css(),
 
+  # JavaScript for scroll to top
+  tags$script(HTML("
+    Shiny.addCustomMessageHandler('scrollToTop', function(message) {
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+  ")),
+
   # Conditional layout: full-screen landing or sidebar layout
   uiOutput("app_layout")
 )
