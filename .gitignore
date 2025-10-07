@@ -56,3 +56,6 @@ rsconnect/
 *.html
 /doc/
 /Meta/
+/example code
+/package_instructions.md
+/publications/
