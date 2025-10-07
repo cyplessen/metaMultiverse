@@ -8,7 +8,6 @@ output:
     toc_depth: 3
     fig_width: 10
     fig_height: 7
-    css: styles.css
 vignette: >
   %\VignetteIndexEntry{Multiverse Meta-Analysis: Theory and Practice}
   %\VignetteEngine{knitr::rmarkdown}

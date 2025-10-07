@@ -8,7 +8,6 @@ output:
     toc_depth: 3
     fig_width: 8
     fig_height: 6
-    css: styles.css
 vignette: >
   %\VignetteIndexEntry{Getting Started with metaMultiverse}
   %\VignetteEngine{knitr::rmarkdown}

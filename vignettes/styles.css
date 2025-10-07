@@ -1,0 +1,262 @@
+/* ============================================================
+   metaMultiverse Vignette Styles
+   Clean, professional styling for R package documentation
+   ============================================================ */
+
+/* Typography */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #2c3e50;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Headers */
+h1 {
+  font-weight: 900;
+  font-size: 2.5rem;
+  line-height: 1.1;
+  color: #1a1a1a;
+  margin: 3rem 0 1.5rem 0;
+  border-bottom: 4px solid #3498db;
+  padding-bottom: 0.5rem;
+}
+
+h2 {
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin: 2.5rem 0 1rem 0;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.3rem;
+}
+
+h3 {
+  font-weight: 600;
+  font-size: 1.3rem;
+  color: #34495e;
+  margin: 2rem 0 0.8rem 0;
+}
+
+h4 {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #555;
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+/* Code blocks */
+pre {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-left: 4px solid #3498db;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+code {
+  background: #f1f3f5;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  font-size: 0.9em;
+  color: #e83e8c;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2rem 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+thead {
+  background: #3498db;
+  color: white;
+}
+
+th {
+  text-align: left;
+  padding: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+tbody tr:hover {
+  background: #f8f9fa;
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid #3498db;
+  margin: 1.5rem 0;
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  font-style: italic;
+  color: #555;
+}
+
+/* Links */
+a {
+  color: #3498db;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom 0.2s;
+}
+
+a:hover {
+  border-bottom: 1px solid #3498db;
+}
+
+/* Lists */
+ul, ol {
+  margin: 1rem 0;
+  padding-left: 2rem;
+}
+
+li {
+  margin: 0.5rem 0;
+}
+
+/* Horizontal rules */
+hr {
+  border: none;
+  border-top: 2px solid #e0e0e0;
+  margin: 3rem 0;
+}
+
+/* Info boxes */
+.note {
+  background: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 4px;
+}
+
+.warning {
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 4px;
+}
+
+.tip {
+  background: #f1f8e9;
+  border-left: 4px solid #8bc34a;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 4px;
+}
+
+/* TOC styling */
+#TOC {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  width: fit-content;
+  min-width: 250px;
+}
+
+#TOC ul {
+  list-style: none;
+  padding-left: 1rem;
+}
+
+#TOC > ul {
+  padding-left: 0;
+}
+
+#TOC a {
+  color: #2c3e50;
+  border-bottom: none;
+}
+
+#TOC a:hover {
+  color: #3498db;
+}
+
+/* Figures and images */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin: 1.5rem 0;
+}
+
+.figure {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.caption {
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+/* Footer */
+.footer {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e0e0e0;
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  body {
+    padding: 1rem;
+    font-size: 15px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  pre {
+    padding: 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  table {
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    padding: 0.6rem;
+  }
+}
