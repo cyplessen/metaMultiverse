@@ -10,14 +10,26 @@ results_server <- function(input, output, session, values) {
     create_results_summary(values$results)
   })
 
-  # Specification curve plot
+  # Specification curve plot (v0.2.0: use package function)
   output$spec_curve <- renderPlotly({
-    create_spec_curve_plot(values$results)
+    if (is.null(values$results)) return(NULL)
+    tryCatch({
+      plot_spec_curve(values$results, interactive = TRUE)
+    }, error = function(e) {
+      plotly::plotly_empty() %>%
+        plotly::add_annotations(text = paste("Plot error:", e$message), showarrow = FALSE)
+    })
   })
 
-  # Vibration of effects plot
+  # Vibration of effects plot (v0.2.0: use package function)
   output$voe_plot <- renderPlotly({
-    create_voe_plot(values$results, input)
+    if (is.null(values$results)) return(NULL)
+    tryCatch({
+      plot_voe(values$results, interactive = TRUE)
+    }, error = function(e) {
+      plotly::plotly_empty() %>%
+        plotly::add_annotations(text = paste("Plot error:", e$message), showarrow = FALSE)
+    })
   })
 
   # Results table
@@ -43,36 +55,23 @@ create_results_summary <- function(results) {
 
   data <- results$results
 
-  fluidRow(
-    column(3,
-           wellPanel(
-             h5("Total Specifications"),
-             h3(nrow(data), style = "margin: 0; color: #337ab7;"),
-             p("analyses conducted")
-           )
-    ),
-    column(3,
-           wellPanel(
-             h5("Mean Effect Size"),
-             h3(sprintf("%.2f", mean(data$b, na.rm = TRUE)), style = "margin: 0; color: #337ab7;"),
-             p(paste("Range:", sprintf("%.2f", min(data$b, na.rm = TRUE)), "to", sprintf("%.2f", max(data$b, na.rm = TRUE))))
-           )
-    ),
-    column(3,
-           wellPanel(
-             h5("Significant Results"),
-             h3(paste0(sprintf("%.1f", 100 * mean(data$pval < 0.05, na.rm = TRUE)), "%"),
-                style = "margin: 0; color: #337ab7;"),
-             p(paste(sum(data$pval < 0.05, na.rm = TRUE), "of", nrow(data), "specs"))
-           )
-    ),
-    column(3,
-           wellPanel(
-             h5("Average Studies"),
-             h3(sprintf("%.1f", mean(data$k, na.rm = TRUE)), style = "margin: 0; color: #337ab7;"),
-             p("per analysis")
-           )
-    )
+  div(class = "stat-grid",
+      div(class = "stat-card",
+          div(class = "stat-value", nrow(data)),
+          div(class = "stat-label", "Specifications")
+      ),
+      div(class = "stat-card",
+          div(class = "stat-value", sprintf("%.2f", mean(data$b, na.rm = TRUE))),
+          div(class = "stat-label", "Mean Effect Size")
+      ),
+      div(class = "stat-card",
+          div(class = "stat-value", paste0(sprintf("%.0f", 100 * mean(data$pval < 0.05, na.rm = TRUE)), "%")),
+          div(class = "stat-label", "Significant")
+      ),
+      div(class = "stat-card",
+          div(class = "stat-value", sprintf("%.1f", mean(data$k, na.rm = TRUE))),
+          div(class = "stat-label", "Avg Studies")
+      )
   )
 }
 

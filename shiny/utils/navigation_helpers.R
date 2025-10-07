@@ -56,6 +56,9 @@ setup_navigation_server <- function(input, output, session, values) {
   observeEvent(input$goto_step4, { values$current_step <- 4 })
   observeEvent(input$goto_about, { values$current_step <- 5 })
 
+  # Landing page CTA
+  observeEvent(input$start_analysis, { values$current_step <- 2 })
+
   # Step navigation
   observeEvent(input$next_step, {
     if (values$current_step < 4) {
@@ -84,7 +87,7 @@ setup_navigation_server <- function(input, output, session, values) {
            } else {
              tags$span("Upload data to continue", style = "color: #999;")
            },
-           "3" = if (!is.null(values$specifications)) {
+           "3" = if (!is.null(values$spec_output)) {
              actionButton("next_step", "View Results →", class = "btn-primary")
            } else {
              tags$span("Create specifications to continue", style = "color: #999;")

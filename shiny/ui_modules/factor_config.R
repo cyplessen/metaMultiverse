@@ -42,11 +42,10 @@ get_enhanced_factor_selection_ui <- function() {
       h3("Which Factors to Explore",
          style = "color: #2c3e50; margin-bottom: 2rem; font-weight: 600;"),
 
-      # Enhanced description
-      div(style = "background: linear-gradient(135deg, #667eea, #764ba2); padding: 2rem; border-radius: 12px; margin-bottom: 2rem; color: white;",
-          h5("🚀 Enhanced Workflow with define_factors()", style = "margin-bottom: 1rem; color: white;"),
-          p("This enhanced interface allows you to create sophisticated inclusion criteria with custom groupings. For example, you can define 'conservative', 'moderate', and 'liberal' inclusion strategies based on risk of bias.",
-            style = "margin: 0; font-size: 0.95rem; line-height: 1.5;")
+      # Enhanced description (cosmic minimalism)
+      div(class = "alert-info",
+          tags$strong("🚀 Enhanced Workflow: "),
+          "Create sophisticated inclusion criteria with custom groupings. For example, define 'conservative', 'moderate', and 'liberal' inclusion strategies based on risk of bias."
       ),
 
       # Enhanced Decision Framework Guide
@@ -218,14 +217,31 @@ get_enhanced_specs_success_ui <- function() {
       # Enhanced specifications summary
       uiOutput("specs_summary"),
 
-      # Enhanced run analysis button
+      # Run analysis button
       div(style = "text-align: center; margin-top: 2rem;",
-          actionButton("run_analysis", "🚀 Run Enhanced Multiverse Analysis",
-                       style = "background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 22px 55px; font-size: 1.5rem; font-weight: 600; border-radius: 50px; color: white; box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4); text-transform: uppercase; letter-spacing: 2px;"),
+          conditionalPanel(
+            condition = "!output.analysis_complete && !output.analysis_running",
+            actionButton("run_analysis", "Run Multiverse Analysis",
+                         class = "btn-primary",
+                         style = "padding: 16px 40px; font-size: 1.125rem;")
+          ),
 
           conditionalPanel(
             condition = "output.analysis_running",
             get_enhanced_analysis_progress_ui()
+          ),
+
+          conditionalPanel(
+            condition = "output.analysis_complete && !output.analysis_running",
+            div(class = "alert-success",
+                style = "display: inline-block; margin-bottom: 16px;",
+                tags$strong("✓ Analysis Complete! "),
+                "Your multiverse has been explored."
+            ),
+            tags$br(),
+            actionButton("goto_step4", "View Results →",
+                         class = "btn-primary",
+                         style = "padding: 16px 40px; font-size: 1.125rem;")
           )
       )
   )
@@ -233,16 +249,16 @@ get_enhanced_specs_success_ui <- function() {
 
 #' Get Enhanced Analysis Progress UI
 get_enhanced_analysis_progress_ui <- function() {
-  div(style = "margin-top: 2.5rem; background: white; padding: 2.5rem; border-radius: 20px; border: 1px solid #e9ecef; box-shadow: 0 5px 20px rgba(0,0,0,0.08);",
-      div(style = "text-align: center;",
-          h5("🔄 Enhanced Multiverse Analysis in Progress", style = "color: #667eea; margin-bottom: 1rem; font-weight: 600;"),
-          p("Processing custom factor groupings and sophisticated inclusion criteria...",
-            style = "color: #6c757d; margin-bottom: 1.5rem;"),
-          p("This may take several minutes depending on the complexity of your multiverse.",
-            style = "color: #6c757d; font-size: 0.9rem; margin-bottom: 1.5rem;")
-      ),
-      div(style = "background: #f8f9fa; border-radius: 10px; height: 10px; overflow: hidden;",
-          div(style = "height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); animation: progress-animation 2s ease-in-out infinite;")
+  div(class = "card mt-lg",
+      div(class = "card-body text-center",
+          h4("Analysis Running", class = "mb-md"),
+          p("Processing your multiverse specifications...",
+            class = "text-muted mb-lg"),
+          div(class = "loading-overlay",
+              div(class = "loading-spinner")
+          ),
+          p("This may take several minutes depending on complexity.",
+            class = "text-muted", style = "font-size: 0.875rem;")
       )
   )
 }

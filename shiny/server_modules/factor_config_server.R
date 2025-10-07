@@ -15,13 +15,13 @@ factor_config_server <- function(input, output, session, values) {
     create_define_factors_specs(input, values)
   })
 
-  # Specs created status
-  output$specs_created <- reactive({ !is.null(values$specifications) })
+  # Specs created status (v0.2.0: use spec_output)
+  output$specs_created <- reactive({ !is.null(values$spec_output) })
   outputOptions(output, "specs_created", suspendWhenHidden = FALSE)
 
   # Render specs summary
   output$specs_summary <- renderUI({
-    render_minimal_specs_summary(values$factor_setup, values$specifications)
+    render_minimal_specs_summary(values$factor_setup, values$spec_output)
   })
 }
 
@@ -180,15 +180,18 @@ create_define_factors_specs <- function(input, values) {
       grouping <- input[[paste0("grouping_", col_name)]]
 
       if (grouping == "simple") {
-        # Simple: list(column, decision, type="binary")
-        factor_definitions[[label]] <- list(col_name, decision = decision, type = "binary")
+        # v0.2.0 Simple factor: Just "column_name|decision"
+        factor_definitions[[label]] <- paste0(col_name, "|", decision)
 
       } else if (grouping == "custom") {
-        # Custom groups: collect dynamically created groups
+        # v0.2.0 Custom factor: list(column, decision = X, groups = list(...))
         groups <- collect_dynamic_groups(col_name, session)
 
         if (length(groups) > 0) {
           factor_definitions[[label]] <- list(col_name, decision = decision, groups = groups)
+        } else {
+          # If no groups defined, fall back to simple
+          factor_definitions[[label]] <- paste0(col_name, "|", decision)
         }
       }
     }
@@ -200,22 +203,17 @@ create_define_factors_specs <- function(input, values) {
   }
 
   tryCatch({
-    # Call define_factors exactly like in your example
+    # v0.2.0 API: define_factors() %>% create_multiverse_specifications()
     values$factor_setup <- do.call(define_factors, c(list(values$data), factor_definitions))
 
-    # Create specifications
-    specs_result <- create_principled_multiverse_specifications(
-      data = values$factor_setup$data,
-      wf_vars = values$factor_setup$factors$wf_internal,
+    # Create specifications using v0.2.0 API
+    values$spec_output <- create_multiverse_specifications(
+      factor_setup = values$factor_setup,
       ma_methods = get_selected_methods(input),
-      dependencies = input$dependency_strategy,
-      decision_map = values$factor_setup$decision_map,
-      factor_groups = values$factor_setup$factor_groups
+      dependencies = input$dependency_strategy
     )
 
-    values$specifications <- specs_result$specifications
-
-    showNotification(paste("Created", specs_result$number_specs, "specifications"),
+    showNotification(paste("Created", values$spec_output$number_specs, "specifications"),
                      type = "message", duration = 5)
 
   }, error = function(e) {
@@ -226,26 +224,27 @@ create_define_factors_specs <- function(input, values) {
 
 get_selected_methods <- function(input) {
   methods <- character(0)
+  # v0.2.0 method names (from register_defaults.R)
   if (input$method_fe) methods <- c(methods, "fe")
   if (input$method_reml) methods <- c(methods, "reml")
-  if (input$method_3_level) methods <- c(methods, "3-level")
+  if (input$method_3_level) methods <- c(methods, "three-level")  # Fixed: was "3-level"
   if (input$method_rve) methods <- c(methods, "rve")
-  if (input$method_pet_peese) methods <- c(methods, "pet.peese")
-  if (input$method_pet_peese_corr) methods <- c(methods, "pet.peese.corrected")
-  if (input$method_puni_star) methods <- c(methods, "puni_star")
+  if (input$method_pet_peese) methods <- c(methods, "pet-peese")  # Fixed: was "pet.peese"
+  if (input$method_pet_peese_corr) methods <- c(methods, "pet-peese-corrected")  # Fixed: was "pet.peese.corrected"
+  if (input$method_puni_star) methods <- c(methods, "p-uniform")  # Fixed: was "puni_star"
   if (input$method_uwls) methods <- c(methods, "uwls")
   if (input$method_waap) methods <- c(methods, "waap")
   if (input$method_bayesmeta) methods <- c(methods, "bayesmeta")
   return(methods)
 }
 
-render_minimal_specs_summary <- function(factor_setup, specifications) {
-  if (is.null(specifications)) return(NULL)
+render_minimal_specs_summary <- function(factor_setup, spec_output) {
+  if (is.null(spec_output)) return(NULL)
 
   div(
     h4("Specifications Created"),
-    p(paste("Total specifications:", nrow(specifications))),
-    p(paste("Unique multiverses:", length(unique(specifications$multiverse_id)))),
+    p(paste("Total specifications:", spec_output$number_specs)),
+    p(paste("Unique multiverses:", length(unique(spec_output$specifications$multiverse_id)))),
 
     if (!is.null(factor_setup) && !is.null(factor_setup$factors)) {
       div(

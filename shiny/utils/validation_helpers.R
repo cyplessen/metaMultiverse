@@ -93,9 +93,9 @@ handle_file_upload <- function(input, values) {
   values$data_validation_status <- NULL
   values$data_validation_messages <- NULL
 
-  # IMPORTANT: Also reset any derived data
+  # IMPORTANT: Also reset any derived data (v0.2.0)
   values$factor_setup <- NULL
-  values$specifications <- NULL
+  values$spec_output <- NULL
   values$results <- NULL
 
   # FORCE NULL FIRST to trigger reactivity

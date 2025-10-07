@@ -5,15 +5,15 @@
 #' Analysis Runner Server Module
 analysis_runner_server <- function(input, output, session, values) {
 
-  # Track analysis status (MOVED HERE - don't initialize in server function)
+  # Track analysis status
   output$analysis_running <- reactive({
     if (is.null(values$analysis_running)) FALSE else values$analysis_running
   })
   outputOptions(output, "analysis_running", suspendWhenHidden = FALSE)
 
-  # Run analysis (UPDATED to use enhanced handler)
+  # Run analysis using v0.2.0 API
   observeEvent(input$run_analysis, {
-    run_enhanced_multiverse_analysis_handler(input, values)
+    run_multiverse_analysis_handler(input, values)
   })
 
   # Analysis complete status
@@ -23,76 +23,37 @@ analysis_runner_server <- function(input, output, session, values) {
   outputOptions(output, "analysis_complete", suspendWhenHidden = FALSE)
 }
 
-# And add the enhanced analysis handler function:
-run_enhanced_multiverse_analysis_handler <- function(input, values) {
-  req(values$data, values$specifications, input$k_smallest)
-
-  values$analysis_running <- TRUE
-  options(metaMultiverse.k_smallest_ma = input$k_smallest)
-
-  showNotification("Running enhanced multiverse analysis with custom groupings...",
-                   type = "message", duration = NULL, id = "analysis_msg")
-
-  tryCatch({
-    # Use the enhanced run_multiverse_analysis with factor_groups support
-    analysis_data <- if (!is.null(values$factor_setup)) values$factor_setup$data else values$data
-    factor_groups <- if (!is.null(values$factor_setup)) values$factor_setup$factor_groups else NULL
-
-    values$results <- run_multiverse_analysis(
-      data = analysis_data,
-      specifications = values$specifications,
-      factor_groups = factor_groups,
-      verbose = TRUE,
-      progress = TRUE
-    )
-
-    values$analysis_running <- FALSE
-    removeNotification("analysis_msg")
-    showNotification("Enhanced analysis completed successfully!",
-                     type = "message", duration = 5)
-
-  }, error = function(e) {
-    values$analysis_running <- FALSE
-    removeNotification("analysis_msg")
-    showNotification(paste("Error in enhanced analysis:", e$message),
-                     type = "error", duration = 8)
-  })
-}
-
-
 # ==============================================================================
 # Helper Functions
 # ==============================================================================
 
-#' Run Multiverse Analysis Handler
-run_enhanced_multiverse_analysis_handler <- function(input, values) {
-  req(values$data, values$specifications, input$k_smallest)
+#' Run Multiverse Analysis Handler (v0.2.0 API)
+run_multiverse_analysis_handler <- function(input, values) {
+  req(values$spec_output, input$k_smallest)
 
   values$analysis_running <- TRUE
   options(metaMultiverse.k_smallest_ma = input$k_smallest)
 
-  showNotification("Running enhanced multiverse analysis with custom groupings...",
+  showNotification("Running multiverse analysis...",
                    type = "message", duration = NULL, id = "analysis_msg")
 
   tryCatch({
-    # Use the enhanced run_multiverse_analysis with factor_groups support
+    # v0.2.0 API: run_multiverse_analysis() takes spec_output directly
     values$results <- run_multiverse_analysis(
-      data = values$factor_setup$data,  # Use the setup data with wf_* columns
-      specifications = values$specifications,
-      factor_groups = values$factor_setup$factor_groups,  # Pass custom groups
+      spec_output = values$spec_output,
       verbose = TRUE,
       progress = TRUE
     )
 
     values$analysis_running <- FALSE
     removeNotification("analysis_msg")
-    showNotification("Enhanced analysis completed successfully! Custom groupings processed.",
+    showNotification("Analysis completed successfully!",
                      type = "message", duration = 5)
 
   }, error = function(e) {
     values$analysis_running <- FALSE
     removeNotification("analysis_msg")
-    showNotification(paste("Error in enhanced analysis:", e$message),
+    showNotification(paste("Error in analysis:", e$message),
                      type = "error", duration = 8)
   })
 }
