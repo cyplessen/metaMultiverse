@@ -150,8 +150,6 @@ Shows all effect sizes sorted by magnitude with specification details:
 plot_spec_curve(results, interactive = FALSE)
 ```
 
-<img src="man/figures/spec-curve-example.png" width="80%" />
-
 ### Vibration of Effects (VoE)
 
 Explores the relationship between effect size and p-value:
@@ -159,8 +157,6 @@ Explores the relationship between effect size and p-value:
 ```r
 plot_voe(results, interactive = FALSE)
 ```
-
-<img src="man/figures/voe-example.png" width="60%" />
 
 ---
 
@@ -273,7 +269,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 📬 Contact
 
 - **Author:** Constantin Yves Plessen
-- **Email:** yves.plessen@gmail.com
 - **Website:** [constantinplessen.com](https://constantinplessen.com)
 - **GitHub:** [@cyplessen](https://github.com/cyplessen)
 
