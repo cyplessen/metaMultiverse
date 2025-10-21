@@ -1,4 +1,4 @@
-# metaMultiverse <img src="man/figures/logo.png" align="right" height="139" alt="" />
+# metaMultiverse <img src="man/figures/logo.svg" align="right" height="139" alt="" />
 
 <!-- badges: start -->
 ![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)

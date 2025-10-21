@@ -1,0 +1,151 @@
+<svg viewBox="0 0 200 173.2" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background gradient - deep black to dark purple -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0014;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a0a2e;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Neon cyan gradient -->
+    <linearGradient id="neonCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00ccff;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Neon magenta gradient -->
+    <linearGradient id="neonMagenta" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff00ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff00aa;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Neon yellow accent -->
+    <linearGradient id="neonYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffff00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffcc00;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Subtle glow effect -->
+    <filter id="neonGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Strong glow effect -->
+    <filter id="strongGlow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Grid pattern -->
+    <pattern id="grid" x="0" y="0" width="15" height="15" patternUnits="userSpaceOnUse">
+      <path d="M 15 0 L 0 0 0 15" fill="none" stroke="#ff00ff" stroke-width="0.1" opacity="0.1"/>
+    </pattern>
+  </defs>
+  
+  <!-- Regular hexagon background -->
+  <polygon points="50,0 150,0 200,86.6 150,173.2 50,173.2 0,86.6" 
+           fill="url(#bgGradient)" stroke="none"/>
+  
+  <!-- Grid overlay -->
+  <polygon points="50,0 150,0 200,86.6 150,173.2 50,173.2 0,86.6" 
+           fill="url(#grid)" opacity="0.4"/>
+  
+  <!-- Garden of Forking Paths - main tree structure -->
+  <g opacity="0.9">
+    <!-- Initial path (root) -->
+    <path d="M 50 120 L 70 110" stroke="url(#neonCyan)" stroke-width="2" filter="url(#neonGlow)"/>
+    
+    <!-- First fork - research design choices -->
+    <path d="M 70 110 L 85 95" stroke="url(#neonCyan)" stroke-width="1.5" opacity="0.9"/>
+    <path d="M 70 110 L 85 115" stroke="url(#neonMagenta)" stroke-width="1.5" opacity="0.9"/>
+    
+    <!-- Second level forks - analysis choices -->
+    <!-- Upper branch -->
+    <path d="M 85 95 L 100 85" stroke="url(#neonCyan)" stroke-width="1.2" opacity="0.8"/>
+    <path d="M 85 95 L 95 75" stroke="url(#neonCyan)" stroke-width="1" opacity="0.7"/>
+    <path d="M 85 95 L 105 95" stroke="url(#neonMagenta)" stroke-width="1" opacity="0.7"/>
+    
+    <!-- Lower branch -->
+    <path d="M 85 115 L 100 105" stroke="url(#neonMagenta)" stroke-width="1.2" opacity="0.8"/>
+    <path d="M 85 115 L 95 125" stroke="url(#neonMagenta)" stroke-width="1" opacity="0.7"/>
+    <path d="M 85 115 L 105 120" stroke="#ffff00" stroke-width="0.8" opacity="0.6"/>
+    
+    <!-- Third level - more analytical choices -->
+    <path d="M 100 85 L 115 80" stroke="url(#neonCyan)" stroke-width="0.8" opacity="0.6"/>
+    <path d="M 100 85 L 120 70" stroke="url(#neonCyan)" stroke-width="0.8" opacity="0.6"/>
+    <path d="M 100 85 L 125 85" stroke="#ffffff" stroke-width="0.6" opacity="0.5"/>
+    
+    <path d="M 95 75 L 110 65" stroke="url(#neonCyan)" stroke-width="0.6" opacity="0.5"/>
+    <path d="M 95 75 L 105 55" stroke="url(#neonMagenta)" stroke-width="0.6" opacity="0.5"/>
+    
+    <path d="M 100 105 L 120 100" stroke="url(#neonMagenta)" stroke-width="0.8" opacity="0.6"/>
+    <path d="M 100 105 L 115 115" stroke="#ffff00" stroke-width="0.6" opacity="0.5"/>
+    <path d="M 100 105 L 125 105" stroke="url(#neonMagenta)" stroke-width="0.8" opacity="0.6"/>
+    
+    <!-- Fourth level - converging paths (meta-analysis) -->
+    <path d="M 115 80 L 140 75" stroke="url(#neonCyan)" stroke-width="0.6" opacity="0.5"/>
+    <path d="M 120 70 L 140 75" stroke="url(#neonCyan)" stroke-width="0.6" opacity="0.5"/>
+    <path d="M 125 85 L 140 75" stroke="#ffffff" stroke-width="0.4" opacity="0.4"/>
+    
+    <path d="M 120 100 L 140 85" stroke="url(#neonMagenta)" stroke-width="0.6" opacity="0.5"/>
+    <path d="M 115 115 L 140 85" stroke="#ffff00" stroke-width="0.4" opacity="0.4"/>
+    <path d="M 125 105 L 140 85" stroke="url(#neonMagenta)" stroke-width="0.6" opacity="0.5"/>
+    
+    <!-- Convergence point - meta-analysis diamond -->
+    <g transform="translate(140, 80)">
+      <polygon points="0,-8 8,0 0,8 -8,0" 
+               fill="url(#neonCyan)" fill-opacity="0.2" 
+               stroke="url(#neonCyan)" stroke-width="1.5" filter="url(#strongGlow)"/>
+      <circle cx="0" cy="0" r="2" fill="white" opacity="0.9"/>
+    </g>
+    
+    <!-- Some paths continue beyond -->
+    <path d="M 140 75 L 160 70" stroke="url(#neonCyan)" stroke-width="0.4" opacity="0.3" stroke-dasharray="2,2"/>
+    <path d="M 140 85 L 160 90" stroke="url(#neonMagenta)" stroke-width="0.4" opacity="0.3" stroke-dasharray="2,2"/>
+  </g>
+  
+  <!-- Decision nodes (circles at forks) -->
+  <g opacity="0.8">
+    <circle cx="70" cy="110" r="2.5" fill="none" stroke="url(#neonCyan)" stroke-width="0.8"/>
+    <circle cx="85" cy="95" r="2" fill="none" stroke="url(#neonCyan)" stroke-width="0.6"/>
+    <circle cx="85" cy="115" r="2" fill="none" stroke="url(#neonMagenta)" stroke-width="0.6"/>
+    <circle cx="100" cy="85" r="1.5" fill="none" stroke="url(#neonCyan)" stroke-width="0.5"/>
+    <circle cx="100" cy="105" r="1.5" fill="none" stroke="url(#neonMagenta)" stroke-width="0.5"/>
+    <circle cx="95" cy="75" r="1.2" fill="none" stroke="#ffffff" stroke-width="0.4"/>
+    <circle cx="95" cy="125" r="1.2" fill="none" stroke="#ffff00" stroke-width="0.4"/>
+  </g>
+  
+  <!-- Background accent lines -->
+  <g opacity="0.2">
+    <line x1="30" y1="50" x2="170" y2="40" stroke="url(#neonCyan)" stroke-width="0.3"/>
+    <line x1="40" y1="140" x2="180" y2="130" stroke="url(#neonMagenta)" stroke-width="0.3"/>
+  </g>
+  
+  <!-- Package name - moved up inside hexagon -->
+  <text x="100" y="35" text-anchor="middle" fill="white" font-family="Georgia, 'Times New Roman', serif" font-size="16" font-weight="normal" letter-spacing="0.3" font-style="normal">
+    metaMultiverse
+  </text>
+  
+  <!-- Subtle underline -->
+  <line x1="45" y1="40" x2="155" y2="40" stroke="url(#neonCyan)" stroke-width="0.4" opacity="0.5"/>
+  
+  <!-- Tagline - also moved up -->
+  <text x="100" y="50" text-anchor="middle" fill="#ffffff" font-family="Trebuchet MS, Verdana, sans-serif" font-size="5.5" font-weight="normal" letter-spacing="1.5" opacity="0.5">
+    MULTIVERSE META-ANALYSIS
+  </text>
+  
+  <!-- Small subtitle about forking paths -->
+  <text x="100" y="155" text-anchor="middle" fill="url(#neonMagenta)" font-family="Georgia, 'Times New Roman', serif" font-size="4.5" font-weight="normal" letter-spacing="0.8" opacity="0.6" font-style="italic">
+    EXPLORING ALL PATHS
+  </text>
+  
+
+  
+
+</svg>
