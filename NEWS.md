@@ -1,3 +1,42 @@
+# metaMultiverse 0.2.3 (Development)
+
+## New Features
+
+* Added N-type decision support for custom factors - custom factors with `decision = "N"` now properly create separate multiverses without adding "total_" option
+
+## Bug Fixes
+
+* Fixed `create_multiverse_specifications()` to properly handle N-type decisions for custom factor groups
+* Custom factors no longer bypass decision type logic
+
+## Test Suite
+
+* Added test for N-type simple factors verifying separate multiverses without total option
+* Added test for N-type custom factors verifying proper multiverse separation
+
+---
+
+# metaMultiverse 0.2.2 (Development)
+
+## New Features
+
+* Added bidirectional format compatibility between metafor (`yi`/`vi`) and metaPsyTools (`.g`/`.g_se`)
+* Added auto-generation of `es_id` column when missing - uses row numbers as unique identifiers
+
+## Improvements
+
+* `check_data_multiverse()` now accepts data in either metafor or metaPsyTools format
+* After validation, data contains both formats for cross-package compatibility
+* Improved error messages for missing effect size columns
+
+## Test Suite
+
+* Added 11 tests for bidirectional format compatibility
+* Added 3 tests for auto-generated `es_id`
+* Updated integration tests for new error messages
+
+---
+
 # metaMultiverse 0.2.0 (Development)
 
 ## New Features

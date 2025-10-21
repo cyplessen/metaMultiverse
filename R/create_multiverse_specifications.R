@@ -104,7 +104,16 @@ create_multiverse_specifications <- function(factor_setup,
     # Check for custom groups
     if (!is.null(factor_groups) && wf %in% names(factor_groups)) {
       # Use custom group names
-      return(names(factor_groups[[wf]]))
+      custom_groups <- names(factor_groups[[wf]])
+
+      # Apply N-type decision logic to custom factors
+      if (decision_map[[wf]] == "N") {
+        # Non-equivalent: just custom group names
+        return(custom_groups)
+      } else {
+        # E or U: add "total_" option
+        return(c(custom_groups, paste0("total_", wf)))
+      }
     }
 
     # Standard: use data levels

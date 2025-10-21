@@ -108,14 +108,14 @@ test_that("dependency modeling methods (3-level, RVE) work with modeled dependen
 # ADVANCED TEST 4: Multiple Multiverses from Type N
 # ==============================================================================
 
-test_that("multiple factors create complex multiverse structure", {
+test_that("N-type factors create separate multiverses without total option", {
   data("data_digDep")
 
   results <- data_digDep %>%
     check_data_multiverse() %>%
     define_factors(
-      Population = "wf_3|E",    # Multiple populations
-      Guidance = "wf_2|U"        # Different guidance levels
+      Population = "wf_3|N",    # N-type: separate multiverses
+      Guidance = "wf_2|U"        # U-type: uncertain
     ) %>%
     create_multiverse_specifications(
       ma_methods = "reml",
@@ -123,8 +123,12 @@ test_that("multiple factors create complex multiverse structure", {
     ) %>%
     run_multiverse_analysis(verbose = FALSE, progress = FALSE)
 
-  # Should create multiple specifications
-  expect_true(results$n_attempted >= 10)
+  # Should create separate multiverse for each population level
+  n_multiverses <- length(unique(results$results$multiverse_id))
+  expect_true(n_multiverses >= 3)  # At least 3 population levels
+
+  # N-type factors should NOT have "total_" option
+  expect_false(any(grepl("total_wf_3", results$results$multiverse_id)))
 
   # Each specification should have results
   expect_true(results$n_successful > 0)
@@ -382,7 +386,48 @@ test_that("E and U factors work correctly together in complex design", {
 })
 
 # ==============================================================================
-# ADVANCED TEST 12: Plotting with Complex Results
+# ADVANCED TEST 12: N-Type Custom Factors Create Separate Multiverses
+# ==============================================================================
+
+test_that("custom factors with N-type decision create separate multiverses", {
+  data("data_digDep")
+
+  results <- data_digDep %>%
+    check_data_multiverse() %>%
+    define_factors(
+      Population = "wf_3|U",
+      # Custom factor with N-type decision
+      Guidance = list(
+        column = "wf_2",
+        decision = "N",
+        groups = list(
+          high_support = "guided",
+          low_support = c("minimal to no support", "automated encouragement")
+        )
+      )
+    ) %>%
+    create_multiverse_specifications(
+      ma_methods = "reml",
+      dependencies = "aggregate"
+    ) %>%
+    run_multiverse_analysis(verbose = FALSE, progress = FALSE)
+
+  # Should create multiple multiverses (one per custom group, no total)
+  n_multiverses <- length(unique(results$results$multiverse_id))
+  expect_equal(n_multiverses, 2)  # Only 2 custom groups, no "total_" option
+
+  # Each multiverse should correspond to a custom group
+  expect_true(all(results$results$multiverse_id %in% c("high_support", "low_support")))
+
+  # Should NOT have "total_wf_2" because N-type doesn't add total option
+  expect_false(any(grepl("total", results$results$multiverse_id)))
+
+  # Both multiverses should have results
+  expect_true(results$n_successful > 0)
+})
+
+# ==============================================================================
+# ADVANCED TEST 13: Plotting with Complex Results
 # ==============================================================================
 
 test_that("plotting functions handle complex multiverse results", {
