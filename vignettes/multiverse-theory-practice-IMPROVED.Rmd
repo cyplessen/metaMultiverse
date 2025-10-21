@@ -32,7 +32,7 @@ library(dplyr)
 library(ggplot2)
 ```
 
-# Introduction
+# Introduction <img src="../man/figures/logo.svg" align="right" height="139" alt="metaMultiverse hex logo" />
 
 Meta-analysis synthesizes research findings but requires many analytical decisions. Which studies to include? How to handle multiple effect sizes? Which statistical model? These **researcher degrees of freedom** can substantially impact conclusions.
 
@@ -44,6 +44,8 @@ This vignette covers:
 2. **Practical implementation**: Complete workflow with examples
 3. **Interpretation**: Making sense of multiverse results
 4. **Reporting**: Communicating findings transparently
+
+**Want a quick start?** See `vignette("getting-started")` for a streamlined introduction to the package.
 
 ---
 
@@ -267,6 +269,41 @@ print(factor_setup_custom$factor_groups)
 -   Combining rare categories for statistical power
 -   Testing sensitivity to different quality thresholds
 -   Creating theory-driven comparisons
+
+### N-Type Custom Factors: Separate Multiverses (v0.2.3+)
+
+Custom factors can also be designated as Type N to create separate multiverses:
+
+```{r custom-n-type, eval=FALSE}
+factor_setup_n <- data_validated %>%
+  define_factors(
+    Population = "wf_3|U",
+
+    # N-type custom factor: Each group becomes a separate multiverse
+    RiskOfBias = list(
+      column = "wf_7",
+      decision = "N",  # Non-equivalent: different research questions
+      groups = list(
+        low_only = "low risk",
+        low_moderate = c("low risk", "some concerns"),
+        all_studies = c("low risk", "some concerns", "high risk")
+      )
+    )
+  )
+```
+
+This creates **three separate multiverses**:
+1. Low-risk studies only
+2. Low + moderate risk studies
+3. All studies regardless of risk
+
+Each multiverse is analyzed independently because they represent fundamentally different research questions about study quality. Type N prevents the "total_" aggregation option from being added, ensuring clean separation between research questions.
+
+**When to use N-type custom factors:**
+
+-   Different quality standards represent different research questions
+-   Distinct population groups (e.g., clinical vs. subclinical)
+-   Conceptually different intervention types that shouldn't be pooled
 
 ---
 
@@ -703,6 +740,16 @@ Multiverse meta-analysis transforms analytical flexibility from a threat to vali
 4.  **Reporting**: Full disclosure builds credibility
 
 The `metaMultiverse` package makes this approach accessible through a clean, pipeable workflow that handles computational complexity while preserving theoretical clarity.
+
+---
+
+# Further Reading
+
+**For quick start:**
+See `vignette("getting-started")` for a streamlined introduction to the package with essential workflow steps.
+
+**For hands-on tutorial with real data:**
+See the [blog post tutorial](https://constantinyvesplessen.com/posts/metamultiverse-tutorial.html) for a comprehensive walkthrough using Metapsy API data.
 
 ---
 

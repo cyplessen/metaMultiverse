@@ -27,11 +27,13 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Introduction
+# Introduction <img src="../man/figures/logo.svg" align="right" height="139" alt="metaMultiverse hex logo" />
 
 Meta-analysis requires making many analytical decisions: Which studies to include? How to handle dependencies? Which statistical model? The **multiverse approach** systematically explores how these choices affect your conclusions.
 
 This vignette shows you how to conduct a multiverse meta-analysis in 5 simple steps.
+
+**Want more depth?** See `vignette("multiverse-theory-practice")` for comprehensive theoretical background and advanced usage.
 
 ## Installation
 
@@ -119,7 +121,9 @@ This is where you specify the "forking paths" in your analysis. There are three 
 
 - **E (Equivalent)**: Options are theoretically interchangeable
 - **U (Uncertain)**: Unclear which option is best
-- **N (Non-equivalent)**: Different research questions
+- **N (Non-equivalent)**: Different research questions (creates separate multiverses)
+
+For detailed theoretical background on the E/U/N framework, see `vignette("multiverse-theory-practice")`.
 
 ## Simple Example: One Factor
 
@@ -181,6 +185,30 @@ This is useful for:
 - Combining rare categories
 - Testing theoretically motivated groupings
 - Sensitivity analyses with different thresholds
+
+## N-Type Custom Factors: Separate Multiverses
+
+Custom factors can also use Type N decisions to create separate multiverses (new in v0.2.3):
+
+```{r define-custom-n, eval=FALSE}
+factor_setup_n <- data_validated %>%
+  define_factors(
+    Population = "wf_3|U",
+
+    # N-type custom factor creates separate multiverses
+    RiskOfBias = list(
+      column = "wf_7",
+      decision = "N",
+      groups = list(
+        low_only = "low risk",
+        low_moderate = c("low risk", "some concerns"),
+        all_studies = c("low risk", "some concerns", "high risk")
+      )
+    )
+  )
+```
+
+This creates **three separate multiverses** (one per risk level), not one combined multiverse. Each is analyzed independently because they represent different research questions about study quality.
 
 ---
 
@@ -544,6 +572,16 @@ Multiverse meta-analysis transforms analytical flexibility from a source of conc
 3. ✅ Use `create_multiverse_specifications()` to generate combinations
 4. ✅ Use `run_multiverse_analysis()` to execute all analyses
 5. ✅ Use `plot_spec_curve()` and `plot_voe()` to visualize results
+
+---
+
+# Further Reading
+
+**For theoretical depth:**
+See `vignette("multiverse-theory-practice")` for comprehensive coverage of the E/U/N framework, advanced interpretation, and reporting guidelines.
+
+**For hands-on tutorial with real data:**
+See the [blog post tutorial](https://constantinyvesplessen.com/posts/metamultiverse-tutorial.html) for a step-by-step walkthrough using Metapsy API data.
 
 ---
 
