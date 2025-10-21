@@ -28,9 +28,47 @@ test_that("valid data passes and returns validated data frame", {
   expect_true(attr(result, "multiverse_validated"))
   expect_true(!is.null(attr(result, "validation_timestamp")))
 
-  # Check data integrity
+  # Check data integrity - now includes .g and .g_se columns
   expect_equal(nrow(result), nrow(valid_data))
-  expect_equal(ncol(result), ncol(valid_data))
+  expect_equal(ncol(result), ncol(valid_data) + 2)  # Added .g and .g_se
+
+  # Check that compatibility columns were created correctly
+  expect_true(".g" %in% names(result))
+  expect_true(".g_se" %in% names(result))
+  expect_equal(result$.g, result$yi)
+  expect_equal(result$.g_se, sqrt(result$vi))
+})
+
+# Test compatibility layer
+test_that("compatibility columns are added when missing", {
+  valid_data <- create_valid_data()
+
+  # Should see message about adding compatibility columns
+  expect_message(
+    result <- metaMultiverse::check_data_multiverse(valid_data),
+    regexp = "Added .g and .g_se columns for metaPsyTools compatibility"
+  )
+
+  # Verify the columns were added correctly
+  expect_equal(result$.g, valid_data$yi)
+  expect_equal(result$.g_se, sqrt(valid_data$vi))
+})
+
+test_that("existing .g and .g_se columns are preserved", {
+  valid_data <- create_valid_data()
+  # Add .g and .g_se columns with different values
+  valid_data$.g <- valid_data$yi + 0.1  # Slightly different values
+  valid_data$.g_se <- sqrt(valid_data$vi) + 0.01
+
+  # Should NOT see message about adding columns
+  result <- metaMultiverse::check_data_multiverse(valid_data)
+
+  # Verify the original values were preserved
+  expect_equal(result$.g, valid_data$.g)
+  expect_equal(result$.g_se, valid_data$.g_se)
+
+  # Should still pass validation
+  expect_true(attr(result, "multiverse_validated"))
 })
 
 # Test input validation errors
@@ -217,6 +255,9 @@ test_that("extreme effect sizes trigger warnings but pass", {
     regexp = "Found 1 effect sizes with absolute value > 10"
   )
   expect_s3_class(result, "data.frame")
+  # Check compatibility columns were still added
+  expect_true(".g" %in% names(result))
+  expect_true(".g_se" %in% names(result))
 })
 
 test_that("large Cohen's d triggers SD/SE confusion warning", {
@@ -229,6 +270,9 @@ test_that("large Cohen's d triggers SD/SE confusion warning", {
     regexp = "unreasonably large d detected.*Check if SD and SE were confused"
   )
   expect_s3_class(result, "data.frame")
+  # Check compatibility columns were still added
+  expect_true(".g" %in% names(result))
+  expect_true(".g_se" %in% names(result))
 })
 
 test_that("multiple large Cohen's d values are detected", {
@@ -274,6 +318,9 @@ test_that("few studies trigger warnings", {
     regexp = "Only 2 unique studies found"
   )
   expect_s3_class(result, "data.frame")
+  # Check compatibility columns were added
+  expect_equal(result$.g, few_studies_data$yi)
+  expect_equal(result$.g_se, sqrt(few_studies_data$vi))
 })
 
 # Test missing value warnings
@@ -289,6 +336,9 @@ test_that("missing values trigger warnings but pass", {
     regexp = "Some required columns contain missing values"
   )
   expect_s3_class(result, "data.frame")
+  # Check compatibility columns were added
+  expect_true(".g" %in% names(result))
+  expect_true(".g_se" %in% names(result))
 })
 
 # Test sei/vi consistency warnings
@@ -353,6 +403,9 @@ test_that("edge cases are handled correctly", {
     regexp = "Data validation passed"
   )
   expect_s3_class(result, "data.frame")
+  # Verify compatibility columns were added even for minimal data
+  expect_true(".g" %in% names(result))
+  expect_true(".g_se" %in% names(result))
 
   # Data without sei column (should not trigger sei/vi consistency check)
   no_sei_data <- create_valid_data() |> dplyr::select(-sei)
@@ -379,4 +432,37 @@ test_that("multiple issues are reported appropriately", {
     result <- metaMultiverse::check_data_multiverse(multi_warning_data)
   )
   expect_s3_class(result, "data.frame")
+  # Verify compatibility columns were added despite warnings
+  expect_true(".g" %in% names(result))
+  expect_true(".g_se" %in% names(result))
+})
+
+# Test compatibility with NA values in yi/vi
+test_that("compatibility columns handle NA values correctly", {
+  valid_data <- create_valid_data()
+  # NA values in yi/vi trigger the non-finite error, not warning
+  # So we need to test this differently
+  valid_data$yi[2] <- NA
+  valid_data$vi[3] <- NA
+
+  # This will trigger an error due to non-finite check
+  expect_error(
+    metaMultiverse::check_data_multiverse(valid_data),
+    regexp = "non-finite values"
+  )
+
+  # Instead, test with data that already has .g and .g_se with NA values
+  valid_data2 <- create_valid_data()
+  valid_data2$.g <- valid_data2$yi
+  valid_data2$.g[2] <- NA  # Add NA to .g
+  valid_data2$.g_se <- sqrt(valid_data2$vi)
+  valid_data2$.g_se[3] <- NA  # Add NA to .g_se
+
+  # This should pass since yi and vi are valid
+  result <- metaMultiverse::check_data_multiverse(valid_data2)
+
+  # Check that existing NA values in .g/.g_se are preserved
+  expect_true(is.na(result$.g[2]))
+  expect_true(is.na(result$.g_se[3]))
+  expect_equal(result$.g[1], valid_data2$yi[1])
 })

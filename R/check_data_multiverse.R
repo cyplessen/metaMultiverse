@@ -6,7 +6,8 @@
 #' @param data Data frame to validate. Must contain study-level and effect size data.
 #'
 #' @return The input data frame (invisibly) with validation attributes added.
-#'   Compatible with pipe operations.
+#'   Compatible with pipe operations. Data will contain both yi/vi (metafor format)
+#'   and .g/.g_se (metaPsyTools format) for cross-package compatibility.
 #'
 #' @details
 #' Performs comprehensive validation:
@@ -36,6 +37,14 @@
 #'   \item Unreasonably large Cohen's d (|d| > 2.5)
 #'   \item Very large variances (> 100)
 #'   \item Fewer than 3 studies
+#' }
+#'
+#' \strong{Compatibility:}
+#' The function ensures compatibility with both metaMultiverse and metaPsyTools
+#' by providing effect sizes in both formats:
+#' \itemize{
+#'   \item \code{yi} and \code{vi} for metafor/metaMultiverse functions
+#'   \item \code{.g} and \code{.g_se} for metaPsyTools functions
 #' }
 #'
 #' @examples
@@ -200,6 +209,22 @@ check_data_multiverse <- function(data) {
                     "cases where sei and sqrt(vi) differ substantially. Please verify data consistency."))
     }
   }
+
+  # === ADD COMPATIBILITY LAYER FOR metaPsyTools ===
+  # Ensure compatibility with both metaMultiverse and metaPsyTools formats
+
+  # Check which columns already exist
+  has_g <- all(c(".g", ".g_se") %in% names(data))
+
+  # If .g and .g_se don't exist, create them from yi and vi for metaPsyTools compatibility
+  if (!has_g) {
+    data$.g <- data$yi
+    data$.g_se <- sqrt(data$vi)
+    message("Added .g and .g_se columns for metaPsyTools compatibility.")
+  }
+
+  # Note: We don't need to create yi/vi from .g/.g_se since yi/vi are required columns
+  # that were already validated above. es_id is also already required and validated.
 
   # Success message if all checks pass
   message("Data validation passed. Dataset is ready for multiverse analysis.")

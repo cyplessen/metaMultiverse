@@ -11,7 +11,8 @@ check_data_multiverse(data)
 }
 \value{
 The input data frame (invisibly) with validation attributes added.
-  Compatible with pipe operations.
+  Compatible with pipe operations. Data will contain both yi/vi (metafor format)
+  and .g/.g_se (metaPsyTools format) for cross-package compatibility.
 }
 \description{
 Validates dataset structure and content for multiverse analysis compatibility.
@@ -45,6 +46,14 @@ Performs comprehensive validation:
   \item Unreasonably large Cohen's d (|d| > 2.5)
   \item Very large variances (> 100)
   \item Fewer than 3 studies
+}
+
+\strong{Compatibility:}
+The function ensures compatibility with both metaMultiverse and metaPsyTools
+by providing effect sizes in both formats:
+\itemize{
+  \item \code{yi} and \code{vi} for metafor/metaMultiverse functions
+  \item \code{.g} and \code{.g_se} for metaPsyTools functions
 }
 }
 \examples{
