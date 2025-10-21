@@ -96,18 +96,18 @@ test_that("empty data triggers error", {
 test_that("missing required columns trigger errors", {
   valid_data <- create_valid_data()
 
-  # Missing single core column
+  # Missing yi (has vi but not both)
   bad_data <- valid_data |> dplyr::select(-yi)
   expect_error(
     metaMultiverse::check_data_multiverse(bad_data),
-    regexp = "Missing required columns: yi"
+    regexp = "Data must contain either yi/vi \\(metafor format\\) or .g/.g_se \\(metaPsyTools format\\)"
   )
 
-  # Missing multiple core columns
+  # Missing multiple core columns (both yi/vi)
   bad_data <- valid_data |> dplyr::select(-yi, -vi)
   expect_error(
     metaMultiverse::check_data_multiverse(bad_data),
-    regexp = "Missing required columns: yi, vi"
+    regexp = "Data must contain either yi/vi \\(metafor format\\) or .g/.g_se \\(metaPsyTools format\\)"
   )
 
   # Note: wf columns are dynamically detected, so we can't test "missing wf_1"
@@ -465,4 +465,171 @@ test_that("compatibility columns handle NA values correctly", {
   expect_true(is.na(result$.g[2]))
   expect_true(is.na(result$.g_se[3]))
   expect_equal(result$.g[1], valid_data2$yi[1])
+})
+
+# === TESTS FOR BIDIRECTIONAL COMPATIBILITY (metaPsyTools → metafor) ===
+
+# Helper function to create metaPsyTools format data
+create_metapsy_data <- function() {
+  data.frame(
+    study = c("Study A", "Study B", "Study C", "Study D"),
+    es_id = 1:4,
+    .g = c(0.5, -0.2, 0.8, 0.1),
+    .g_se = c(0.141, 0.173, 0.100, 0.200),
+    wf_1 = c("X", "Y", "X", "Y"),
+    wf_2 = c("high", "low", "medium", "high"),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("metaPsyTools format (.g/.g_se) is converted to metafor format (yi/vi)", {
+  metapsy_data <- create_metapsy_data()
+
+  # Should see message about conversion
+  expect_message(
+    result <- metaMultiverse::check_data_multiverse(metapsy_data),
+    regexp = "Converted .g and .g_se to yi and vi for metaMultiverse compatibility"
+  )
+
+  # Check that yi and vi were created correctly
+  expect_true("yi" %in% names(result))
+  expect_true("vi" %in% names(result))
+  expect_equal(result$yi, metapsy_data$.g)
+  expect_equal(result$vi, metapsy_data$.g_se^2)
+
+  # Original .g and .g_se should still exist
+  expect_equal(result$.g, metapsy_data$.g)
+  expect_equal(result$.g_se, metapsy_data$.g_se)
+
+  # Should pass validation
+  expect_true(attr(result, "multiverse_validated"))
+})
+
+test_that("data with only .g/.g_se (no yi/vi) passes validation", {
+  metapsy_data <- create_metapsy_data()
+
+  # Should not error
+  expect_message(
+    result <- metaMultiverse::check_data_multiverse(metapsy_data),
+    regexp = "Data validation passed"
+  )
+
+  expect_s3_class(result, "data.frame")
+  expect_equal(nrow(result), nrow(metapsy_data))
+})
+
+test_that("data with both formats preserves both yi/vi and .g/.g_se", {
+  # Create data with both formats (slightly different values to test preservation)
+  both_formats_data <- data.frame(
+    study = c("Study A", "Study B", "Study C"),
+    es_id = 1:3,
+    yi = c(0.5, -0.2, 0.8),
+    vi = c(0.02, 0.03, 0.01),
+    .g = c(0.51, -0.19, 0.81),  # Slightly different
+    .g_se = c(0.142, 0.174, 0.101),
+    wf_1 = c("X", "Y", "X"),
+    stringsAsFactors = FALSE
+  )
+
+  result <- metaMultiverse::check_data_multiverse(both_formats_data)
+
+  # Both formats should be preserved as-is (no conversion message)
+  expect_equal(result$yi, both_formats_data$yi)
+  expect_equal(result$vi, both_formats_data$vi)
+  expect_equal(result$.g, both_formats_data$.g)
+  expect_equal(result$.g_se, both_formats_data$.g_se)
+
+  # Should pass validation
+  expect_true(attr(result, "multiverse_validated"))
+})
+
+test_that("data with neither format throws appropriate error", {
+  no_effect_data <- data.frame(
+    study = c("Study A", "Study B"),
+    es_id = 1:2,
+    wf_1 = c("X", "Y"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    metaMultiverse::check_data_multiverse(no_effect_data),
+    regexp = "Data must contain either yi/vi \\(metafor format\\) or .g/.g_se \\(metaPsyTools format\\)"
+  )
+})
+
+test_that("metaPsyTools data with quality issues still triggers warnings", {
+  metapsy_data <- create_metapsy_data()
+  metapsy_data$.g[1] <- 15  # Extreme effect size
+
+  # Should trigger warning about extreme effect sizes
+  expect_warning(
+    result <- metaMultiverse::check_data_multiverse(metapsy_data),
+    regexp = "effect sizes with absolute value > 10"
+  )
+
+  # But should still pass validation
+  expect_s3_class(result, "data.frame")
+  expect_true(attr(result, "multiverse_validated"))
+})
+
+# === TESTS FOR AUTO-GENERATED es_id ===
+
+test_that("es_id is auto-generated if missing (metafor format)", {
+  data_no_esid <- data.frame(
+    study = c("Study A", "Study B", "Study C"),
+    yi = c(0.5, -0.2, 0.8),
+    vi = c(0.02, 0.03, 0.01),
+    wf_1 = c("X", "Y", "X"),
+    stringsAsFactors = FALSE
+  )
+
+  # Should see message about es_id generation
+  expect_message(
+    result <- check_data_multiverse(data_no_esid),
+    regexp = "Generated es_id column using row numbers"
+  )
+
+  # Check that es_id was created
+  expect_true("es_id" %in% names(result))
+  expect_equal(result$es_id, 1:3)
+  expect_true(attr(result, "multiverse_validated"))
+})
+
+test_that("es_id is auto-generated if missing (metaPsyTools format)", {
+  data_no_esid <- data.frame(
+    study = c("Study A", "Study B", "Study C"),
+    .g = c(0.5, -0.2, 0.8),
+    .g_se = c(0.141, 0.173, 0.100),
+    wf_1 = c("X", "Y", "X"),
+    stringsAsFactors = FALSE
+  )
+
+  # Should see messages about both es_id and format conversion
+  result <- check_data_multiverse(data_no_esid)
+
+  # Check that es_id was created
+  expect_true("es_id" %in% names(result))
+  expect_equal(result$es_id, 1:3)
+
+  # Check format conversion still works
+  expect_true("yi" %in% names(result))
+  expect_true("vi" %in% names(result))
+  expect_true(attr(result, "multiverse_validated"))
+})
+
+test_that("existing es_id is preserved if present", {
+  data_with_esid <- data.frame(
+    study = c("Study A", "Study B"),
+    es_id = c(100, 200),  # Custom IDs
+    yi = c(0.5, -0.2),
+    vi = c(0.02, 0.03),
+    wf_1 = c("X", "Y"),
+    stringsAsFactors = FALSE
+  )
+
+  result <- check_data_multiverse(data_with_esid)
+
+  # Original es_id should be preserved
+  expect_equal(result$es_id, c(100, 200))
+  expect_true(attr(result, "multiverse_validated"))
 })

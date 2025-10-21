@@ -7,7 +7,8 @@
 check_data_multiverse(data)
 }
 \arguments{
-\item{data}{Data frame to validate. Must contain study-level and effect size data.}
+\item{data}{Data frame to validate. Must contain study-level and effect size data
+in either metafor format (yi/vi) or metaPsyTools format (.g/.g_se).}
 }
 \value{
 The input data frame (invisibly) with validation attributes added.
@@ -21,12 +22,11 @@ Checks required columns, data types, unique identifiers, and data quality.
 \details{
 Performs comprehensive validation:
 
-\strong{Required columns:}
+\strong{Required columns (in either format):}
 \itemize{
   \item \code{study}: Study identifier (character)
-  \item \code{es_id}: Unique effect size ID (numeric)
-  \item \code{yi}: Effect size estimate (numeric)
-  \item \code{vi}: Sampling variance (numeric)
+  \item \code{es_id}: Unique effect size ID (numeric) - auto-generated if missing
+  \item \strong{Either} \code{yi}/\code{vi} (metafor) \strong{or} \code{.g}/\code{.g_se} (metaPsyTools)
   \item \code{wf_*}: Which factor columns (character)
 }
 
@@ -48,13 +48,17 @@ Performs comprehensive validation:
   \item Fewer than 3 studies
 }
 
-\strong{Compatibility:}
-The function ensures compatibility with both metaMultiverse and metaPsyTools
-by providing effect sizes in both formats:
+\strong{Automatic Enhancements:}
 \itemize{
-  \item \code{yi} and \code{vi} for metafor/metaMultiverse functions
-  \item \code{.g} and \code{.g_se} for metaPsyTools functions
+  \item \strong{es_id auto-generation}: If missing, creates unique IDs using row numbers
+  \item \strong{Bidirectional format conversion}:
+    \itemize{
+      \item If data has \code{yi}/\code{vi}: creates \code{.g} and \code{.g_se}
+      \item If data has \code{.g}/\code{.g_se}: creates \code{yi} and \code{vi}
+      \item If data has both: preserves both formats as-is
+    }
 }
+After validation, all data will have both formats for cross-package compatibility.
 }
 \examples{
 \dontrun{

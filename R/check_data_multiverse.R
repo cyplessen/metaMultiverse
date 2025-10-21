@@ -3,7 +3,8 @@
 #' Validates dataset structure and content for multiverse analysis compatibility.
 #' Checks required columns, data types, unique identifiers, and data quality.
 #'
-#' @param data Data frame to validate. Must contain study-level and effect size data.
+#' @param data Data frame to validate. Must contain study-level and effect size data
+#'   in either metafor format (yi/vi) or metaPsyTools format (.g/.g_se).
 #'
 #' @return The input data frame (invisibly) with validation attributes added.
 #'   Compatible with pipe operations. Data will contain both yi/vi (metafor format)
@@ -12,12 +13,11 @@
 #' @details
 #' Performs comprehensive validation:
 #'
-#' \strong{Required columns:}
+#' \strong{Required columns (in either format):}
 #' \itemize{
 #'   \item \code{study}: Study identifier (character)
-#'   \item \code{es_id}: Unique effect size ID (numeric)
-#'   \item \code{yi}: Effect size estimate (numeric)
-#'   \item \code{vi}: Sampling variance (numeric)
+#'   \item \code{es_id}: Unique effect size ID (numeric) - auto-generated if missing
+#'   \item \strong{Either} \code{yi}/\code{vi} (metafor) \strong{or} \code{.g}/\code{.g_se} (metaPsyTools)
 #'   \item \code{wf_*}: Which factor columns (character)
 #' }
 #'
@@ -39,13 +39,17 @@
 #'   \item Fewer than 3 studies
 #' }
 #'
-#' \strong{Compatibility:}
-#' The function ensures compatibility with both metaMultiverse and metaPsyTools
-#' by providing effect sizes in both formats:
+#' \strong{Automatic Enhancements:}
 #' \itemize{
-#'   \item \code{yi} and \code{vi} for metafor/metaMultiverse functions
-#'   \item \code{.g} and \code{.g_se} for metaPsyTools functions
+#'   \item \strong{es_id auto-generation}: If missing, creates unique IDs using row numbers
+#'   \item \strong{Bidirectional format conversion}:
+#'     \itemize{
+#'       \item If data has \code{yi}/\code{vi}: creates \code{.g} and \code{.g_se}
+#'       \item If data has \code{.g}/\code{.g_se}: creates \code{yi} and \code{vi}
+#'       \item If data has both: preserves both formats as-is
+#'     }
 #' }
+#' After validation, all data will have both formats for cross-package compatibility.
 #'
 #' @examples
 #' \dontrun{
@@ -74,7 +78,34 @@ check_data_multiverse <- function(data) {
     stop("Input data is empty (0 rows)")
   }
 
-  # Required columns
+  # === AUTO-GENERATE es_id IF MISSING ===
+  # If es_id doesn't exist, create it as row numbers
+  if (!"es_id" %in% names(data)) {
+    data$es_id <- seq_len(nrow(data))
+    message("Generated es_id column using row numbers (1 to ", nrow(data), ").")
+  }
+
+  # === BIDIRECTIONAL COMPATIBILITY LAYER ===
+  # Support both metafor format (yi/vi) and metaPsyTools format (.g/.g_se)
+
+  has_metafor <- all(c("yi", "vi") %in% names(data))
+  has_metapsy <- all(c(".g", ".g_se") %in% names(data))
+
+  # Convert between formats if needed
+  if (!has_metafor && has_metapsy) {
+    # metaPsyTools → metafor conversion
+    data$yi <- data$.g
+    data$vi <- data$.g_se^2
+    message("Converted .g and .g_se to yi and vi for metaMultiverse compatibility.")
+  } else if (has_metafor && !has_metapsy) {
+    # metafor → metaPsyTools conversion (will be done later after validation)
+    # We defer this to after validation to ensure yi/vi are valid first
+  } else if (!has_metafor && !has_metapsy) {
+    stop("Data must contain either yi/vi (metafor format) or .g/.g_se (metaPsyTools format)")
+  }
+  # If both formats exist, preserve them as-is
+
+  # Required columns (now yi/vi should exist after conversion if needed)
   required_columns <- c(
     "study", "es_id", "yi", "vi"
   )
@@ -210,21 +241,16 @@ check_data_multiverse <- function(data) {
     }
   }
 
-  # === ADD COMPATIBILITY LAYER FOR metaPsyTools ===
-  # Ensure compatibility with both metaMultiverse and metaPsyTools formats
+  # === COMPLETE BIDIRECTIONAL COMPATIBILITY ===
+  # Now that yi/vi are validated, create .g/.g_se if they don't exist
 
-  # Check which columns already exist
-  has_g <- all(c(".g", ".g_se") %in% names(data))
-
-  # If .g and .g_se don't exist, create them from yi and vi for metaPsyTools compatibility
-  if (!has_g) {
+  if (!has_metapsy) {
+    # metafor → metaPsyTools conversion (deferred from earlier)
     data$.g <- data$yi
     data$.g_se <- sqrt(data$vi)
     message("Added .g and .g_se columns for metaPsyTools compatibility.")
   }
-
-  # Note: We don't need to create yi/vi from .g/.g_se since yi/vi are required columns
-  # that were already validated above. es_id is also already required and validated.
+  # Note: If data originally had .g/.g_se, yi/vi were already created at the top
 
   # Success message if all checks pass
   message("Data validation passed. Dataset is ready for multiverse analysis.")

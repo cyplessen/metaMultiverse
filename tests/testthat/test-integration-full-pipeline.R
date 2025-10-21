@@ -336,7 +336,7 @@ test_that("pipeline validates data before proceeding", {
     bad_data %>%
       check_data_multiverse() %>%
       define_factors(Population = "wf_1|E"),
-    "Missing required columns"
+    "Data must contain either yi/vi"
   )
 })
 
