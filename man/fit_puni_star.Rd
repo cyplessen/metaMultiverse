@@ -28,8 +28,8 @@ for multiverse analyses involving thousands of specifications.
 
 Direction selection:
 \itemize{
-  \item If weighted mean ≥ 0: uses right-sided testing (H1: θ > 0)
-  \item If weighted mean < 0: uses left-sided testing (H1: θ < 0)
+  \item If weighted mean >= 0: uses right-sided testing (H1: \eqn{\theta} > 0)
+  \item If weighted mean < 0: uses left-sided testing (H1: \eqn{\theta} < 0)
 }
 }
 \references{

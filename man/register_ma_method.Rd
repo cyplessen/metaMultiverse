@@ -13,7 +13,7 @@ register_ma_method(
 \arguments{
 \item{name}{Character scalar (key used in `ma_methods`)}
 
-\item{fun}{Function(dat) → list(b, ci.lb, ci.ub, pval)}
+\item{fun}{Function(dat) -> list(b, ci.lb, ci.ub, pval)}
 
 \item{dependencies}{Character vector: "select_min", "select_max", "aggregate", "modeled"}
 }

@@ -1,10 +1,10 @@
 # metaMultiverse <img src="man/figures/logo.svg" align="right" height="139" alt="" />
 
 <!-- badges: start -->
-![Version](https://img.shields.io/badge/version-0.2.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
 ![R](https://img.shields.io/badge/R-%E2%89%A53.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Tests](https://img.shields.io/badge/tests-446%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-657%20passing-brightgreen)
 <!-- badges: end -->
 
 > **Principled Multiverse Meta-Analysis in R**
@@ -15,12 +15,13 @@
 
 ## ✨ Features
 
-- 🔬 **11+ Meta-Analytic Methods**: Fixed-effects, REML, Paule-Mandel, PET-PEESE, p-uniform*, UWLS, WAAP, Three-level, RVE, and more
+- 🔬 **15+ Meta-Analytic Methods**: Fixed-effects, REML, Paule-Mandel, DerSimonian-Laird, Hartung-Knapp-Sidik-Jonkman, PET-PEESE, p-uniform*, UWLS, WAAP, Three-level, RVE, and more
+- 📐 **Pre/Post Designs**: Turn arm-level pre/post means and SDs into effect sizes under several metrics (post-test SMD, change-score SMD, standardized mean change, adjusted differences) and vary the metric as a "how" factor
 - 🌳 **E/U/N Decision Framework**: Classify analytical decisions as Equivalent, Uncertain, or Non-equivalent
 - 📊 **Beautiful Visualizations**: Specification curves and Vibration of Effects (VoE) plots
 - 🔄 **Flexible Pipeline**: Clean, pipeable workflow using `%>%` or `|>`
 - 📖 **Comprehensive Documentation**: Two detailed vignettes with fully executable examples
-- ✅ **Well-Tested**: 446 passing tests with full integration coverage
+- ✅ **Well-Tested**: 657 passing expectations in 100 tests with full integration coverage
 
 ---
 
@@ -111,7 +112,7 @@ Classify your analytical decisions to create **principled multiverses**:
 - `fe` - Fixed-effects
 - `reml` - Restricted Maximum Likelihood
 - `pm` - Paule-Mandel
-- `hk` - Hartung-Knapp
+- `hk-sj` - Hartung-Knapp interval with Sidik-Jonkman heterogeneity
 
 ### Publication Bias Correction
 - `pet-peese` - PET-PEESE
@@ -126,6 +127,14 @@ Classify your analytical decisions to create **principled multiverses**:
 
 ### Bayesian
 - `bayesmeta` - Bayesian meta-analysis (slow, optional)
+
+### Registered on demand
+Call `register_metafor_estimators()` once per session to add:
+
+- `dl` - DerSimonian-Laird
+- `dl_hksj`, `reml_hksj`, `pm_hksj` - DerSimonian-Laird, REML and Paule-Mandel with the Hartung-Knapp-Sidik-Jonkman adjustment
+
+They are not registered at load so that the default method set (all registered methods) stays the same for existing analyses.
 
 ---
 
@@ -151,6 +160,7 @@ vignette("multiverse-theory-practice-IMPROVED", package = "metaMultiverse")
 - ✅ Multiple meta-analytic methods
 - ✅ Dependency handling strategies
 - ✅ Result interpretation and reporting
+- ✅ Pre/post (change-score) data with the effect-size metric as a factor
 - ✅ Visualization examples (static + interactive)
 - ✅ Troubleshooting common issues
 
@@ -203,6 +213,42 @@ results <- data_digDep %>%
   ) %>%
   run_multiverse_analysis()
 ```
+
+---
+
+## 📐 Example: Pre/Post (Change-Score) Data
+
+When trials report arm-level pre/post means and SDs rather than a finished effect size, the effect-size metric is itself an analytical decision. `run_pre_post_multiverse()` runs the standard pipeline once per metric and stacks the results:
+
+```r
+d <- data.frame(
+  study = paste("Study", 1:8),
+  n_1 = c(30, 40, 25, 50, 20, 35, 45, 28), n_2 = c(32, 38, 27, 48, 22, 33, 44, 30),
+  pre_1_m = c(24, 22, 25, 23, 26, 21, 24, 22), pre_1_sd = 6,
+  pre_2_m = c(23, 23, 24, 23, 25, 22, 24, 23), pre_2_sd = 6,
+  post_1_m = c(14, 12, 15, 13, 16, 11, 14, 12), post_1_sd = 8,
+  post_2_m = c(13, 12, 12, 13, 14, 12, 13, 11), post_2_sd = 8,
+  rater = rep(c("clinician", "self"), 4)
+)
+
+register_metafor_estimators()   # adds dl, dl_hksj, reml_hksj, pm_hksj
+
+mv <- run_pre_post_multiverse(
+  d,
+  which_factors = list(rater = "rater|E"),
+  es_grid = data.frame(
+    es_metric = c("post_smd", "change_smd_r0.5", "smc_r0.5"),
+    imputed_post_sd = "borrow"
+  ),
+  ma_methods = c("reml", "dl_hksj"),
+  dependencies = "aggregate",
+  k_smallest_ma = 3
+)
+
+head(mv$results[, c("es_metric", "rater", "ma_method", "b", "ci.lb", "ci.ub", "k_studies")])
+```
+
+Metrics: `post_smd` (post-test SMD), `change_smd_r<r>` (SMD of change scores, change SD imputed under pre-post correlation `r` unless reported), `smc_r<r>` (standardized mean change, Becker 1988) and `adjusted_post_smd` (reported adjusted difference where available). `imputed_post_sd` (`borrow`, `exclude`, `change_smd`) controls how studies without a reported post SD enter the post-test metrics. `compute_pre_post_es()` gives the per-study `yi`/`vi` for a single metric.
 
 ---
 

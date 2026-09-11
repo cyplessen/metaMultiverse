@@ -19,7 +19,7 @@ for between-study variance estimation. Accounts for heterogeneity between studie
 \details{
 Uses REML estimation with adjusted step size (0.5) and increased iterations (2000)
 for improved convergence. REML is generally preferred over method-of-moments
-estimators as it produces less biased estimates of τ².
+estimators as it produces less biased estimates of \eqn{\tau^2}.
 }
 \references{
 Harrer, M., Cuijpers, P., Furukawa, T.A., & Ebert, D.D. (2021).
