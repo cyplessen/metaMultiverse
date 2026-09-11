@@ -20,14 +20,14 @@ and between-study heterogeneity.
 Uses the bayesmeta package with default priors:
 \itemize{
   \item Effect size: Improper uniform prior
-  \item Heterogeneity (τ): Half-Cauchy(0, 0.5) prior
+  \item Heterogeneity (\eqn{\tau}): Half-Cauchy(0, 0.5) prior
 }
 
 Returns posterior median as point estimate with 95% credible intervals.
 No p-value is provided as this is not typically meaningful in Bayesian analysis.
 }
 \references{
-Röver, C. (2020). Bayesian random‐effects meta‐analysis using the bayesmeta R package.
+\enc{Röver}{Roever}, C. (2020). Bayesian random-effects meta-analysis using the bayesmeta R package.
 Journal of Statistical Software, 93(6), 1-51.
 }
 \keyword{internal}

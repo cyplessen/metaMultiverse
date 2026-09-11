@@ -19,7 +19,7 @@ and Sidik-Jonkman variance estimation.
 \details{
 The Hartung-Knapp method provides improved confidence interval coverage
 by using a t-distribution instead of normal distribution. Combined with
-Sidik-Jonkman τ² estimation, this can provide better small-sample properties.
+Sidik-Jonkman \eqn{\tau^2} estimation, this can provide better small-sample properties.
 }
 \references{
 Knapp, G., & Hartung, J. (2003). Improved tests for a random effects meta-regression

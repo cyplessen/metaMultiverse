@@ -20,7 +20,7 @@ Standard Error (PET-PEESE) procedure for publication bias correction.
 PET-PEESE uses a two-stage procedure:
 \enumerate{
   \item PET: Regresses effect sizes on standard errors to test for bias
-  \item If PET p-value ≥ 0.10, use PET estimate (more conservative)
+  \item If PET p-value >= 0.10, use PET estimate (more conservative)
   \item If PET p-value < 0.10, switch to PEESE (regress on variances)
 }
 

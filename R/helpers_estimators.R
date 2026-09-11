@@ -67,7 +67,7 @@ fit_fe <- function(data) safe_call({
 #' @details
 #' Uses REML estimation with adjusted step size (0.5) and increased iterations (2000)
 #' for improved convergence. REML is generally preferred over method-of-moments
-#' estimators as it produces less biased estimates of τ².
+#' estimators as it produces less biased estimates of \eqn{\tau^2}.
 #'
 #' @references
 #' Harrer, M., Cuijpers, P., Furukawa, T.A., & Ebert, D.D. (2021).
@@ -97,7 +97,7 @@ fit_reml <- function(data) safe_call({
 #' PET-PEESE uses a two-stage procedure:
 #' \enumerate{
 #'   \item PET: Regresses effect sizes on standard errors to test for bias
-#'   \item If PET p-value ≥ 0.10, use PET estimate (more conservative)
+#'   \item If PET p-value >= 0.10, use PET estimate (more conservative)
 #'   \item If PET p-value < 0.10, switch to PEESE (regress on variances)
 #' }
 #'
@@ -172,7 +172,7 @@ fit_pet.peese <- function(data) safe_call({
 #' version sets such estimates to zero as a conservative approach.
 #'
 #' @references
-#' Stanley, T. D., & Doucouliagos, H. (2014). Meta‐regression approximations
+#' Stanley, T. D., & Doucouliagos, H. (2014). Meta-regression approximations
 #' to reduce publication selection bias. Research Synthesis Methods, 5(1), 60-78.
 #' @keywords internal
 fit_pet.peese_corrected <- function(data) safe_call({
@@ -204,8 +204,8 @@ fit_pet.peese_corrected <- function(data) safe_call({
 #'
 #' Direction selection:
 #' \itemize{
-#'   \item If weighted mean ≥ 0: uses right-sided testing (H1: θ > 0)
-#'   \item If weighted mean < 0: uses left-sided testing (H1: θ < 0)
+#'   \item If weighted mean >= 0: uses right-sided testing (H1: \eqn{\theta} > 0)
+#'   \item If weighted mean < 0: uses left-sided testing (H1: \eqn{\theta} < 0)
 #' }
 #'
 #' @references
@@ -299,7 +299,7 @@ fit_uwls <- function(data) safe_call({
 #' these powered studies. Requires at least 2 powered studies for estimation.
 #'
 #' The power threshold of 2.8 corresponds to approximately 80% power to detect
-#' the UWLS estimate at α = 0.05.
+#' the UWLS estimate at \eqn{\alpha} = 0.05.
 #'
 #' @references
 #' Stanley, T. D., Doucouliagos, H., & Ioannidis, J. P. A. (2022).
@@ -350,7 +350,7 @@ fit_waap <- function(data, power_threshold = 2.8) safe_call({
 #' @param data Data frame containing yi (effect sizes) and vi (variances)
 #' @return A universe_result object with Paule-Mandel estimate
 #' @details
-#' The Paule-Mandel method estimates τ² by equating the weighted sum of squares
+#' The Paule-Mandel method estimates \eqn{\tau^2} by equating the weighted sum of squares
 #' to its expected value. It can perform better than DerSimonian-Laird in
 #' certain conditions and provides an exact solution.
 #'
@@ -394,7 +394,7 @@ fit_pm <- function(data) safe_call({
 #' @details
 #' The Hartung-Knapp method provides improved confidence interval coverage
 #' by using a t-distribution instead of normal distribution. Combined with
-#' Sidik-Jonkman τ² estimation, this can provide better small-sample properties.
+#' Sidik-Jonkman \eqn{\tau^2} estimation, this can provide better small-sample properties.
 #'
 #' @references
 #' Knapp, G., & Hartung, J. (2003). Improved tests for a random effects meta-regression
@@ -523,14 +523,14 @@ fit_rve <- function(data) safe_call({
 #' Uses the bayesmeta package with default priors:
 #' \itemize{
 #'   \item Effect size: Improper uniform prior
-#'   \item Heterogeneity (τ): Half-Cauchy(0, 0.5) prior
+#'   \item Heterogeneity (\eqn{\tau}): Half-Cauchy(0, 0.5) prior
 #' }
 #'
 #' Returns posterior median as point estimate with 95% credible intervals.
 #' No p-value is provided as this is not typically meaningful in Bayesian analysis.
 #'
 #' @references
-#' Röver, C. (2020). Bayesian random‐effects meta‐analysis using the bayesmeta R package.
+#' \enc{Röver}{Roever}, C. (2020). Bayesian random-effects meta-analysis using the bayesmeta R package.
 #' Journal of Statistical Software, 93(6), 1-51.
 #' @keywords internal
 fit_bayesmeta <- function(data) safe_call({

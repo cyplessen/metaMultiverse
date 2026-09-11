@@ -115,7 +115,7 @@ run_aggregate_dependency <- function(dat, ma_method, rho = 0.5) {
 #' \strong{Requirements:}
 #' \itemize{
 #'   \item At least some studies must contribute multiple effect sizes
-#'   \item Sufficient number of studies for stable estimation (typically ≥10)
+#'   \item Sufficient number of studies for stable estimation (typically >=10)
 #'   \item Proper study and effect size identifiers (\code{study}, \code{es_id})
 #' }
 #'
@@ -291,7 +291,7 @@ run_select_dependency <- function(dat, ma_method, dependency) {
 #'   \item{\bold{Modeled}}{
 #'     \itemize{
 #'       \item Complex dependency structures
-#'       \item Sufficient studies with multiple effects (≥10 studies)
+#'       \item Sufficient studies with multiple effects (>=10 studies)
 #'       \item Want to model heterogeneity at multiple levels
 #'       \item Interested in variance components
 #'     }
@@ -316,6 +316,6 @@ run_select_dependency <- function(dat, ma_method, dependency) {
 #' \itemize{
 #'   \item \bold{Speed}: select > aggregate > modeled
 #'   \item \bold{Stability}: aggregate > select > modeled
-#'   \item \bold{Information retention}: modeled ≈ aggregate > select
+#'   \item \bold{Information retention}: modeled ~ aggregate > select
 #' }
 NULL
