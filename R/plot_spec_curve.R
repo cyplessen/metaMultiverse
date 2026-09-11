@@ -4,11 +4,22 @@
 #' and the corresponding specification choices (bottom). Effects are sorted by magnitude
 #' and colored by the number of studies included.
 #'
-#' @param x A multiverse_result object from \code{\link{run_multiverse_analysis}}
+#' @param x A \code{multiverse_result} object from
+#'   \code{\link{run_multiverse_analysis}}, a \code{pre_post_multiverse} object
+#'   from \code{\link{run_pre_post_multiverse}}, or a data frame of results
+#'   with columns \code{b}, \code{ci.lb}, \code{ci.ub}, \code{pval}, \code{k}
+#'   and one column per factor (see \code{factors})
 #' @param ylim_lower Lower limit for effect size axis. Default: NULL (auto-calculated as min CI * 1.1)
 #' @param ylim_upper Upper limit for effect size axis. Default: NULL (auto-calculated as max CI * 1.1)
 #' @param colorblind_friendly Logical. Use colorblind-friendly palette. Default: TRUE
 #' @param interactive Logical. Return interactive plotly (TRUE) or static ggplot2 (FALSE). Default: TRUE
+#' @param factors Character vector naming the columns of the results that hold
+#'   the which/how factor levels, drawn top to bottom in the order given.
+#'   Names, where present, are used as the display labels
+#'   (e.g. \code{c("Rater" = "rater", "Metric" = "es_metric")}). Default:
+#'   \code{NULL}, which uses the \code{wf_*}, \code{ma_method} and
+#'   \code{dependency} columns for a \code{multiverse_result} or a data
+#'   frame, and the \code{factors} element of a \code{pre_post_multiverse}.
 #' @param ... Additional arguments (currently unused)
 #'
 #' @return A plotly object if interactive = TRUE, otherwise a ggplot2 object
@@ -32,8 +43,19 @@
 #'   \item "Combined" indicates all levels included
 #' }
 #'
-#' Factor labels are automatically extracted from the multiverse setup. Interactive
-#' plots include hover tooltips with detailed information for each specification.
+#' Factor labels are automatically extracted from the multiverse setup, or
+#' taken from the names of \code{factors}; unlabelled columns are shown with a
+#' title-cased version of the column name (\code{ma_method},
+#' \code{dependency}, \code{es_metric} and \code{imputed_post_sd} have
+#' built-in labels). A level starting with \code{"total_"} is shown as
+#' "Combined". Interactive plots include hover tooltips with detailed
+#' information for each specification.
+#'
+#' For the stacked results of \code{\link{run_pre_post_multiverse}} the
+#' effect-size metric and the imputed-post-SD rule are drawn as additional
+#' how factors. Any data frame with the required columns can be plotted by
+#' naming its factor columns in \code{factors}, e.g. results stacked from
+#' several calls.
 #'
 #' @examples
 #' \dontrun{
@@ -49,11 +71,22 @@
 #' # Non-colorblind-friendly palette (why would you?)
 #' multiverse %>%
 #'   plot_spec_curve(colorblind_friendly = FALSE)
+#'
+#' # Stacked pre/post results: the metric is drawn as a how factor
+#' # (d holds arm-level pre/post data, see ?run_pre_post_multiverse)
+#' mv <- run_pre_post_multiverse(d, which_factors = list(rater = "rater|E"))
+#' plot_spec_curve(mv, interactive = FALSE)
+#'
+#' # Any results data frame, naming (and labelling) the factor columns
+#' plot_spec_curve(mv$results, interactive = FALSE,
+#'                 factors = c("Rater" = "rater", "Metric" = "es_metric",
+#'                             "Method" = "ma_method"))
 #' }
 #'
 #' @seealso
 #' \code{\link{plot_voe}} for vibration of effects visualization
-#' \code{\link{run_multiverse_analysis}} for generating input data
+#' \code{\link{run_multiverse_analysis}} and
+#' \code{\link{run_pre_post_multiverse}} for generating input data
 #'
 #' @export
 plot_spec_curve <- function(x,
@@ -61,16 +94,15 @@ plot_spec_curve <- function(x,
                             ylim_upper = NULL,
                             colorblind_friendly = TRUE,
                             interactive = TRUE,
+                            factors = NULL,
                             ...) {
 
-  if (!inherits(x, "multiverse_result")) {
-    stop("Input must be a multiverse_result object from run_multiverse_analysis()")
-  }
-
-  data <- x$results
-  if (is.null(data) || nrow(data) == 0) {
-    stop("No results to plot")
-  }
+  input <- resolve_plot_input(x, factors,
+                              required = c("b", "ci.lb", "ci.ub", "pval", "k"))
+  data <- input$data
+  all_factors <- input$factors
+  factor_labels <- input$labels
+  factor_groups <- input$factor_groups
 
   # Auto-detect y-axis limits
   if (is.null(ylim_lower)) {
@@ -78,36 +110,6 @@ plot_spec_curve <- function(x,
   }
   if (is.null(ylim_upper)) {
     ylim_upper <- max(data$ci.ub, na.rm = TRUE) * 1.1
-  }
-
-  # Auto-create factor labels from metadata
-  factor_label_lookup <- list()
-  if (!is.null(x$specifications)) {
-    factor_info <- attr(x$specifications, "factor_info")
-    if (!is.null(factor_info)) {
-      factor_label_lookup <- setNames(as.list(factor_info$label), factor_info$wf_internal)
-    }
-  }
-
-  # Add default labels for method and dependency
-  factor_label_lookup[["ma_method"]] <- "Meta-Analysis Method"
-  factor_label_lookup[["dependency"]] <- "Dependency Handling"
-
-  # Detect "Which" and "How" factors dynamically
-  wf_cols <- colnames(data)[grep("^wf_", colnames(data))]
-  how_cols <- colnames(data)[colnames(data) %in% c("ma_method", "dependency")]
-  all_factors <- c(wf_cols, how_cols)
-
-  # Generate factor labels - use provided labels or create defaults
-  factor_labels <- list()
-  for (col in all_factors) {
-    if (!is.null(factor_label_lookup[[col]])) {
-      factor_labels[[col]] <- factor_label_lookup[[col]]
-    } else {
-      # Create default label from column name
-      factor_labels[[col]] <- gsub("_", " ", col) %>%
-        stringr::str_to_title()
-    }
   }
 
   # Create levels for the y-axis by combining labels with data values
@@ -123,8 +125,8 @@ plot_spec_curve <- function(x,
         val_display <- stringr::str_to_sentence(as.character(val))
 
         # Check if this is a custom group and add details
-        if (!is.null(x$factor_groups) && col %in% names(x$factor_groups)) {
-          groups <- x$factor_groups[[col]]
+        if (!is.null(factor_groups) && col %in% names(factor_groups)) {
+          groups <- factor_groups[[col]]
           if (val %in% names(groups)) {
             # This is a custom group - add the levels it includes
             levels_included <- groups[[val]]
@@ -158,9 +160,10 @@ plot_spec_curve <- function(x,
   # Expand x_rank across all levels of yvar
   xvar <- rep(x_rank, each = length(levels(yvar)))
 
-  # Select columns required for plotting
+  # Select columns required for plotting ("set" is carried along when present)
+  plot_cols <- intersect(c(all_factors, "b", "ci.lb", "ci.ub", "pval", "k", "set"), colnames(data))
   plot_data <- data %>%
-    dplyr::select(dplyr::all_of(c(all_factors, "b", "ci.lb", "ci.ub", "pval", "k", "set")))
+    dplyr::select(dplyr::all_of(plot_cols))
 
   # Generate spec matrix to define the tile plot structure
   spec <- NULL
@@ -173,8 +176,8 @@ plot_spec_curve <- function(x,
         val_display <- stringr::str_to_sentence(value)
 
         # Check if this is a custom group and add details (same logic as above)
-        if (!is.null(x$factor_groups) && col %in% names(x$factor_groups)) {
-          groups <- x$factor_groups[[col]]
+        if (!is.null(factor_groups) && col %in% names(factor_groups)) {
+          groups <- factor_groups[[col]]
           if (value %in% names(groups)) {
             levels_included <- groups[[value]]
             if (length(levels_included) <= 3) {

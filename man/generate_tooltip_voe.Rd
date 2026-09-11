@@ -4,7 +4,15 @@
 \alias{generate_tooltip_voe}
 \title{Generate Tooltips for Vibration of Effects Plot}
 \usage{
-generate_tooltip_voe(data, x, y, k_col = "k", set_col = "set")
+generate_tooltip_voe(
+  data,
+  x,
+  y,
+  k_col = "k",
+  set_col = "set",
+  factors = character(0),
+  factor_labels = list()
+)
 }
 \arguments{
 \item{data}{Data frame containing the input data.}
@@ -15,7 +23,14 @@ generate_tooltip_voe(data, x, y, k_col = "k", set_col = "set")
 
 \item{k_col}{Character. Name of the column containing the number of studies (default: "k").}
 
-\item{set_col}{Character. Name of the column containing the study set IDs (default: "set").}
+\item{set_col}{Character. Name of the column containing the study set IDs (default: "set").
+Omitted from the tooltip when the column is absent.}
+
+\item{factors}{Character vector of factor columns whose values are appended
+to the tooltip, one line each (default: none).}
+
+\item{factor_labels}{Named list of display labels for \code{factors}; a
+factor without a label is shown under its column name.}
 }
 \value{
 A data frame with an additional `tooltip` column.

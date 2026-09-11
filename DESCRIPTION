@@ -1,7 +1,7 @@
 Package: metaMultiverse
 Type: Package
 Title: Multiverse Meta-Analysis Toolkit
-Version: 0.3.0
+Version: 0.3.1
 Date: 2026-09-11
 Author: Constantin Yves Plessen <yves.plessen@gmail.com>
 Maintainer: Constantin Yves Plessen <yves.plessen@gmail.com>

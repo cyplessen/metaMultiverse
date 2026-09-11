@@ -341,3 +341,99 @@ test_that("corrigendum Table 1, post-test SMD, DerSimonian-Laird: g = 0.10 [-0.1
   expect_equal(mv$results$k_studies, 14)
   expect_equal(round(c(mv$results$b, mv$results$ci.lb, mv$results$ci.ub), 2), c(0.10, -0.13, 0.33))
 })
+
+# ------------------------------------------------------------------------------
+# plotting the stacked results
+# ------------------------------------------------------------------------------
+
+test_that("plot_spec_curve and plot_voe plot the stacked results of the run_pre_post_multiverse example", {
+  register_metafor_estimators()
+  mv <- run_pre_post_multiverse(
+    pp_eight(), which_factors = list(rater = "rater|E"),
+    ma_methods = c("reml", "dl_hksj"), dependencies = "aggregate",
+    k_smallest_ma = 3, verbose = FALSE
+  )
+  expect_s3_class(mv, "pre_post_multiverse")
+  expect_type(mv, "list")
+  expect_equal(mv$factors, c("rater", "ma_method", "dependency", "es_metric", "imputed_post_sd"))
+  expect_output(print(mv), "pre_post_multiverse")
+  expect_output(print(mv), "es_metric")
+
+  # the object itself: metric and imputed-post-SD rule drawn as how factors
+  input <- resolve_plot_input(mv)
+  expect_equal(input$factors, mv$factors)
+  expect_equal(input$labels$rater, "Rater")
+  expect_equal(input$labels$es_metric, "Effect-Size Metric")
+  expect_equal(input$labels$imputed_post_sd, "Imputed Post SD")
+  expect_equal(input$labels$ma_method, "Meta-Analysis Method")
+  expect_equal(nrow(input$data), nrow(mv$results))
+
+  p_static <- plot_spec_curve(mv, interactive = FALSE)
+  expect_s3_class(p_static, "ggplot")
+  p_interactive <- plot_spec_curve(mv, interactive = TRUE)
+  expect_s3_class(p_interactive, "plotly")
+
+  expect_s3_class(plot_voe(mv, cutoff = 3, interactive = FALSE), "ggplot")
+  expect_s3_class(plot_voe(mv, cutoff = 3, interactive = TRUE, factors = mv$factors), "plotly")
+
+  # the results data frame with an explicit, labelled factor set
+  input_df <- resolve_plot_input(
+    mv$results,
+    factors = c("Rater" = "rater", "es_metric", "Method" = "ma_method")
+  )
+  expect_equal(input_df$factors, c("rater", "es_metric", "ma_method"))
+  expect_equal(unname(unlist(input_df$labels)), c("Rater", "Effect-Size Metric", "Method"))
+  expect_s3_class(
+    plot_spec_curve(mv$results, interactive = FALSE,
+                    factors = c("Rater" = "rater", "es_metric", "Method" = "ma_method")),
+    "ggplot"
+  )
+  expect_s3_class(plot_voe(mv$results, cutoff = 3, interactive = FALSE), "ggplot")
+
+  # a stacked data frame without the package's set column still plots
+  stacked <- mv$results[, c("b", "ci.lb", "ci.ub", "pval", "k", "rater", "es_metric", "ma_method")]
+  expect_s3_class(plot_spec_curve(stacked, interactive = FALSE, factors = c("rater", "es_metric")), "ggplot")
+  expect_s3_class(plot_voe(stacked, cutoff = 3, interactive = TRUE, factors = "es_metric"), "plotly")
+
+  # the factor levels are appended to the VoE tooltip when asked for
+  tip <- generate_tooltip_voe(mv$results, "b", "pval", factors = "es_metric",
+                              factor_labels = list(es_metric = "Effect-Size Metric"))$tooltip
+  expect_true(all(grepl("<b>Effect-Size Metric:</b> ", tip, fixed = TRUE)))
+  expect_true(all(grepl("<b>Study Set:</b> ", tip, fixed = TRUE)))
+  tip_default <- generate_tooltip_voe(mv$results, "b", "pval")$tooltip
+  expect_false(any(grepl("Effect-Size Metric", tip_default, fixed = TRUE)))
+})
+
+test_that("plot input validation is informative for data frames and other objects", {
+  register_metafor_estimators()
+  mv <- run_pre_post_multiverse(
+    pp_eight(), which_factors = list(rater = "rater|E"),
+    es_grid = data.frame(es_metric = "post_smd", imputed_post_sd = "borrow"),
+    ma_methods = "dl", dependencies = "aggregate", k_smallest_ma = 3, verbose = FALSE
+  )
+  res <- mv$results
+  # the renamed pre/post columns are not auto-detected: wf_* only
+  expect_error(plot_spec_curve(res[, setdiff(names(res), c("ma_method", "dependency"))],
+                               interactive = FALSE),
+               "No factor columns found")
+  expect_error(plot_spec_curve(res, factors = c("rater", "no_such_column"), interactive = FALSE),
+               "no_such_column")
+  expect_error(plot_spec_curve(res, factors = c("rater", "rater"), interactive = FALSE),
+               "duplicated")
+  expect_error(plot_spec_curve(res, factors = 1, interactive = FALSE), "character vector")
+  expect_error(plot_spec_curve(res[, c("rater", "b", "k")], factors = "rater", interactive = FALSE),
+               "ci.lb")
+  expect_error(plot_spec_curve(list(results = res), interactive = FALSE), "data frame")
+  expect_error(plot_voe(list(results = res), interactive = FALSE), "data frame")
+  expect_error(plot_spec_curve(res[0, ], factors = "rater", interactive = FALSE), "No results to plot")
+
+  # auto-detection on a plain data frame uses wf_* / ma_method / dependency, as for multiverse_result
+  res_wf <- res
+  names(res_wf)[names(res_wf) == "rater"] <- "wf_1"
+  input <- resolve_plot_input(res_wf)
+  # which factors first, then the how factors in the order of the columns
+  expect_equal(input$factors,
+               c("wf_1", intersect(names(res_wf), c("ma_method", "dependency"))))
+  expect_equal(input$labels$wf_1, "Wf 1")
+  expect_s3_class(plot_spec_curve(res_wf, interactive = FALSE), "ggplot")
+})

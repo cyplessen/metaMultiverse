@@ -1,7 +1,7 @@
 # metaMultiverse <img src="man/figures/logo.svg" align="right" height="139" alt="" />
 
 <!-- badges: start -->
-![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)
 ![R](https://img.shields.io/badge/R-%E2%89%A53.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Tests](https://img.shields.io/badge/tests-657%20passing-brightgreen)
@@ -246,6 +246,10 @@ mv <- run_pre_post_multiverse(
 )
 
 head(mv$results[, c("es_metric", "rater", "ma_method", "b", "ci.lb", "ci.ub", "k_studies")])
+
+# The metric and imputed-post-SD rule are drawn as how factors
+plot_spec_curve(mv, interactive = FALSE)
+plot_voe(mv, cutoff = 3, factors = mv$factors)
 ```
 
 Metrics: `post_smd` (post-test SMD), `change_smd_r<r>` (SMD of change scores, change SD imputed under pre-post correlation `r` unless reported), `smc_r<r>` (standardized mean change, Becker 1988) and `adjusted_post_smd` (reported adjusted difference where available). `imputed_post_sd` (`borrow`, `exclude`, `change_smd`) controls how studies without a reported post SD enter the post-test metrics. `compute_pre_post_es()` gives the per-study `yi`/`vi` for a single metric.

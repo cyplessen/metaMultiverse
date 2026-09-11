@@ -33,6 +33,11 @@ compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
 #' @param y Character. Name of the y-variable column for the pvalue.
 #' @param k_col Character. Name of the column containing the number of studies (default: "k").
 #' @param set_col Character. Name of the column containing the study set IDs (default: "set").
+#'   Omitted from the tooltip when the column is absent.
+#' @param factors Character vector of factor columns whose values are appended
+#'   to the tooltip, one line each (default: none).
+#' @param factor_labels Named list of display labels for \code{factors}; a
+#'   factor without a label is shown under its column name.
 #'
 #' @return A data frame with an additional `tooltip` column.
 #'
@@ -40,14 +45,21 @@ compute_density_colors <- function(data, x, y, colorblind_friendly = TRUE) {
 #' @importFrom glue glue
 #' @importFrom scales scientific
 #' @importFrom stringr str_wrap
-generate_tooltip_voe <- function(data, x, y, k_col = "k", set_col = "set") {
-  data %>%
-    dplyr::mutate(
-      tooltip = glue::glue(
-        "<b>Effect Size (d):</b> {round(.data[[x]], 3)}<br>",  # This will always show "Effect Size (d)"
-        "<b>P-value:</b> {scales::scientific(.data[[y]], digits = 8)}<br>",
-        "<b>Number of Studies:</b> {get(k_col)}<br>",
-        "<b>Study Set:</b> {stringr::str_wrap(get(set_col), width = 30)}"
-      )
-    )
+generate_tooltip_voe <- function(data, x, y, k_col = "k", set_col = "set",
+                                 factors = character(0), factor_labels = list()) {
+  tooltip <- paste0(
+    "<b>Effect Size (d):</b> ", round(data[[x]], 3), "<br>",  # This will always show "Effect Size (d)"
+    "<b>P-value:</b> ", scales::scientific(data[[y]], digits = 8), "<br>",
+    "<b>Number of Studies:</b> ", data[[k_col]]
+  )
+  if (set_col %in% names(data)) {
+    tooltip <- paste0(tooltip, "<br><b>Study Set:</b> ",
+                      stringr::str_wrap(as.character(data[[set_col]]), width = 30))
+  }
+  for (col in factors) {
+    label <- if (!is.null(factor_labels[[col]])) factor_labels[[col]] else col
+    tooltip <- paste0(tooltip, "<br><b>", label, ":</b> ", as.character(data[[col]]))
+  }
+  data$tooltip <- tooltip
+  data
 }

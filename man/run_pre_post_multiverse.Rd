@@ -56,7 +56,7 @@ the call).}
 \item{verbose}{Print one progress line per effect-size variant.}
 }
 \value{
-A list with:
+A list of class \code{pre_post_multiverse} with:
 \describe{
   \item{results}{Data frame with one row per unique meta-analysis across
     all variants: the columns of \code{run_multiverse_analysis()$results}
@@ -67,6 +67,10 @@ A list with:
     \code{NULL} if no specification produced a result.}
   \item{specifications}{The stacked specification grids, with the same
     renaming and the \code{es_metric} and \code{imputed_post_sd} columns.}
+  \item{factors}{Character vector naming the factor columns of
+    \code{results}: the which-factor labels, then \code{ma_method},
+    \code{dependency}, \code{es_metric} and \code{imputed_post_sd}.
+    This is what \code{\link{plot_spec_curve}} draws by default.}
   \item{n_attempted}{Number of specifications attempted across variants.}
   \item{warnings}{Character vector of warnings and failures collected from
     \code{run_multiverse_analysis()}.}
@@ -91,12 +95,15 @@ Study-specific alternatives such as a different follow-up time point are
 not a built-in factor: swap the rows in \code{data} and call the function
 again, then stack the results.
 
-The return value is a plain list, not a \code{multiverse_result} object:
-\code{\link{plot_spec_curve}} and \code{\link{plot_voe}} detect factors by
-their \code{wf_*} column names and do not know about \code{es_metric} or
-\code{imputed_post_sd}, so build specification-curve plots from
-\code{results} directly (e.g. sort by \code{b} and facet or colour by
-\code{es_metric}).
+The return value can be passed straight to \code{\link{plot_spec_curve}}
+and \code{\link{plot_voe}}. The specification curve draws the columns
+named in \code{factors}, so the effect-size metric and the imputed-post-SD
+rule appear as how factors next to \code{ma_method} and
+\code{dependency}; pass \code{factors} to either plot function to choose
+or relabel the rows (see their documentation). Results stacked from
+several calls (e.g. different follow-up time points, with an extra column
+identifying the call) can be plotted the same way by giving the stacked
+data frame and \code{factors} to \code{plot_spec_curve()}.
 }
 \examples{
 \donttest{
@@ -116,6 +123,9 @@ mv <- run_pre_post_multiverse(
   k_smallest_ma = 3, verbose = FALSE
 )
 head(mv$results[, c("es_metric", "rater", "ma_method", "b", "k_studies")])
+mv$factors
+plot_spec_curve(mv, interactive = FALSE)
+plot_voe(mv, cutoff = 3, interactive = FALSE)
 
 # which_factors as a function: custom groups may only name levels that are
 # present in the variant's data, so build them from that data

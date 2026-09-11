@@ -451,6 +451,9 @@ mv <- run_pre_post_multiverse(
 mv$results %>%
   group_by(es_metric) %>%
   summarise(n_analyses = n(), median_g = round(median(b), 3), .groups = "drop")
+
+# The metric and imputed-post-SD rule appear as how factors in the plot
+plot_spec_curve(mv, interactive = FALSE)
 ```
 
 Columns 1 and 2 are the two arms; positive means arm 1 scored higher at post-test (or improved less). `k_studies` counts distinct studies per analysis, `studies_in_set` names them. Studies without a reported post SD are flagged with `post_sd_imputed = TRUE`, and `imputed_post_sd` (`"borrow"`, `"exclude"`, `"change_smd"`) decides how they enter the post-test metrics. See `?compute_pre_post_es` for all metrics and columns.
