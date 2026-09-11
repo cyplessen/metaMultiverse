@@ -1,4 +1,4 @@
-# metaMultiverse 0.3.0
+# metaMultiverse 0.3.0 (2026-09-11)
 
 ## New Features
 

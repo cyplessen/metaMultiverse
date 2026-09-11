@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use metaMultiverse, please cite it as below."
+type: software
+title: "metaMultiverse: Principled Multiverse Meta-Analysis in R"
+authors:
+  - family-names: Plessen
+    given-names: Constantin Yves
+    affiliation: "Psychotherapy and Psychotherapy Research (CBT), Center for Psychotherapy, University of Graz, Austria"
+version: 0.3.0
+date-released: 2026-09-11
+repository-code: "https://github.com/cyplessen/metaMultiverse"
+license: MIT
+keywords:
+  - meta-analysis
+  - multiverse analysis
+  - specification curve
+  - robustness
+  - R package
