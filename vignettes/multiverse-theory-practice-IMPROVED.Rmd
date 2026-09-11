@@ -68,7 +68,7 @@ Meta-analytic decisions fall into two categories:
 -   Statistical models (fixed vs. random effects, robust methods)
 -   Dependency handling (aggregate, select one, model structure)
 -   Publication bias correction (PET-PEESE, p-uniform\*, trim-and-fill)
--   Effect size metric (when multiple options available)
+-   Effect size metric (when multiple options available; for arm-level pre/post data see `run_pre_post_multiverse()`, which varies post-test SMD, change-score SMD, standardized mean change and adjusted differences as a factor)
 
 ## The E/U/N Typology
 
@@ -357,6 +357,8 @@ for (method in methods) {
   cat("  -", method, "\n")
 }
 ```
+
+DerSimonian-Laird and the Hartung-Knapp-Sidik-Jonkman variants of DL, REML and Paule-Mandel are available on demand: `register_metafor_estimators()` adds `dl`, `dl_hksj`, `reml_hksj` and `pm_hksj` to this list for the current session.
 
 ---
 

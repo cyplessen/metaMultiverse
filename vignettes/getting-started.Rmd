@@ -248,10 +248,11 @@ print(list_ma_methods())
 ```
 
 Methods include:
-- **Standard**: FE, REML, Paule-Mandel, Hartung-Knapp
+- **Standard**: FE, REML, Paule-Mandel, Hartung-Knapp/Sidik-Jonkman
 - **Bias correction**: PET-PEESE, p-uniform*, UWLS, WAAP
 - **Dependency modeling**: Three-level, RVE
 - **Bayesian**: bayesmeta (optional, slow)
+- **On demand**: `register_metafor_estimators()` adds DerSimonian-Laird (`dl`) and the Hartung-Knapp-Sidik-Jonkman variants `dl_hksj`, `reml_hksj`, `pm_hksj`
 
 ### Dependency Strategies
 
@@ -413,6 +414,46 @@ options(metaMultiverse.k_smallest_ma = 10)
 results <- specs %>%
   run_multiverse_analysis()
 ```
+
+## Pre/Post Data: The Effect-Size Metric as a Factor
+
+The pipeline above starts from precomputed `yi`/`vi`. When trials report arm-level pre/post means and SDs, the effect-size metric is itself an analytical decision: post-test SMD, SMD of change scores (with an assumed pre-post correlation for the change SD), standardized mean change, or a reported adjusted difference. `run_pre_post_multiverse()` runs the standard pipeline once per metric and stacks the results, so the metric enters the multiverse as a "how" factor next to `ma_method` and `dependency`.
+
+```{r pre-post}
+d <- data.frame(
+  study = paste("Study", 1:8),
+  n_1 = c(30, 40, 25, 50, 20, 35, 45, 28), n_2 = c(32, 38, 27, 48, 22, 33, 44, 30),
+  pre_1_m = c(24, 22, 25, 23, 26, 21, 24, 22), pre_1_sd = 6,
+  pre_2_m = c(23, 23, 24, 23, 25, 22, 24, 23), pre_2_sd = 6,
+  post_1_m = c(14, 12, 15, 13, 16, 11, 14, 12), post_1_sd = 8,
+  post_2_m = c(13, 12, 12, 13, 14, 12, 13, 11), post_2_sd = 8,
+  rater = rep(c("clinician", "self"), 4)
+)
+
+# Effect sizes for one metric
+head(compute_pre_post_es(d, "change_smd_r0.5")[, c("study", "yi", "vi")], 3)
+
+# The metric as a factor: one run per row of es_grid, results stacked
+register_metafor_estimators()   # adds dl, dl_hksj, reml_hksj, pm_hksj
+mv <- run_pre_post_multiverse(
+  d,
+  which_factors = list(rater = "rater|E"),
+  es_grid = data.frame(
+    es_metric = c("post_smd", "change_smd_r0.5", "smc_r0.5"),
+    imputed_post_sd = "borrow"
+  ),
+  ma_methods = c("reml", "dl_hksj"),
+  dependencies = "aggregate",
+  k_smallest_ma = 3,
+  verbose = FALSE
+)
+
+mv$results %>%
+  group_by(es_metric) %>%
+  summarise(n_analyses = n(), median_g = round(median(b), 3), .groups = "drop")
+```
+
+Columns 1 and 2 are the two arms; positive means arm 1 scored higher at post-test (or improved less). `k_studies` counts distinct studies per analysis, `studies_in_set` names them. Studies without a reported post SD are flagged with `post_sd_imputed = TRUE`, and `imputed_post_sd` (`"borrow"`, `"exclude"`, `"change_smd"`) decides how they enter the post-test metrics. See `?compute_pre_post_es` for all metrics and columns.
 
 ## Interactive Plots
 
