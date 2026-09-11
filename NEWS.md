@@ -1,3 +1,40 @@
+# metaMultiverse 0.3.0
+
+## New Features
+
+* Pre/post (change-score) designs. `compute_pre_post_es()` turns arm-level
+  pre/post means and SDs into `yi`/`vi` under a chosen metric:
+  `"post_smd"` (post-test SMD), `"change_smd_r<r>"` (SMD of change scores,
+  change SD imputed from the pre and post SDs under pre-post correlation `r`
+  following Cochrane Handbook 6.5.2.8 unless reported), `"smc_r<r>"`
+  (difference in standardized mean change, Becker 1988 variance) and
+  `"adjusted_post_smd"` (reported adjusted between-group difference where
+  available, post-test SMD otherwise). `imputed_post_sd` (`"borrow"`,
+  `"exclude"`, `"change_smd"`) governs rows flagged `post_sd_imputed = TRUE`
+  in the post-test metrics.
+* `run_pre_post_multiverse()` runs the standard `define_factors()` ->
+  `create_multiverse_specifications()` -> `run_multiverse_analysis()`
+  pipeline once per row of an `es_grid` (metric x imputed-post-SD rule) and
+  stacks the results, so that the effect-size metric becomes a "how" factor.
+  Results carry `k_studies` and `studies_in_set` (`k` counts effect sizes,
+  not studies) and `wf_*` columns are renamed to the factor labels.
+  `which_factors` may be a function of the per-variant data, and
+  `spec_filter` can prune the specification grid per variant.
+* `register_metafor_estimators()` adds `dl`, `dl_hksj`, `reml_hksj` and
+  `pm_hksj` (metafor, Hartung-Knapp-Sidik-Jonkman via `test = "knha"`) to
+  the estimator registry. It is user-called, not run at load, so the default
+  method set of `create_multiverse_specifications()` is unchanged.
+
+## Test Suite
+
+* New tests for every metric against `metafor::escalc()`, for the imputed
+  post SD rules, for `run_pre_post_multiverse()` (stacking, function-valued
+  `which_factors`, `spec_filter`, all-failing variants) and a regression test
+  reproducing the Luo et al. (2020) corrigendum Table 1 post-test analysis
+  (DerSimonian-Laird, g = 0.10 [-0.13, 0.33]).
+
+---
+
 # metaMultiverse 0.2.3 (Development)
 
 ## New Features
