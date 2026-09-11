@@ -24,7 +24,7 @@ studies as those with SE < |UWLS estimate|/2.8. The final estimate uses only
 these powered studies. Requires at least 2 powered studies for estimation.
 
 The power threshold of 2.8 corresponds to approximately 80% power to detect
-the UWLS estimate at α = 0.05.
+the UWLS estimate at \eqn{\alpha} = 0.05.
 }
 \references{
 Stanley, T. D., Doucouliagos, H., & Ioannidis, J. P. A. (2022).

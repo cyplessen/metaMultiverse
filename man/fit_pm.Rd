@@ -17,7 +17,7 @@ Implements random effects meta-analysis using the Paule-Mandel method
 for between-study variance estimation.
 }
 \details{
-The Paule-Mandel method estimates τ² by equating the weighted sum of squares
+The Paule-Mandel method estimates \eqn{\tau^2} by equating the weighted sum of squares
 to its expected value. It can perform better than DerSimonian-Laird in
 certain conditions and provides an exact solution.
 }

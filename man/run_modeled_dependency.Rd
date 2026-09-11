@@ -40,7 +40,7 @@ when the dependency structure is complex or heterogeneous across studies.
 \strong{Requirements:}
 \itemize{
   \item At least some studies must contribute multiple effect sizes
-  \item Sufficient number of studies for stable estimation (typically ≥10)
+  \item Sufficient number of studies for stable estimation (typically >=10)
   \item Proper study and effect size identifiers (\code{study}, \code{es_id})
 }
 }

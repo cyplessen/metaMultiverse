@@ -22,7 +22,7 @@ entire observed effect may be due to publication bias. The corrected
 version sets such estimates to zero as a conservative approach.
 }
 \references{
-Stanley, T. D., & Doucouliagos, H. (2014). Meta‐regression approximations
+Stanley, T. D., & Doucouliagos, H. (2014). Meta-regression approximations
 to reduce publication selection bias. Research Synthesis Methods, 5(1), 60-78.
 }
 \keyword{internal}
