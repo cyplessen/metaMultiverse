@@ -1,16 +1,22 @@
 citHeader("To cite metaMultiverse in publications use:")
 
+meta <- packageDescription("metaMultiverse")
+year <- sub("-.*", "", meta$Date)
+if (!nzchar(year)) year <- format(Sys.Date(), "%Y")
+authors <- Filter(function(p) "aut" %in% p$role, utils::as.person(meta$`Authors@R`))
+
 bibentry(
-  bibtype  = "Manual",
-  title    = "metaMultiverse: Principled Multiverse Meta-Analysis in R",
-  author   = "Constantin Yves Plessen",
-  year     = "2026",
-  note     = "R package version 0.3.1",
-  url      = "https://github.com/cyplessen/metaMultiverse",
-  textVersion = paste(
-    "Plessen, C.Y. (2026).",
-    "metaMultiverse: Principled Multiverse Meta-Analysis in R.",
-    "R package version 0.3.1.",
-    "https://github.com/cyplessen/metaMultiverse"
+  bibtype = "Manual",
+  title   = "{metaMultiverse}: Principled Multiverse Meta-Analysis in {R}",
+  author  = authors,
+  year    = year,
+  note    = paste("R package version", meta$Version),
+  url     = "https://github.com/cyplessen/metaMultiverse",
+  doi     = "10.5281/zenodo.22705834",
+  textVersion = paste0(
+    "Plessen, C. Y. (", year, "). ",
+    "metaMultiverse: Principled Multiverse Meta-Analysis in R. ",
+    "R package version ", meta$Version, ". ",
+    "https://doi.org/10.5281/zenodo.22705834"
   )
 )
