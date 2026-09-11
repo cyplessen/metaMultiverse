@@ -135,7 +135,10 @@ create_multiverse_specifications <- function(factor_setup,
                  list(dependency = dependencies,
                       ma_method = ma_methods))
 
-  specs <- do.call(expand.grid, grid_args)
+  # stringsAsFactors = FALSE: keep factor levels as character so that
+  # downstream code can index label vectors by value (a factor would silently
+  # index by its integer codes)
+  specs <- do.call(expand.grid, c(grid_args, list(stringsAsFactors = FALSE)))
 
   # Add multiverse IDs for N-type factors
   type_N <- names(decision_map)[decision_map == "N"]
