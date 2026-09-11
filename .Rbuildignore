@@ -24,3 +24,4 @@ tutorials/
 ^TEST_FIXES\.md$
 ^VIGNETTE_IMPROVEMENTS\.md$
 ^package_instructions\.md$
+^CITATION\.cff$
