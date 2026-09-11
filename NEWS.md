@@ -6,6 +6,7 @@
 
 ## Bug Fixes
 
+* `create_multiverse_specifications()` now returns the `wf_*`, `dependency` and `ma_method` columns as character rather than factor. Indexing a named label vector with a factor column (e.g. `labels[results$wf_1]`) silently used the integer codes and mislabelled results; the same columns in `run_multiverse_analysis()` output are now character as well.
 * Fixed `create_multiverse_specifications()` to properly handle N-type decisions for custom factor groups
 * Custom factors no longer bypass decision type logic
 
