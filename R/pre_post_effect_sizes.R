@@ -372,7 +372,7 @@ register_metafor_estimators <- function() {
 #'   the call).
 #' @param verbose Print one progress line per effect-size variant.
 #'
-#' @return A list with:
+#' @return A list of class \code{pre_post_multiverse} with:
 #' \describe{
 #'   \item{results}{Data frame with one row per unique meta-analysis across
 #'     all variants: the columns of \code{run_multiverse_analysis()$results}
@@ -383,6 +383,10 @@ register_metafor_estimators <- function() {
 #'     \code{NULL} if no specification produced a result.}
 #'   \item{specifications}{The stacked specification grids, with the same
 #'     renaming and the \code{es_metric} and \code{imputed_post_sd} columns.}
+#'   \item{factors}{Character vector naming the factor columns of
+#'     \code{results}: the which-factor labels, then \code{ma_method},
+#'     \code{dependency}, \code{es_metric} and \code{imputed_post_sd}.
+#'     This is what \code{\link{plot_spec_curve}} draws by default.}
 #'   \item{n_attempted}{Number of specifications attempted across variants.}
 #'   \item{warnings}{Character vector of warnings and failures collected from
 #'     \code{run_multiverse_analysis()}.}
@@ -399,12 +403,15 @@ register_metafor_estimators <- function() {
 #' not a built-in factor: swap the rows in \code{data} and call the function
 #' again, then stack the results.
 #'
-#' The return value is a plain list, not a \code{multiverse_result} object:
-#' \code{\link{plot_spec_curve}} and \code{\link{plot_voe}} detect factors by
-#' their \code{wf_*} column names and do not know about \code{es_metric} or
-#' \code{imputed_post_sd}, so build specification-curve plots from
-#' \code{results} directly (e.g. sort by \code{b} and facet or colour by
-#' \code{es_metric}).
+#' The return value can be passed straight to \code{\link{plot_spec_curve}}
+#' and \code{\link{plot_voe}}. The specification curve draws the columns
+#' named in \code{factors}, so the effect-size metric and the imputed-post-SD
+#' rule appear as how factors next to \code{ma_method} and
+#' \code{dependency}; pass \code{factors} to either plot function to choose
+#' or relabel the rows (see their documentation). Results stacked from
+#' several calls (e.g. different follow-up time points, with an extra column
+#' identifying the call) can be plotted the same way by giving the stacked
+#' data frame and \code{factors} to \code{plot_spec_curve()}.
 #'
 #' @examples
 #' \donttest{
@@ -424,6 +431,9 @@ register_metafor_estimators <- function() {
 #'   k_smallest_ma = 3, verbose = FALSE
 #' )
 #' head(mv$results[, c("es_metric", "rater", "ma_method", "b", "k_studies")])
+#' mv$factors
+#' plot_spec_curve(mv, interactive = FALSE)
+#' plot_voe(mv, cutoff = 3, interactive = FALSE)
 #'
 #' # which_factors as a function: custom groups may only name levels that are
 #' # present in the variant's data, so build them from that data
@@ -491,6 +501,7 @@ run_pre_post_multiverse <- function(data, which_factors,
   on.exit(options(old_opt), add = TRUE)
 
   results <- list(); specs_all <- list(); warnings_all <- character(0); n_attempted <- 0L
+  wf_labels <- character(0)
 
   for (i in seq_len(nrow(es_grid))) {
     g <- es_grid[i, , drop = FALSE]
@@ -502,6 +513,7 @@ run_pre_post_multiverse <- function(data, which_factors,
       do.call(define_factors, c(list(check_data_multiverse(dat)), wf))
     ))
     factor_info <- setup$factors
+    wf_labels <- union(wf_labels, as.character(factor_info$label))
     spec_out <- create_multiverse_specifications(setup, ma_methods = ma_methods,
                                                  dependencies = dependencies)
     if (!is.null(spec_filter)) {
@@ -546,10 +558,30 @@ run_pre_post_multiverse <- function(data, which_factors,
     specs_all[[length(specs_all) + 1]] <- relabel(spec_out$specifications)
   }
 
-  list(
-    results = if (length(results)) do.call(rbind, results) else NULL,
-    specifications = if (length(specs_all)) do.call(rbind, specs_all) else NULL,
-    n_attempted = n_attempted,
-    warnings = warnings_all
+  structure(
+    list(
+      results = if (length(results)) do.call(rbind, results) else NULL,
+      specifications = if (length(specs_all)) do.call(rbind, specs_all) else NULL,
+      factors = c(wf_labels, "ma_method", "dependency", "es_metric", "imputed_post_sd"),
+      n_attempted = n_attempted,
+      warnings = warnings_all
+    ),
+    class = c("pre_post_multiverse", "list")
   )
+}
+
+#' @method print pre_post_multiverse
+#' @export
+print.pre_post_multiverse <- function(x, ...) {
+  n_res <- if (is.null(x$results)) 0L else nrow(x$results)
+  n_variants <- if (n_res > 0) {
+    nrow(unique(x$results[, c("es_metric", "imputed_post_sd")]))
+  } else 0L
+  cat("Pre/post multiverse meta-analysis (pre_post_multiverse)\n")
+  cat("  Effect-size variants with results:", n_variants, "\n")
+  cat("  Unique meta-analyses:", n_res, "from", x$n_attempted, "specifications\n")
+  cat("  Factors:", paste(x$factors, collapse = ", "), "\n")
+  cat("  Warnings:", length(x$warnings), "\n")
+  cat("Use plot_spec_curve(x) / plot_voe(x) to plot; x$results holds the table.\n")
+  invisible(x)
 }

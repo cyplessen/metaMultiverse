@@ -4,7 +4,11 @@
 #' Points are colored by density to highlight concentration areas. Automatically handles
 #' multiple multiverses when non-equivalent factors are present.
 #'
-#' @param x A multiverse_result object from \code{\link{run_multiverse_analysis}}
+#' @param x A \code{multiverse_result} object from
+#'   \code{\link{run_multiverse_analysis}}, a \code{pre_post_multiverse} object
+#'   from \code{\link{run_pre_post_multiverse}}, or a data frame of results
+#'   with columns \code{x_var}, \code{y_var} and \code{k} (plus \code{set}
+#'   and \code{multiverse_id} where available)
 #' @param x_var Column name for x-axis values. Default: "b" (effect size)
 #' @param y_var Column name for y-axis values. Default: "pval" (p-value)
 #' @param colorblind_friendly Logical. Use colorblind-friendly palette. Default: TRUE
@@ -19,6 +23,11 @@
 #' @param title_template Character string with glue syntax for plot title.
 #'   Available variables: k (number of analyses), cutoff.
 #' @param interactive Logical. Return interactive plotly (TRUE) or static ggplot2 (FALSE). Default: TRUE
+#' @param factors Optional character vector naming factor columns of the
+#'   results whose levels are appended to the hover tooltip of interactive
+#'   plots (names, where present, are used as labels). Default: \code{NULL},
+#'   no factor levels in the tooltip. For a \code{pre_post_multiverse} object,
+#'   \code{factors = x$factors} shows the metric of each point.
 #'
 #' @return A plotly object if interactive = TRUE, otherwise a ggplot2 object
 #'
@@ -47,11 +56,17 @@
 #'   plot_voe(interactive = FALSE,
 #'           x_limits = c(-0.5, 1.5),
 #'           cutoff = 10)
+#'
+#' # Stacked pre/post results, with the factor levels in the tooltip
+#' # (d holds arm-level pre/post data, see ?run_pre_post_multiverse)
+#' mv <- run_pre_post_multiverse(d, which_factors = list(rater = "rater|E"))
+#' plot_voe(mv, cutoff = 3, factors = mv$factors)
 #' }
 #'
 #' @seealso
 #' \code{\link{plot_spec_curve}} for specification curve visualization
-#' \code{\link{run_multiverse_analysis}} for generating input data
+#' \code{\link{run_multiverse_analysis}} and
+#' \code{\link{run_pre_post_multiverse}} for generating input data
 #'
 #' @export
 plot_voe <- function(
@@ -67,17 +82,14 @@ plot_voe <- function(
     vertical_lines = c(0.1, 0.9),
     hline_value = 0.05,
     title_template = "{k} meta-analyses with at least {cutoff} studies",
-    interactive = TRUE
+    interactive = TRUE,
+    factors = NULL
 ) {
 
-  if (!inherits(x, "multiverse_result")) {
-    stop("Input must be a multiverse_result object from run_multiverse_analysis()")
-  }
-
-  data <- x$results
-  if (is.null(data) || nrow(data) == 0) {
-    stop("No results to plot")
-  }
+  input <- resolve_plot_input(x, factors,
+                              required = c(x_var, y_var, "k"),
+                              use_default = FALSE, require_factors = FALSE)
+  data <- input$data
 
   # Filter and prepare data
   data <- data %>%
@@ -96,7 +108,8 @@ plot_voe <- function(
 
   # Add tooltips only if interactive
   if (interactive) {
-    data <- generate_tooltip_voe(data, x_var, y_var)
+    data <- generate_tooltip_voe(data, x_var, y_var,
+                                 factors = input$factors, factor_labels = input$labels)
   }
 
   # Number of analyses

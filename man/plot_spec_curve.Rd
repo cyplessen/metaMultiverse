@@ -10,11 +10,16 @@ plot_spec_curve(
   ylim_upper = NULL,
   colorblind_friendly = TRUE,
   interactive = TRUE,
+  factors = NULL,
   ...
 )
 }
 \arguments{
-\item{x}{A multiverse_result object from \code{\link{run_multiverse_analysis}}}
+\item{x}{A \code{multiverse_result} object from
+\code{\link{run_multiverse_analysis}}, a \code{pre_post_multiverse} object
+from \code{\link{run_pre_post_multiverse}}, or a data frame of results
+with columns \code{b}, \code{ci.lb}, \code{ci.ub}, \code{pval}, \code{k}
+and one column per factor (see \code{factors})}
 
 \item{ylim_lower}{Lower limit for effect size axis. Default: NULL (auto-calculated as min CI * 1.1)}
 
@@ -23,6 +28,14 @@ plot_spec_curve(
 \item{colorblind_friendly}{Logical. Use colorblind-friendly palette. Default: TRUE}
 
 \item{interactive}{Logical. Return interactive plotly (TRUE) or static ggplot2 (FALSE). Default: TRUE}
+
+\item{factors}{Character vector naming the columns of the results that hold
+the which/how factor levels, drawn top to bottom in the order given.
+Names, where present, are used as the display labels
+(e.g. \code{c("Rater" = "rater", "Metric" = "es_metric")}). Default:
+\code{NULL}, which uses the \code{wf_*}, \code{ma_method} and
+\code{dependency} columns for a \code{multiverse_result} or a data
+frame, and the \code{factors} element of a \code{pre_post_multiverse}.}
 
 \item{...}{Additional arguments (currently unused)}
 }
@@ -53,8 +66,19 @@ The specification curve consists of two aligned panels:
   \item "Combined" indicates all levels included
 }
 
-Factor labels are automatically extracted from the multiverse setup. Interactive
-plots include hover tooltips with detailed information for each specification.
+Factor labels are automatically extracted from the multiverse setup, or
+taken from the names of \code{factors}; unlabelled columns are shown with a
+title-cased version of the column name (\code{ma_method},
+\code{dependency}, \code{es_metric} and \code{imputed_post_sd} have
+built-in labels). A level starting with \code{"total_"} is shown as
+"Combined". Interactive plots include hover tooltips with detailed
+information for each specification.
+
+For the stacked results of \code{\link{run_pre_post_multiverse}} the
+effect-size metric and the imputed-post-SD rule are drawn as additional
+how factors. Any data frame with the required columns can be plotted by
+naming its factor columns in \code{factors}, e.g. results stacked from
+several calls.
 }
 \examples{
 \dontrun{
@@ -70,10 +94,21 @@ multiverse \%>\%
 # Non-colorblind-friendly palette (why would you?)
 multiverse \%>\%
   plot_spec_curve(colorblind_friendly = FALSE)
+
+# Stacked pre/post results: the metric is drawn as a how factor
+# (d holds arm-level pre/post data, see ?run_pre_post_multiverse)
+mv <- run_pre_post_multiverse(d, which_factors = list(rater = "rater|E"))
+plot_spec_curve(mv, interactive = FALSE)
+
+# Any results data frame, naming (and labelling) the factor columns
+plot_spec_curve(mv$results, interactive = FALSE,
+                factors = c("Rater" = "rater", "Metric" = "es_metric",
+                            "Method" = "ma_method"))
 }
 
 }
 \seealso{
 \code{\link{plot_voe}} for vibration of effects visualization
-\code{\link{run_multiverse_analysis}} for generating input data
+\code{\link{run_multiverse_analysis}} and
+\code{\link{run_pre_post_multiverse}} for generating input data
 }

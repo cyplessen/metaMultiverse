@@ -1,3 +1,24 @@
+# metaMultiverse 0.3.1 (2026-09-11)
+
+## New Features
+
+* `plot_spec_curve()` and `plot_voe()` now also accept the output of
+  `run_pre_post_multiverse()` (new class `pre_post_multiverse`, with a
+  `factors` element and a `print()` method) and plain data frames of
+  results. A new `factors` argument names the factor columns to draw
+  (optionally with labels as names); `plot_spec_curve()` shows `es_metric`
+  and `imputed_post_sd` as how factors, and `plot_voe()` appends the given
+  factors to its hover tooltip. Behaviour for `multiverse_result` input is
+  unchanged.
+
+## Test Suite
+
+* Tests for plotting the stacked results of `run_pre_post_multiverse()`,
+  the data-frame input path with labelled `factors`, and the input
+  validation of both plot functions.
+
+---
+
 # metaMultiverse 0.3.0 (2026-09-11)
 
 ## New Features

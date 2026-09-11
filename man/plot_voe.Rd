@@ -18,11 +18,16 @@ plot_voe(
   vertical_lines = c(0.1, 0.9),
   hline_value = 0.05,
   title_template = "{k} meta-analyses with at least {cutoff} studies",
-  interactive = TRUE
+  interactive = TRUE,
+  factors = NULL
 )
 }
 \arguments{
-\item{x}{A multiverse_result object from \code{\link{run_multiverse_analysis}}}
+\item{x}{A \code{multiverse_result} object from
+\code{\link{run_multiverse_analysis}}, a \code{pre_post_multiverse} object
+from \code{\link{run_pre_post_multiverse}}, or a data frame of results
+with columns \code{x_var}, \code{y_var} and \code{k} (plus \code{set}
+and \code{multiverse_id} where available)}
 
 \item{x_var}{Column name for x-axis values. Default: "b" (effect size)}
 
@@ -49,6 +54,12 @@ Default: c(1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 0.001, 0.01, 0.05, 
 Available variables: k (number of analyses), cutoff.}
 
 \item{interactive}{Logical. Return interactive plotly (TRUE) or static ggplot2 (FALSE). Default: TRUE}
+
+\item{factors}{Optional character vector naming factor columns of the
+results whose levels are appended to the hover tooltip of interactive
+plots (names, where present, are used as labels). Default: \code{NULL},
+no factor levels in the tooltip. For a \code{pre_post_multiverse} object,
+\code{factors = x$factors} shows the metric of each point.}
 }
 \value{
 A plotly object if interactive = TRUE, otherwise a ggplot2 object
@@ -83,10 +94,16 @@ multiverse \%>\%
   plot_voe(interactive = FALSE,
           x_limits = c(-0.5, 1.5),
           cutoff = 10)
+
+# Stacked pre/post results, with the factor levels in the tooltip
+# (d holds arm-level pre/post data, see ?run_pre_post_multiverse)
+mv <- run_pre_post_multiverse(d, which_factors = list(rater = "rater|E"))
+plot_voe(mv, cutoff = 3, factors = mv$factors)
 }
 
 }
 \seealso{
 \code{\link{plot_spec_curve}} for specification curve visualization
-\code{\link{run_multiverse_analysis}} for generating input data
+\code{\link{run_multiverse_analysis}} and
+\code{\link{run_pre_post_multiverse}} for generating input data
 }
