@@ -317,7 +317,9 @@ register_metafor_estimators <- function() {
     function(data) safe_call({
       mod <- metafor::rma(yi = data$yi, vi = data$vi, method = method, test = test,
                           control = list(stepadj = 0.5, maxiter = 2000))
-      out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
+      out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval,
+                                 se = mod$se, tau2 = mod$tau2, i2 = mod$I2,
+                                 k = mod$k)
       attr(out, "method") <- label
       out
     }, method_name = label)

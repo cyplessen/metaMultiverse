@@ -1,9 +1,12 @@
 citHeader("To cite metaMultiverse in publications use:")
 
-meta <- packageDescription("metaMultiverse")
+# `meta` is supplied by readCitationFile() from DESCRIPTION, whether or not
+# the package is installed. Authors@R holds R code, so it is evaluated rather
+# than passed to as.person(), which would split it into meaningless pieces.
 year <- sub("-.*", "", meta$Date)
-if (!nzchar(year)) year <- format(Sys.Date(), "%Y")
-authors <- Filter(function(p) "aut" %in% p$role, utils::as.person(meta$`Authors@R`))
+if (is.null(year) || length(year) == 0 || !nzchar(year)) year <- format(Sys.Date(), "%Y")
+authors <- eval(parse(text = meta$`Authors@R`))
+authors <- authors[vapply(authors, function(p) "aut" %in% p$role, logical(1))]
 
 bibentry(
   bibtype = "Manual",

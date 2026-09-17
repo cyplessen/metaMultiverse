@@ -163,6 +163,23 @@ create_multiverse_specifications <- function(factor_setup,
     dplyr::inner_join(dep_table, by = c("ma_method", "dependency")) |>
     dplyr::mutate(row_id = dplyr::row_number())
 
+  # A requested method whose registered dependencies share nothing with the
+  # requested dependencies vanishes from the grid in the join above; that loss
+  # must be visible (silent specification attrition).
+  dropped_methods <- setdiff(ma_methods, unique(specs$ma_method))
+  if (length(dropped_methods) > 0) {
+    warning(
+      "Requested ma_method(s) excluded from the grid because none of the ",
+      "requested dependencies (", paste(dependencies, collapse = ", "),
+      ") are compatible: ", paste(dropped_methods, collapse = ", "),
+      ". Compatible dependencies: ",
+      paste(vapply(dropped_methods, function(m) {
+        paste0(m, " = {", paste(.ma_method_registry[[m]]$deps, collapse = ", "), "}")
+      }, character(1)), collapse = "; "),
+      call. = FALSE
+    )
+  }
+
   # Attach factor info for downstream use
   attr(specs, "factor_groups") <- factor_groups
   attr(specs, "factor_info") <- factor_setup$factors

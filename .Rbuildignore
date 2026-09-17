@@ -25,3 +25,6 @@ tutorials/
 ^VIGNETTE_IMPROVEMENTS\.md$
 ^package_instructions\.md$
 ^CITATION\.cff$
+^CLAUDE\.md$
+^inst/shiny/rsconnect$
+^\.github$

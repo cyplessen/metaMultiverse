@@ -35,9 +35,56 @@ library(glue)
 # Quick test run
 
 ```{r}
+example_U <- data_digDep %>%
+  mutate(.g = yi,
+         .g_se = sqrt(vi)) %>% 
+  define_factors(
+    Risk_of_Bias = list(
+      "wf_7",
+      decision = "U",
+      groups = list(
+        low_only = "low risk",
+        low_moderate = c("low risk", "some concerns"),
+        all_studies = c("low risk", "some concerns", "high risk")
+      ))) %>%
+  create_multiverse_specifications(
+    ma_methods = c("reml", "fe"),
+    dependencies = c("aggregate")
+  ) %>% 
+  run_multiverse_analysis()
+
+example_N <- data_digDep %>%
+  mutate(.g = yi,
+         .g_se = sqrt(vi)) %>% 
+  define_factors(
+    Risk_of_Bias = list(
+      "wf_7",
+      decision = "N",
+      groups = list(
+        low_only = "low risk",
+        low_moderate = c("low risk", "some concerns"),
+        all_studies = c("low risk", "some concerns", "high risk")
+      ))) %>%
+  create_multiverse_specifications(
+    ma_methods = c("reml", "fe"),
+    dependencies = c("aggregate")
+  ) %>% 
+  run_multiverse_analysis()
+
+plot_spec_curve(example_U)
+plot_voe(example_U)
+
+
+plot_spec_curve(example_N)
+plot_voe(example_N)
+```
+
+```{r}
 devtools::document()
 devtools::load_all()
 multiverse <- data_digDep %>%
+  mutate(.g = yi,
+         .g_se = sqrt(vi)) %>% 
   check_data_multiverse() %>%
   define_factors(
     Population = "wf_3|U",
@@ -54,7 +101,10 @@ multiverse <- data_digDep %>%
   ) %>%
   create_multiverse_specifications(ma_methods = "reml") %>% 
   run_multiverse_analysis()
+```
 
+
+```{r}
 #viz
 plot_spec_curve(multiverse,
          interactive = F)
@@ -62,6 +112,27 @@ plot_spec_curve(multiverse,
 plot_voe(multiverse)
 ```
 
+
+# Update package loop
+```{r}
+# 1. Document - updates NAMESPACE and documentation from roxygen2 comments
+devtools::document()
+
+# 2. Load/install the package locally for testing
+devtools::load_all()  # or Ctrl/Cmd + Shift + L in RStudio
+
+# 3. Run tests to make sure everything works
+devtools::test()  # or Ctrl/Cmd + Shift + T
+```
+
+```{r}
+devtools::build_vignettes()
+```
+
+```{r}
+# 4. Full check - comprehensive package check
+devtools::check()  # or Ctrl/Cmd + Shift + E
+```
 
 #2.0 Worflow
 

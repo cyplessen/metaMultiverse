@@ -4,10 +4,35 @@
 \alias{new_universe_result}
 \title{Build a universe result (internal helper)}
 \usage{
-new_universe_result(b, ci.lb, ci.ub, pval)
+new_universe_result(
+  b,
+  ci.lb,
+  ci.ub,
+  pval,
+  se = NA_real_,
+  tau2 = NA_real_,
+  i2 = NA_real_,
+  k = NA_integer_,
+  convergence = TRUE,
+  notes = NULL
+)
 }
 \arguments{
 \item{b, ci.lb, ci.ub, pval}{Numeric scalars.}
+
+\item{se}{Standard error of the pooled estimate (NA if the method does not
+provide one).}
+
+\item{tau2}{Between-study variance estimate. Named tau2 -- never tau -- so
+the historical tau/tau-squared mislabeling cannot recur.}
+
+\item{i2}{I-squared in percent (0-100).}
+
+\item{k}{Number of units (studies/effects) contributing to the fit.}
+
+\item{convergence}{Logical; FALSE when the fit failed or hit limits.}
+
+\item{notes}{Optional character notes from the fitting function.}
 }
 \value{
 An object of class \code{c("universe_result","list")}.

@@ -52,7 +52,8 @@ safe_call <- function(expr, method_name = "unknown") {
 #' @keywords internal
 fit_fe <- function(data) safe_call({
   mod <- metafor::rma(yi = data$yi, vi = data$vi, method = "FE")
-  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
+  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval,
+                             se = mod$se, tau2 = 0, i2 = mod$I2, k = mod$k)
   attr(out, "method") <- "FE"
   out
 }, method_name = "Fixed Effects")
@@ -77,7 +78,10 @@ fit_fe <- function(data) safe_call({
 fit_reml <- function(data) safe_call({
   mod <- metafor::rma(yi = data$yi, vi = data$vi, method = "REML",
                       control = list(stepadj = 0.5, maxiter = 2000))
-  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
+  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval,
+                             se = mod$se, tau2 = mod$tau2, i2 = mod$I2,
+                             k = mod$k, convergence = isTRUE(mod$converged) ||
+                               is.null(mod$converged))
   attr(out, "method") <- "REML"
   out
 }, method_name = "REML")
@@ -125,13 +129,15 @@ fit_pet.peese <- function(data) safe_call({
 
   pet_p <- stats::coef(summary(pet_fit))["(Intercept)", "Pr(>|t|)"]
 
-  # PET-PEESE decision rule: if PET p ≥ 0.10, use PET (more conservative)
+  # PET-PEESE decision rule: if PET p >= 0.10, use PET (more conservative)
   if (is.na(pet_p) || pet_p >= 0.10) {
     out <- new_universe_result(
       b     = stats::coef(pet_fit)["(Intercept)"],
       ci.lb = stats::confint(pet_fit)["(Intercept)", "2.5 %"],
       ci.ub = stats::confint(pet_fit)["(Intercept)", "97.5 %"],
-      pval  = pet_p
+      pval  = pet_p,
+      se    = stats::coef(summary(pet_fit))["(Intercept)", "Std. Error"],
+      k     = nrow(data)
     )
     attr(out, "method") <- "PET"
     return(out)
@@ -153,7 +159,9 @@ fit_pet.peese <- function(data) safe_call({
     b     = stats::coef(peese_fit)["(Intercept)"],
     ci.lb = stats::confint(peese_fit)["(Intercept)", "2.5 %"],
     ci.ub = stats::confint(peese_fit)["(Intercept)", "97.5 %"],
-    pval  = stats::coef(summary(peese_fit))["(Intercept)", "Pr(>|t|)"]
+    pval  = stats::coef(summary(peese_fit))["(Intercept)", "Pr(>|t|)"],
+    se    = stats::coef(summary(peese_fit))["(Intercept)", "Std. Error"],
+    k     = nrow(data)
   )
   attr(out, "method") <- "PEESE"
   out
@@ -240,7 +248,9 @@ fit_puni_star <- function(data) safe_call({
     b     = pu$est,
     ci.lb = pu$ci.lb,
     ci.ub = pu$ci.ub,
-    pval  = pu$pval.0
+    pval  = pu$pval.0,
+    tau2  = if (!is.null(pu$tau2)) pu$tau2 else NA_real_,
+    k     = nrow(data)
   )
   attr(out, "method") <- paste0("p-uniform* (", side, ")")
   out
@@ -279,7 +289,9 @@ fit_uwls <- function(data) safe_call({
     b     = stats::coef(reg)["Precision"],
     ci.lb = stats::confint(reg)["Precision", "2.5 %"],
     ci.ub = stats::confint(reg)["Precision", "97.5 %"],
-    pval  = stats::coef(summary(reg))["Precision", "Pr(>|t|)"]
+    pval  = stats::coef(summary(reg))["Precision", "Pr(>|t|)"],
+    se    = stats::coef(summary(reg))["Precision", "Std. Error"],
+    k     = nrow(data)
   )
   attr(out, "method") <- "UWLS"
   out
@@ -332,7 +344,10 @@ fit_waap <- function(data, power_threshold = 2.8) safe_call({
     b     = stats::coef(reg)["Precision[powered]"],
     ci.lb = stats::confint(reg)["Precision[powered]", "2.5 %"],
     ci.ub = stats::confint(reg)["Precision[powered]", "97.5 %"],
-    pval  = stats::coef(summary(reg))["Precision[powered]", "Pr(>|t|)"]
+    pval  = stats::coef(summary(reg))["Precision[powered]", "Pr(>|t|)"],
+    se    = stats::coef(summary(reg))["Precision[powered]", "Std. Error"],
+    k     = sum(powered),
+    notes = paste0(sum(powered), "/", length(powered), " studies powered")
   )
   attr(out, "method") <- paste0("WAAP (", sum(powered), "/", length(powered), " powered)")
   out
@@ -378,7 +393,9 @@ fit_pm <- function(data) safe_call({
     b     = unname(mod$b),
     ci.lb = unname(mod$ci.lb),
     ci.ub = unname(mod$ci.ub),
-    pval  = unname(mod$pval)
+    pval  = unname(mod$pval),
+    se    = unname(mod$se),
+    tau2  = mod$tau2, i2 = mod$I2, k = mod$k
   )
   attr(out, "method") <- "PM"
   out
@@ -424,7 +441,11 @@ fit_hk_sj <- function(data) safe_call({
     b     = mod$TE.random,
     ci.lb = mod$lower.random,
     ci.ub = mod$upper.random,
-    pval  = mod$pval.random
+    pval  = mod$pval.random,
+    se    = mod$seTE.random,
+    tau2  = mod$tau2,
+    i2    = 100 * mod$I2, # meta reports proportions; tau2 stored as tau2
+    k     = mod$k
   )
   attr(out, "method") <- "HK/SJ"
   out
@@ -461,7 +482,15 @@ fit_three_level <- function(data) safe_call({
                          random = ~ 1 | study/es_id,
                          method = "REML",
                          sparse = TRUE)
-  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval)
+  out <- new_universe_result(mod$b, mod$ci.lb, mod$ci.ub, mod$pval,
+                             se = mod$se,
+                             tau2 = sum(mod$sigma2), # total between-cluster variance
+                             k = length(unique(data$study)),
+                             convergence = isTRUE(mod$converged) ||
+                               is.null(mod$converged),
+                             notes = paste0("sigma2 = ",
+                                            paste(round(mod$sigma2, 4),
+                                                  collapse = "/")))
   attr(out, "method") <- "3-level"
   out
 }, method_name = "Three-level")
@@ -502,7 +531,10 @@ fit_rve <- function(data) safe_call({
     b     = robust_results$b,
     ci.lb = robust_results$ci.lb,
     ci.ub = robust_results$ci.ub,
-    pval  = robust_results$pval
+    pval  = robust_results$pval,
+    se    = robust_results$se,
+    tau2  = sum(mod$sigma2),
+    k     = length(unique(data$study))
   )
   attr(out, "method") <- "RVE"
   out
@@ -552,7 +584,10 @@ fit_bayesmeta <- function(data) safe_call({
     b     = s["median",    "mu"],
     ci.lb = s["95% lower", "mu"],
     ci.ub = s["95% upper", "mu"],
-    pval  = NA_real_              # Bayesian analysis: no p-value
+    pval  = NA_real_,             # Bayesian analysis: no p-value
+    se    = s["sd", "mu"],
+    tau2  = s["median", "tau"]^2, # posterior median tau, squared and labeled tau2
+    k     = nrow(data)
   )
   attr(out, "method") <- "bayesmeta"
   out

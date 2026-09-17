@@ -1,10 +1,11 @@
 # metaMultiverse <img src="man/figures/logo.svg" align="right" height="139" alt="" />
 
 <!-- badges: start -->
-![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)
-![R](https://img.shields.io/badge/R-%E2%89%A53.5-blue)
+![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
+[![R-CMD-check](https://github.com/cyplessen/metaMultiverse/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/cyplessen/metaMultiverse/actions/workflows/R-CMD-check.yaml)
+![R](https://img.shields.io/badge/R-%E2%89%A54.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Tests](https://img.shields.io/badge/tests-657%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-1078%20passing-brightgreen)
 <!-- badges: end -->
 
 > **Principled Multiverse Meta-Analysis in R**
@@ -21,7 +22,7 @@
 - 📊 **Beautiful Visualizations**: Specification curves and Vibration of Effects (VoE) plots
 - 🔄 **Flexible Pipeline**: Clean, pipeable workflow using `%>%` or `|>`
 - 📖 **Comprehensive Documentation**: Two detailed vignettes with fully executable examples
-- ✅ **Well-Tested**: 657 passing expectations in 100 tests with full integration coverage
+- ✅ **Well-Tested**: 1078 passing expectations in 184 tests with full integration coverage
 
 ---
 
@@ -150,6 +151,9 @@ vignette("getting-started", package = "metaMultiverse")
 
 # In-depth guide with theory and practice
 vignette("multiverse-theory-practice-IMPROVED", package = "metaMultiverse")
+
+# Decisions as justified forks, estimand cells, attrition ledger
+vignette("eunx-workflow", package = "metaMultiverse")
 ```
 
 ### Key Topics Covered

@@ -45,7 +45,11 @@ generate_multiverse_report <- function(results, specifications, original_data,
     median_effect = median(results_clean$b, na.rm = TRUE),
     sd_effect = sd(results_clean$b, na.rm = TRUE),
     significant_analyses = sum(results_clean$pval < 0.05, na.rm = TRUE),
-    prop_significant = mean(results_clean$pval < 0.05, na.rm = TRUE),
+    # Denominator is ALL analyses, not just those with a p-value: methods
+    # without p-values (e.g. bayesmeta) must not silently shrink it. Reported
+    # alongside so the reader sees how many analyses carry no p-value at all.
+    n_with_pval = sum(!is.na(results_clean$pval)),
+    prop_significant = sum(results_clean$pval < 0.05, na.rm = TRUE) / nrow(results_clean),
     methods_used = if("ma_method" %in% names(results_clean)) unique(results_clean$ma_method) else "Unknown",
     dependencies_used = if("dependency" %in% names(results_clean)) unique(results_clean$dependency) else "Unknown",
     ci_widths = results_clean$ci.ub - results_clean$ci.lb
@@ -228,7 +232,7 @@ generate_multiverse_plots <- function(results_clean, wf_columns, plot_output_dir
   # 4. P-value distribution
   plots$pvalue_distribution <- ggplot(results_clean, aes(x = pval)) +
     geom_histogram(bins = 30, fill = "lightcoral", alpha = 0.7, color = "black") +
-    geom_vline(xintercept = 0.05, linetype = "dashed", color = "red", size = 1) +
+    geom_vline(xintercept = 0.05, linetype = "dashed", color = "red", linewidth = 1) +
     labs(title = "Distribution of P-values Across All Specifications",
          x = "P-value", y = "Frequency") +
     theme_minimal() +
@@ -249,7 +253,8 @@ generate_multiverse_plots <- function(results_clean, wf_columns, plot_output_dir
     for (wf_col in wf_columns) {
       wf_name <- gsub("^wf_", "", wf_col)
 
-      plots[[paste0("wf_", wf_name)]] <- ggplot(results_clean, aes_string(x = wf_col, y = "b", fill = wf_col)) +
+      plots[[paste0("wf_", wf_name)]] <- ggplot(results_clean,
+                                                aes(x = .data[[wf_col]], y = .data$b, fill = .data[[wf_col]])) +
         geom_violin(alpha = 0.7) +
         geom_boxplot(width = 0.1, outlier.shape = NA) +
         geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
