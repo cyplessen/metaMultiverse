@@ -1,7 +1,7 @@
 # metaMultiverse <img src="man/figures/logo.svg" align="right" height="139" alt="" />
 
 <!-- badges: start -->
-![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)
 ![R](https://img.shields.io/badge/R-%E2%89%A53.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Tests](https://img.shields.io/badge/tests-657%20passing-brightgreen)
@@ -150,6 +150,9 @@ vignette("getting-started", package = "metaMultiverse")
 
 # In-depth guide with theory and practice
 vignette("multiverse-theory-practice-IMPROVED", package = "metaMultiverse")
+
+# Decisions as justified forks, estimand cells, attrition ledger
+vignette("eunx-workflow", package = "metaMultiverse")
 ```
 
 ### Key Topics Covered

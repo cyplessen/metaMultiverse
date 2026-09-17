@@ -1,15 +1,25 @@
 Package: metaMultiverse
 Type: Package
 Title: Multiverse Meta-Analysis Toolkit
-Version: 0.3.1
-Date: 2026-09-11
+Version: 0.4.0
+Date: 2026-09-17
 Authors@R: person(given = c("Constantin", "Yves"),
                   family = "Plessen",
                   email = "constantin.plessen@uni-graz.at",
                   role = c("aut", "cre", "cph"),
                   comment = c(ORCID = "0000-0002-4907-3505",
                               affiliation = "Psychotherapy and Psychotherapy Research (CBT), Center for Psychotherapy, University of Graz"))
-Description: A toolkit for conducting multiverse meta-analysis, with functions for generating specification grids, performing various estimation methods (PET-PEESE, P-uniform, UWLS, WAAP), and visualizing results using both static and interactive plots. Implements the E/U/N decision type framework for principled multiverse analysis. Designed for researchers and data scientists working with meta-analytic methods.
+Description: A toolkit for multiverse meta-analysis: generate specification
+    grids over study-selection and analytic decisions, estimate every
+    specification (REML, Paule-Mandel, Hartung-Knapp/Sidik-Jonkman, PET-PEESE,
+    p-uniform*, UWLS, WAAP, three-level and robust variance models), and
+    visualize the results as specification curves and vibration-of-effects
+    plots. Decisions are declared as named forks with a ruling (equivalent,
+    uncertain, changes the question, indefensible) and a required
+    justification; question-changing decisions define estimand cells that
+    are never pooled, and an attrition ledger records every specification
+    that could not be estimated. Effect sizes can be computed from arm-level
+    pre/post data with the metric varied as a further decision.
 VignetteBuilder: knitr
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -37,7 +47,6 @@ Suggests:
     withr,
     KernSmooth,
     clubSandwich,
-    lme4,
     knitr,
     rmarkdown,
     quarto,

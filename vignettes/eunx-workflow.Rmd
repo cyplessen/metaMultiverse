@@ -1,0 +1,217 @@
+---
+title: "Plain-language decision rulings: estimand-aware multiverse meta-analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Plain-language decision rulings: estimand-aware multiverse meta-analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7)
+```
+
+```{r setup}
+library(metaMultiverse)
+```
+
+This vignette demonstrates the estimand-aware multiverse workflow on
+simulated data: plain-language fork rulings (with E/U/N/X letter
+aliases), per-domain configs with
+warrants, load-time validation, the crossed estimand grid, execution with
+full traceability, plausibility flagging, fragility metrics, and reporting.
+
+## Decision rulings
+
+Every analytic or clinical decision ("fork") gets an individual
+plain-language ruling (letter aliases from the source framework are
+accepted everywhere):
+
+```{r crosswalk}
+knitr::kable(decision_crosswalk())
+```
+
+- **equivalent** (alias E): defensible alternatives expected to be interchangeable.
+  Varied within the multiverse; movement beyond a declared
+  equivalence margin is
+  flagged for reclassification.
+- **uncertain** (alias U): defensible alternatives that plausibly matter, but the
+  literature cannot yet rank them. Varied within the multiverse and tracked
+  as metadata.
+- **changes_question** (alias N): levels answer *different clinical questions*.
+  Crossing question-changing forks defines the **estimand cells** of the
+  grid; effect
+  summaries are never pooled across cells.
+- **indefensible** (alias X): historically used but not defensible; excluded from inference,
+  quantified separately in the bias-decomposition layer.
+
+This adapts Del Giudice & Gangestad's (2021) framework, in which N-type
+decisions are fixed to the best option and U-type decisions split into
+separate multiverses. Here the split criterion is the *estimand*: N forks
+split because they change the clinical question; U forks vary within
+because they do not. The reclassification pathway (groundwork moves U
+forks to fixed decisions, their inferior alternatives to X) is the same.
+
+## A simulated domain
+
+```{r simulate}
+dat <- simulate_multiverse_data(n_studies = 40, es_per_study = 1:2, seed = 7)
+head(dat)
+```
+
+Flag implausible effect sizes (Harrer et al. 2025). The reference
+distribution is an explicit choice; missing risk-of-bias ratings count as
+high risk by project convention:
+
+```{r flags}
+dat <- add_plausibility_flags(dat, high_rob = dat$rob == 1, reference = "all")
+table(dat$flag_profile)
+```
+
+## Config with warrants
+
+```{r config}
+cfg <- domain_config(
+  domain = "simulated_demo",
+  forks = list(
+    fork("comparator", type = "data", decision = "changes_question",
+         family = "clinical",
+         column = "comparator",
+         levels = list(wl = "wl", cau = "cau",
+                       all_controls = c("wl", "cau", "other")),
+         reference = "all_controls",
+         justification = list(
+           basis = "citation",
+           text = "Control condition changes the clinical question",
+           citation = "Cuijpers et al. 2019")),
+    plausibility_fork(),
+    fork("ma_method", type = "analysis", decision = "uncertain",
+         family = "analytic",
+         levels = c("reml", "pm"), reference = "reml",
+         justification = "Both defensible tau2 estimators; ranking unresolved"),
+    fork("dependency", type = "analysis", decision = "uncertain",
+         family = "analytic",
+         levels = c("aggregate", "modeled"), reference = "aggregate",
+         justification = "Both defensible dependency strategies"),
+    fork("model_type", type = "analysis", decision = "indefensible",
+         family = "analytic",
+         levels = c("random_effects", "fixed_effect"),
+         reference = "random_effects",
+         overrides = list(fixed_effect = list(ma_method = "fe")),
+         justification = list(
+           basis = "citation",
+           text = "Fixed-effect under clear heterogeneity is indefensible;
+                   quantified in the bias layer only",
+           citation = "Borenstein et al. 2010"))
+  ),
+  estimand = list(population = "simulated adults",
+                  intervention = "simulated psychotherapy",
+                  outcome = "symptoms", timepoint = "post-treatment"),
+  fixed_decisions = list(
+    effect_metric = list(
+      value = "Hedges' g",
+      justification = list(basis = "citation",
+                           text = "Standard small-sample-corrected SMD",
+                           citation = "Hedges 1981"))
+  )
+)
+cfg
+```
+
+The warrant table is generated automatically -- no fork exists without a
+machine-readable justification:
+
+```{r warrants}
+warrant_table(cfg)[, c("element", "name", "decision", "family", "basis")]
+```
+
+A preregisterable, time-stamped export of configs + warrants + estimand
+declarations is available via `export_prereg_config(cfg, "prereg.qmd")`.
+
+## Validation and the availability matrix
+
+Configs are validated against the data at load time; absent levels are
+informative errors, small strata are set aside as too_few_studies
+(min_studies = 5, strict rerun at 10), and levels with identical realized subsets are marked as
+duplicates rather than pretending to vary:
+
+```{r validate}
+v <- validate_domain_config(cfg, dat)
+v$fork_status
+```
+
+## The crossed estimand grid
+
+One grid per domain: question-changing fork levels define estimand
+cells; equivalent/uncertain and analysis forks vary within cells;
+indefensible forks run only in the bias layer against the
+reference specification:
+
+```{r grid}
+grid <- build_specification_grid(cfg, dat)
+summary(grid)
+```
+
+## Execution with full traceability
+
+```{r run}
+res <- run_multiverse_grid(grid, rho = 0.6, progress = FALSE)
+attrition_summary(res)
+```
+
+Every estimate is traceable: `lookup_spec(res, spec_id)` returns the spec
+definition, estimand declaration, fork warrants, result, audit flags, and
+attrition entries.
+
+## Effect summaries respect the two-layer rule
+
+```{r summaries}
+summarize_effects(res)
+```
+
+Pooling effects across estimand cells is refused at runtime:
+
+```{r guard, error = TRUE}
+assert_single_estimand(res$results, "a pooled median")
+```
+
+Divergence between cells is its own labeled quantity:
+
+```{r divergence}
+str(summarize_divergence(res), max.level = 1)
+```
+
+## Fragility metrics (within a fixed clinical question)
+
+```{r fragility}
+fragility_metrics(res, cell = "comparator=cau")
+```
+
+M2 (specification-I^2) is the provisional primary metric: it expresses
+analytic divergence relative to sampling uncertainty, so "fragile" cannot
+be an artifact of a small, noisy database. Equivalent-ruled forks that
+move estimates
+beyond their equivalence margin -- and any fork dominating the
+variance -- are
+escalated for reclassification:
+
+```{r tolerances}
+check_fork_tolerances(res, cell = "comparator=cau")
+```
+
+## Report
+
+```{r report, results = "hide"}
+report <- report_grid_result(res)
+```
+
+The report leads with the justified specification count, labels all
+frequencies as descriptive, includes the worst-universe audit, the bias
+layer, the attrition table, and the warrant table.
+
+## Two-layer uncertainty visualization
+
+```{r plots, fig.height = 4.5}
+plot_two_layer(res, "comparator=cau")
+plot_grid_spec_curve(res)
+```

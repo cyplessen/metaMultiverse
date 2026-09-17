@@ -7,7 +7,7 @@ authors:
     given-names: Constantin Yves
     orcid: "https://orcid.org/0000-0002-4907-3505"
     affiliation: "Psychotherapy and Psychotherapy Research (CBT), Center for Psychotherapy, University of Graz, Austria"
-version: 0.3.1
+version: 0.4.0
 date-released: 2026-09-11
 repository-code: "https://github.com/cyplessen/metaMultiverse"
 license: MIT
