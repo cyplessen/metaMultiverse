@@ -92,7 +92,7 @@ Expect roughly 715 passing, 0 failing. If dev's own suite does not pass on
 this machine, stop: the baseline is not trustworthy and nothing below
 means anything.
 
-**Gate 0b.** Dev suite green. Record the actual pass count here: ______
+**Gate 0b.** Dev suite green. Record the actual pass count here: **715 passed, 0 failed, 0 errors, 1 skipped** (157 tests, dev HEAD `165696c`, run 2026-09-17 on a `git archive` export; dev folder left untouched)
 
 ---
 
