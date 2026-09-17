@@ -299,7 +299,16 @@ If you use `metaMultiverse` in your research, please cite:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome. See the [contributing guide](.github/CONTRIBUTING.md) for how to report problems,
+set up a development environment and propose changes, and the [code of conduct](.github/CODE_OF_CONDUCT.md).
+
+### Support and maintenance
+
+The package is maintained by Constantin Yves Plessen (University of Graz). Questions, bug reports and
+feature requests go to the [issue tracker](https://github.com/cyplessen/metaMultiverse/issues); issues are
+usually answered within two weeks. Design decisions are made by the maintainer and discussed in the open
+in issues and pull requests. Releases follow semantic versioning and are listed in the
+[changelog](NEWS.md).
 
 ### Development
 
