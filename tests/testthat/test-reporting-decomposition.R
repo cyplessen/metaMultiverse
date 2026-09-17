@@ -120,3 +120,19 @@ test_that("two-layer plot and grid spec curve build without error", {
   p2 <- plot_grid_spec_curve(res5)
   expect_s3_class(p2, "ggplot")
 })
+
+test_that("decompose_variance records its estimator and announces the fallback", {
+  skip_if_not_installed("lme4")
+  dec <- decompose_variance(res5)
+  expect_equal(attr(dec, "estimator"), "lmer")
+  expect_no_message(decompose_variance(res5))
+
+  # lme4 missing: method-of-moments components, and never silently
+  local_mocked_bindings(.has_lme4 = function() FALSE)
+  expect_message(dec_mom <- decompose_variance(res5), "lme4.*not installed")
+  expect_equal(attr(dec_mom, "estimator"), "method_of_moments")
+  expect_null(attr(dec_mom, "model"))
+  expect_true(abs(sum(dec_mom$share) - 1) < 1e-8)
+  # with the fallback, share and the method-of-moments companion coincide
+  expect_equal(dec_mom$share, dec_mom$mom_share)
+})

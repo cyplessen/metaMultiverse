@@ -12,7 +12,9 @@ check_fork_tolerances(result, cell, dominance_share = 0.5)
 \item{cell}{Estimand cell id.}
 
 \item{dominance_share}{Share of summed sigma_g above which any fork is
-escalated regardless of decision type (default 0.5).}
+escalated regardless of decision type. The default of 0.5 is a working
+convention of the Metapsy multiverse analyses with no external
+source; treat it as a tuning choice.}
 }
 \value{
 Data frame: fork, decision, sigma_g, equivalence_margin,

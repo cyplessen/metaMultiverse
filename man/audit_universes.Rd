@@ -9,8 +9,9 @@ audit_universes(result, i2_high = 50)
 \arguments{
 \item{result}{An \code{mv_grid_result}.}
 
-\item{i2_high}{Threshold above which fixed-effect models are flagged
-(default 50 percent).}
+\item{i2_high}{Threshold above which fixed-effect models are flagged.
+The default of 50 percent follows the common rough guide for
+substantial heterogeneity; it is a convention, not a test.}
 }
 \value{
 Data frame: spec_id, flags (comma-joined), n_flags.

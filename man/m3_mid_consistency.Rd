@@ -11,7 +11,11 @@ m3_mid_consistency(result, cell, mid = 0.24)
 
 \item{cell}{Estimand cell id.}
 
-\item{mid}{Minimally important difference (default 0.24).}
+\item{mid}{Minimally important difference on the effect-size scale. The
+default of 0.24 is the threshold for a clinically relevant effect in
+depression psychotherapy (Cuijpers et al., 2014,
+\doi{10.1002/da.22249}) used in the Metapsy multiverse analyses; it is
+domain-specific, so set it for your outcome.}
 }
 \value{
 One-row data frame: mid, prop_above_mid, n_specs.

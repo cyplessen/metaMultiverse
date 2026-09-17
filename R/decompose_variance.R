@@ -28,7 +28,24 @@
 #' @return Data frame: term, family, layer ("between_estimand",
 #'   "within_question", "residual"), variance, share, mom_share
 #'   (method-of-moments companion), n_levels. Attributes: \code{caveat},
-#'   \code{model} (the lmer fit or NULL if lme4 unavailable/failed).
+#'   \code{model} (the lmer fit, or NULL if lme4 is unavailable or the fit
+#'   failed) and \code{estimator} (\code{"lmer"} or
+#'   \code{"method_of_moments"}, i.e. which of the two produced
+#'   \code{variance} and \code{share}).
+#'
+#' @details
+#' The crossed random-effects model needs the suggested package lme4. When
+#' lme4 is not installed, or the model cannot be fitted, the components
+#' fall back to the method-of-moments estimates and a message says so. The
+#' two estimators can give different shares, so check
+#' \code{attr(x, "estimator")} before comparing decompositions across
+#' machines.
+#'
+#' @section Experimental:
+#' The variance decomposition is experimental. The package ships the
+#' baseline version that \code{\link{report_grid_result}} uses; the method
+#' is being developed further alongside a substantive application, so its
+#' arguments and output may change without a deprecation cycle.
 #' @export
 decompose_variance <- function(result, cell = NULL) {
   stopifnot(inherits(result, "mv_grid_result"))
@@ -56,7 +73,8 @@ decompose_variance <- function(result, cell = NULL) {
 
   model <- NULL
   vc <- NULL
-  if (requireNamespace("lme4", quietly = TRUE)) {
+  has_lme4 <- .has_lme4()
+  if (has_lme4) {
     fml <- stats::as.formula(paste(
       "b ~ 1 +", paste(sprintf("(1 | %s)", forks), collapse = " + ")
     ))
@@ -75,8 +93,18 @@ decompose_variance <- function(result, cell = NULL) {
     }
   }
 
+  estimator <- "lmer"
   if (is.null(vc)) {
-    # lme4 unavailable or failed: fall back to method-of-moments components
+    # lme4 unavailable or failed: fall back to method-of-moments components.
+    # Never silently: the two estimators can give different shares.
+    estimator <- "method_of_moments"
+    message(
+      "decompose_variance(): ",
+      if (has_lme4) "the lme4 variance-component model could not be fitted"
+      else "package 'lme4' is not installed",
+      "; using method-of-moments components instead. Shares can differ ",
+      "from the lme4 estimates (see attr(x, \"estimator\"))."
+    )
     resid <- max(stats::var(df$b) - sum(mom), 0)
     vc <- c(mom, Residual = resid)
   }
@@ -112,13 +140,22 @@ decompose_variance <- function(result, cell = NULL) {
     "layer compares clinical questions; it never pools them."
   )
   attr(out, "model") <- model
+  attr(out, "estimator") <- estimator
   out
 }
+
+# Wrapped so the lme4-missing path can be exercised in tests.
+.has_lme4 <- function() requireNamespace("lme4", quietly = TRUE)
 
 #' Family-level variance shares (clinical vs analytic vs between-estimand)
 #'
 #' @param decomposition Output of \code{\link{decompose_variance}}.
 #' @return Data frame aggregating shares by layer and family.
+#' @section Experimental:
+#' The variance decomposition is experimental. The package ships the
+#' baseline version that \code{\link{report_grid_result}} uses; the method
+#' is being developed further alongside a substantive application, so its
+#' arguments and output may change without a deprecation cycle.
 #' @export
 family_shares <- function(decomposition) {
   d <- decomposition[decomposition$term != "residual", , drop = FALSE]
@@ -151,6 +188,11 @@ family_shares <- function(decomposition) {
 #' @param cell Optional estimand cell restriction.
 #' @return Data frame: level, n_specs, raw_mean, balanced_mean,
 #'   n_common_combos.
+#' @section Experimental:
+#' The variance decomposition is experimental. The package ships the
+#' baseline version that \code{\link{report_grid_result}} uses; the method
+#' is being developed further alongside a substantive application, so its
+#' arguments and output may change without a deprecation cycle.
 #' @export
 marginal_fork_means <- function(result, fork, cell = NULL) {
   df <- result$results

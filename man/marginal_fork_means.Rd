@@ -25,3 +25,11 @@ restricted to combinations observed under every level of the target fork,
 i.e. the common surviving subgrid within the cell). Marginal comparisons
 should quote the balanced version; the raw one is shown alongside.
 }
+\section{Experimental}{
+
+The variance decomposition is experimental. The package ships the
+baseline version that \code{\link{report_grid_result}} uses; the method
+is being developed further alongside a substantive application, so its
+arguments and output may change without a deprecation cycle.
+}
+

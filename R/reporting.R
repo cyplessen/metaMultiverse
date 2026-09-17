@@ -68,7 +68,8 @@ warrant_table <- function(config) {
 #' @param result An \code{mv_grid_result}.
 #' @param purpose Purpose declaration (default: the project stance).
 #' @param mid Minimally important difference for the labeled MID
-#'   descriptive.
+#'   descriptive (default 0.24, a depression-psychotherapy convention; see
+#'   \code{\link{m3_mid_consistency}}).
 #' @return Character vector of markdown lines.
 #' @export
 report_grid_result <- function(result,

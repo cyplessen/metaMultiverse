@@ -18,7 +18,8 @@ report_grid_result(
 \item{purpose}{Purpose declaration (default: the project stance).}
 
 \item{mid}{Minimally important difference for the labeled MID
-descriptive.}
+descriptive (default 0.24, a depression-psychotherapy convention; see
+\code{\link{m3_mid_consistency}}).}
 }
 \value{
 Character vector of markdown lines.

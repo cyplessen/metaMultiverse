@@ -16,7 +16,10 @@ specs with N forks as between-estimand components.}
 Data frame: term, family, layer ("between_estimand",
   "within_question", "residual"), variance, share, mom_share
   (method-of-moments companion), n_levels. Attributes: \code{caveat},
-  \code{model} (the lmer fit or NULL if lme4 unavailable/failed).
+  \code{model} (the lmer fit, or NULL if lme4 is unavailable or the fit
+  failed) and \code{estimator} (\code{"lmer"} or
+  \code{"method_of_moments"}, i.e. which of the two produced
+  \code{variance} and \code{share}).
 }
 \description{
 Fits a crossed random-effects model over the specification-level
@@ -36,4 +39,20 @@ sensitivity, not sampling-theory variance; (2) components estimated from
 forks with few levels are noisy and often shrunk toward zero -- the
 method-of-moments shares from option-level marginal means are reported
 alongside as a stability check.
+
+
+The crossed random-effects model needs the suggested package lme4. When
+lme4 is not installed, or the model cannot be fitted, the components
+fall back to the method-of-moments estimates and a message says so. The
+two estimators can give different shares, so check
+\code{attr(x, "estimator")} before comparing decompositions across
+machines.
 }
+\section{Experimental}{
+
+The variance decomposition is experimental. The package ships the
+baseline version that \code{\link{report_grid_result}} uses; the method
+is being developed further alongside a substantive application, so its
+arguments and output may change without a deprecation cycle.
+}
+

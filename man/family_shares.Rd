@@ -15,3 +15,11 @@ Data frame aggregating shares by layer and family.
 \description{
 Family-level variance shares (clinical vs analytic vs between-estimand)
 }
+\section{Experimental}{
+
+The variance decomposition is experimental. The package ships the
+baseline version that \code{\link{report_grid_result}} uses; the method
+is being developed further alongside a substantive application, so its
+arguments and output may change without a deprecation cycle.
+}
+

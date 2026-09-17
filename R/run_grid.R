@@ -274,8 +274,9 @@ lookup_spec <- function(result, spec_id) {
 #' therefore be visible.
 #'
 #' @param result An \code{mv_grid_result}.
-#' @param i2_high Threshold above which fixed-effect models are flagged
-#'   (default 50 percent).
+#' @param i2_high Threshold above which fixed-effect models are flagged.
+#'   The default of 50 percent follows the common rough guide for
+#'   substantial heterogeneity; it is a convention, not a test.
 #' @return Data frame: spec_id, flags (comma-joined), n_flags.
 #' @export
 audit_universes <- function(result, i2_high = 50) {

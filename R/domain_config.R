@@ -24,8 +24,10 @@
 #' @param flag_reference Reference distribution key for effect-size
 #'   plausibility flagging (\code{"all"}, \code{"dep"}, \code{"psy"},
 #'   \code{"ptsd"}; Phase 3).
-#' @param min_studies Minimum number of unique studies per universe
-#'   (default 5; user decision D3, 2026-07-20). (Alias: \code{min_k}.)
+#' @param min_studies Minimum number of unique studies per universe.
+#'   The default of 5 is the convention adopted for the Metapsy multiverse
+#'   analyses the architecture was built for, not a universal rule; set it
+#'   for your domain. (Alias: \code{min_k}.)
 #' @param min_studies_strict Stricter threshold for the sensitivity rerun
 #'   (default 10). (Alias: \code{min_k_sensitivity}.)
 #' @param min_k,min_k_sensitivity Legacy aliases.

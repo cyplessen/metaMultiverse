@@ -11,7 +11,8 @@ fragility_metrics(result, cell, mid = 0.24)
 
 \item{cell}{Estimand cell id.}
 
-\item{mid}{Minimally important difference for M3/M4.}
+\item{mid}{Minimally important difference for M3/M4 (default 0.24, a
+depression-psychotherapy convention; see \code{\link{m3_mid_consistency}}).}
 }
 \value{
 List with elements m1, m2, m3, m4, m5.

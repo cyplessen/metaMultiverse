@@ -88,7 +88,11 @@ m2_spec_i2 <- function(result, cell) {
 #'
 #' @param result An \code{mv_grid_result}.
 #' @param cell Estimand cell id.
-#' @param mid Minimally important difference (default 0.24).
+#' @param mid Minimally important difference on the effect-size scale. The
+#'   default of 0.24 is the threshold for a clinically relevant effect in
+#'   depression psychotherapy (Cuijpers et al., 2014,
+#'   \doi{10.1002/da.22249}) used in the Metapsy multiverse analyses; it is
+#'   domain-specific, so set it for your outcome.
 #' @return One-row data frame: mid, prop_above_mid, n_specs.
 #' @export
 m3_mid_consistency <- function(result, cell, mid = 0.24) {
@@ -210,7 +214,8 @@ m6_common_subgrid <- function(results, cells) {
 #'
 #' @param result An \code{mv_grid_result}.
 #' @param cell Estimand cell id.
-#' @param mid Minimally important difference for M3/M4.
+#' @param mid Minimally important difference for M3/M4 (default 0.24, a
+#'   depression-psychotherapy convention; see \code{\link{m3_mid_consistency}}).
 #' @return List with elements m1, m2, m3, m4, m5.
 #' @export
 fragility_metrics <- function(result, cell, mid = 0.24) {
@@ -236,7 +241,9 @@ fragility_metrics <- function(result, cell, mid = 0.24) {
 #' @param result An \code{mv_grid_result}.
 #' @param cell Estimand cell id.
 #' @param dominance_share Share of summed sigma_g above which any fork is
-#'   escalated regardless of decision type (default 0.5).
+#'   escalated regardless of decision type. The default of 0.5 is a working
+#'   convention of the Metapsy multiverse analyses with no external
+#'   source; treat it as a tuning choice.
 #' @return Data frame: fork, decision, sigma_g, equivalence_margin,
 #'   exceeds_margin, dominates, escalate.
 #' @export
