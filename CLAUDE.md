@@ -1,13 +1,25 @@
 # metaMultiverse — project instructions
 
 R package for multiverse meta-analysis. Public repo `cyplessen/metaMultiverse`.
-This is the **live** line, version 0.3.0. A second line,
-`metaMultiverse-dev` (version 0.9.0), sits at `../../metaMultiverse-dev`
-and holds an estimand-aware architecture built on top of v0.2.3. The two
-diverged at commit `3b9cc47` and neither has seen the other's work.
+This is the **live** line and the only place package code lives.
 
-If you are here to merge them, read `MERGE_BRIEF.md` first and follow it
-stage by stage. Do not improvise a merge.
+Status (2026-09-17): the estimand-aware architecture from the former
+`metaMultiverse-dev` line (0.9.0) has been ported into this repo as 0.4.0,
+stage by stage following `MERGE_BRIEF.md`, whose gate log records every
+result. The 12-domain regression proved the port moved no numbers. The
+variance decomposition was deliberately left out: it is parked in
+`dev/metapsy-paper/` and is developed with the Metapsy multiverse paper.
+
+## Project layout: package plus paper
+
+- This repo: the package, plus the JOSS paper in `paper/` (excluded from
+  the build). `main` is what is released.
+- One separate repo per paper (`luo-reanalysis`, the Metapsy multiverse
+  paper), each pinning a tagged package release. Methods a paper needs are
+  developed in the paper repo as plain R files sourced on top of the
+  installed package, and enter the package through one PR and a new tag
+  once they have settled.
+- A paper never edits package code in place.
 
 ## Invariants: three things that exist only here
 
@@ -68,6 +80,10 @@ R CMD build . && R CMD check --as-cran metaMultiverse_*.tar.gz
 
 ## Git
 
-Work on a branch, never on `main`. Commit at logical checkpoints. Do not
-push, and do not write anything into `../../metaMultiverse-dev`. Ask
-before any change that alters the statistical meaning of results.
+Work on a branch, never on `main`. Commit at logical checkpoints. Push the
+branch and open **one** PR against `main`; never stack PRs on each other
+(a stacked PR was once merged into its base branch instead of `main`). The
+maintainer merges, tags and publishes releases himself, because a release
+mints a Zenodo DOI. Do not write into `../../metaMultiverse-dev` unless
+explicitly asked to. Ask before any change that alters the statistical
+meaning of results.
