@@ -30,3 +30,4 @@ tutorials/
 ^metaMultiverse_pr$
 ^regression_check\.R$
 ^inst/shiny/rsconnect$
+^\.github$

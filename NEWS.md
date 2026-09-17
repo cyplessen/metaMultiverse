@@ -43,6 +43,15 @@ existing `define_factors()` pipeline is unchanged.
   `within_study_correlation = 0.6`) are documented as conventions of that
   domain rather than universals.
 
+## Infrastructure
+
+* The package now declares `R (>= 4.1.0)`: the code has used the native
+  pipe since 0.2.x, so the previous `R (>= 3.5)` was wrong.
+* GitHub Actions workflow running `R CMD check` on macOS, Windows and
+  Ubuntu (release, devel, oldrel).
+* New tests assert that every registered estimator fills `se`, `tau2`,
+  `i2`, `k` and `convergence`, checked against metafor and meta.
+
 ## Bug Fixes
 
 * `run_multiverse_analysis()`: `full_set` was computed against row order and
