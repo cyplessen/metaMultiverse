@@ -28,6 +28,7 @@ Imports:
     glue,
     plotly,
     puniform,
+    rlang,
     scales,
     stringr,
     viridis

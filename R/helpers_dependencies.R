@@ -5,6 +5,7 @@
 #'
 #' @name dependency_handlers
 #' @keywords internal
+NULL
 
 # =============================================================================
 # AGGREGATE DEPENDENCY HANDLING

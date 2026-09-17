@@ -110,8 +110,9 @@ check_data_multiverse <- function(data) {
     "study", "es_id", "yi", "vi"
   )
 
-  # Dynamically detect wf columns (e.g., wf_1, wf_2, ...)
-  wf_columns <- grep("^wf", colnames(data), value = TRUE)
+  # Dynamically detect wf columns (wf_1, wf_2, ...); the anchored pattern keeps
+  # unrelated columns that merely start with "wf" out of the factor system
+  wf_columns <- grep("^wf_[0-9]+$", colnames(data), value = TRUE)
 
   # Combine required and dynamically detected wf columns
   all_required_columns <- c(required_columns, wf_columns)

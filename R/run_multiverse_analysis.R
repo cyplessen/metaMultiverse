@@ -181,7 +181,7 @@ run_multiverse_analysis <- function(spec_output, verbose = FALSE, progress = TRU
 
   # Combine and clean results
   final_df <- do.call(rbind, successes)
-  full_set_val <- paste(seq_len(nrow(data)), collapse = ",")
+  full_set_val <- paste(data$es_id, collapse = ",")
   final_df$full_set <- as.numeric(final_df$set == full_set_val)
 
   core_vars <- c("b", "ci.lb", "ci.ub", "k", "set")
