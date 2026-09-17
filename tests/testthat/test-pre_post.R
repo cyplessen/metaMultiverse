@@ -220,6 +220,26 @@ test_that("register_metafor_estimators adds four keys that reproduce metafor::rm
   expect_setequal(.ma_method_registry[["dl"]]$deps, c("select_max", "select_min", "aggregate"))
 })
 
+test_that("on-demand metafor estimators fill se, tau2, i2 and k like the built-in ones", {
+  register_metafor_estimators()
+  dat <- compute_pre_post_es(pp_eight(), "post_smd")
+  for (key in c("dl", "dl_hksj", "reml_hksj", "pm_hksj")) {
+    fit <- .ma_method_registry[[key]]$fun(dat)
+    expect_s3_class(fit, "universe_result")
+    expect_false(is.na(fit$se), info = key)
+    expect_false(is.na(fit$tau2), info = key)
+    expect_false(is.na(fit$i2), info = key)
+    expect_equal(fit$k, nrow(dat), info = key)
+    expect_true(fit$convergence, info = key)
+  }
+  ref <- metafor::rma(yi = dat$yi, vi = dat$vi, method = "DL",
+                      control = list(stepadj = 0.5, maxiter = 2000))
+  fit <- .ma_method_registry[["dl"]]$fun(dat)
+  expect_equal(fit$se, ref$se)
+  expect_equal(fit$tau2, ref$tau2)
+  expect_equal(fit$i2, ref$I2)
+})
+
 # ------------------------------------------------------------------------------
 # run_pre_post_multiverse()
 # ------------------------------------------------------------------------------

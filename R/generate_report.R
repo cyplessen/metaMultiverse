@@ -89,7 +89,7 @@ generate_multiverse_report_text <- function(
     ),
     "### Descriptive Specification Curve & Vibration of Effects",
     glue::glue(
-      "The specification curve shows ES varying from null to large. \" "
+      "The specification curve shows ES varying from null to large."
     ),
     glue::glue(
       "Among the {k_ma} analyses, {pct_mean_over_zero}% of mean ES were > 0, and {pct_cis_over_zero}% had 95% CIs entirely > 0."
@@ -159,19 +159,24 @@ generate_multiverse_report_text <- function(
     report <- c(report,
                 "### Consistency Across k Thresholds",
                 glue::glue(
-                  "Mean g varied by < {round(consistency$max_delta,3)} when stratifying at k = {paste(consistency$thresholds, collapse=", ")}."
+                  "Mean g varied by < {round(consistency$max_delta,3)} when stratifying at k = {paste(consistency$thresholds, collapse=', ')}."
                 )
     )
   }
 
-  # 7. Take-home bullets
+  # 7. Take-home bullets (optional sections only when their stats were supplied)
   report <- c(report,
               "### Key Take-Home Points",
-              glue::glue("- Effect sizes remained positive in {pct_mean_over_zero}% of paths."),
-              "- Dependency strategy choice was the largest source of uncertainty.",
-              glue::glue("- Publication-bias adjustments changed median g by {round(pubbias_stats$median_uncorrected - pubbias_stats$median_ppe,3)}."),
-              glue::glue("- Results were robust up to k >= {max(consistency$thresholds)} studies.")
+              glue::glue("- Effect sizes remained positive in {pct_mean_over_zero}% of paths.")
   )
+  if (!is.null(pubbias_stats)) {
+    report <- c(report,
+                glue::glue("- Publication-bias adjustments changed median g by {round(pubbias_stats$median_uncorrected - pubbias_stats$median_ppe,3)}."))
+  }
+  if (!is.null(consistency)) {
+    report <- c(report,
+                glue::glue("- Results were robust up to k >= {max(consistency$thresholds)} studies."))
+  }
 
   return(report)
 }

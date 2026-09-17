@@ -1,140 +1,72 @@
-# metaMultiverse 0.3.1 (2026-09-11)
+# metaMultiverse 0.4.0 (development)
+
+This release adds an estimand-aware architecture for declaring decisions as
+forks. Everything from 0.3.0 and 0.3.1 is kept, and the existing
+`define_factors()` pipeline is unchanged.
 
 ## New Features
 
-* `plot_spec_curve()` and `plot_voe()` now also accept the output of
-  `run_pre_post_multiverse()` (new class `pre_post_multiverse`, with a
-  `factors` element and a `print()` method) and plain data frames of
-  results. A new `factors` argument names the factor columns to draw
-  (optionally with labels as names); `plot_spec_curve()` shows `es_metric`
-  and `imputed_post_sd` as how factors, and `plot_voe()` appends the given
-  factors to its hover tooltip. Behaviour for `multiverse_result` input is
-  unchanged.
-
-## Test Suite
-
-* Tests for plotting the stacked results of `run_pre_post_multiverse()`,
-  the data-frame input path with labelled `factors`, and the input
-  validation of both plot functions.
-
----
-
-# metaMultiverse 0.3.0 (2026-09-11)
-
-## New Features
-
-* Pre/post (change-score) designs. `compute_pre_post_es()` turns arm-level
-  pre/post means and SDs into `yi`/`vi` under a chosen metric:
-  `"post_smd"` (post-test SMD), `"change_smd_r<r>"` (SMD of change scores,
-  change SD imputed from the pre and post SDs under pre-post correlation `r`
-  following Cochrane Handbook 6.5.2.8 unless reported), `"smc_r<r>"`
-  (difference in standardized mean change, Becker 1988 variance) and
-  `"adjusted_post_smd"` (reported adjusted between-group difference where
-  available, post-test SMD otherwise). `imputed_post_sd` (`"borrow"`,
-  `"exclude"`, `"change_smd"`) governs rows flagged `post_sd_imputed = TRUE`
-  in the post-test metrics.
-* `run_pre_post_multiverse()` runs the standard `define_factors()` ->
-  `create_multiverse_specifications()` -> `run_multiverse_analysis()`
-  pipeline once per row of an `es_grid` (metric x imputed-post-SD rule) and
-  stacks the results, so that the effect-size metric becomes a "how" factor.
-  Results carry `k_studies` and `studies_in_set` (`k` counts effect sizes,
-  not studies) and `wf_*` columns are renamed to the factor labels.
-  `which_factors` may be a function of the per-variant data, and
-  `spec_filter` can prune the specification grid per variant.
-* `register_metafor_estimators()` adds `dl`, `dl_hksj`, `reml_hksj` and
-  `pm_hksj` (metafor, Hartung-Knapp-Sidik-Jonkman via `test = "knha"`) to
-  the estimator registry. It is user-called, not run at load, so the default
-  method set of `create_multiverse_specifications()` is unchanged.
-
-## Test Suite
-
-* New tests for every metric against `metafor::escalc()`, for the imputed
-  post SD rules, for `run_pre_post_multiverse()` (stacking, function-valued
-  `which_factors`, `spec_filter`, all-failing variants) and a regression test
-  reproducing the Luo et al. (2020) corrigendum Table 1 post-test analysis
-  (DerSimonian-Laird, g = 0.10 [-0.13, 0.33]).
-
----
-
-# metaMultiverse 0.2.3 (Development)
-
-## New Features
-
-* Added N-type decision support for custom factors - custom factors with `decision = "N"` now properly create separate multiverses without adding "total_" option
-
-## Bug Fixes
-
-* `create_multiverse_specifications()` now returns the `wf_*`, `dependency` and `ma_method` columns as character rather than factor. Indexing a named label vector with a factor column (e.g. `labels[results$wf_1]`) silently used the integer codes and mislabelled results; the same columns in `run_multiverse_analysis()` output are now character as well.
-* Fixed `create_multiverse_specifications()` to properly handle N-type decisions for custom factor groups
-* Custom factors no longer bypass decision type logic
-
-## Test Suite
-
-* Added test for N-type simple factors verifying separate multiverses without total option
-* Added test for N-type custom factors verifying proper multiverse separation
-
----
-
-# metaMultiverse 0.2.2 (Development)
-
-## New Features
-
-* Added bidirectional format compatibility between metafor (`yi`/`vi`) and metaPsyTools (`.g`/`.g_se`)
-* Added auto-generation of `es_id` column when missing - uses row numbers as unique identifiers
+* Decisions as forks. `fork()` declares a named decision with a
+  plain-language ruling (`equivalent`, `uncertain`, `changes_question`,
+  `indefensible`; letter aliases E/U/N/X), a clinical or analytic family and
+  a required machine-readable justification. `domain_config()` and
+  `validate_domain_config()` bundle forks, eligibility rules and the estimand
+  declaration, and validate them against the data at load time
+  (`fork_availability_matrix()`).
+* Estimand cells. `build_specification_grid()` and `run_multiverse_grid()`
+  cross the forks into a grid in which question-changing forks define
+  estimand cells. Effects are summarized per cell only
+  (`summarize_effects()`, guarded by `assert_single_estimand()`); across
+  cells there is labeled divergence (`summarize_divergence()`), never a
+  pooled effect. Indefensible options run in a separate bias layer.
+* Nothing is lost silently. An attrition ledger records every specification
+  that was not estimated, with a machine-readable reason
+  (`attrition_report()`, `attrition_summary()`); `audit_universes()` and
+  `lookup_spec()` give per-specification diagnostics and traceability.
+* Plausibility flags (`flag_effect_sizes()`, `add_plausibility_flags()`,
+  `plausibility_fork()`), fragility metrics (`fragility_metrics()`, `m1` to
+  `m6`, `check_fork_tolerances()`), comparability helpers
+  (`common_core_specs()`), reporting (`report_grid_result()`,
+  `warrant_table()`, `export_prereg_config()`), plots
+  (`plot_grid_spec_curve()`, `plot_two_layer()`) and
+  `simulate_multiverse_data()` for prototyping.
+* New vignette `eunx-workflow` walks through the fork workflow on simulated
+  data.
 
 ## Improvements
 
-* `check_data_multiverse()` now accepts data in either metafor or metaPsyTools format
-* After validation, data contains both formats for cross-package compatibility
-* Improved error messages for missing effect size columns
+* Estimator results carry `se`, `tau2`, `i2`, `k`, `convergence` and `notes`
+  in addition to the estimate, interval and p-value, including the four
+  estimators from `register_metafor_estimators()`.
+* The defaults `min_studies = 5`, `mid = 0.24`, `i2_high = 50`,
+  `dominance_share = 0.5` and `within_study_correlation = 0.6` are
+  documented as domain conventions rather than universals.
 
-## Test Suite
+## Infrastructure
 
-* Added 11 tests for bidirectional format compatibility
-* Added 3 tests for auto-generated `es_id`
-* Updated integration tests for new error messages
-
----
-
-# metaMultiverse 0.2.0 (Development)
-
-## New Features
-
-* Added comprehensive "Getting Started" vignette with progressive examples
-* Added in-depth "Theory and Practice" vignette covering E/U/N framework
-* Added 24 integration tests covering complete pipeline workflows
-
-## Improvements
-
-* Deprecated legacy API functions now issue helpful `.Deprecated()` warnings:
-  - `setup_which_factors()` → use `define_factors()`
-  - `check_data_multiverse_enhanced()` → use `check_data_multiverse()`
-  - `general_multiverse_enhanced()` → use `general_multiverse()`
-  - `get_display_labels()` and `get_original_names()` → use factor_setup directly
+* The package now declares `R (>= 4.1.0)`: the code has used the native
+  pipe since 0.2.x, so the previous `R (>= 3.5)` was wrong.
+* GitHub Actions workflow running `R CMD check` on macOS, Windows and
+  Ubuntu (release, devel, oldrel).
+* New tests assert that every registered estimator fills `se`, `tau2`,
+  `i2`, `k` and `convergence`, checked against metafor and meta.
 
 ## Bug Fixes
 
-* Fixed test assertions in `check_data_multiverse()` tests to match actual return values
-* Removed 6 outdated test files that tested non-existent or deprecated functions
-
-## Test Suite
-
-* **Test coverage**: 446 tests passing, 0 failing
-* **New integration tests**: Full pipeline, multiple factors, custom groupings, visualizations
-* **Removed**: Outdated tests for removed/deprecated functions
-
-## Documentation
-
-* New vignettes with fully executable code examples
-* Improved error messages and deprecation warnings
-* Better examples of E/U/N decision types
+* `run_multiverse_analysis()`: `full_set` was computed against row order and
+  was wrong whenever `es_id` was not `1..n`; it now compares against the
+  actual ids.
+* `create_multiverse_specifications()` warns when a requested method drops
+  out of the grid because none of the requested dependencies is compatible
+  with it, instead of dropping it silently.
+* `check_data_multiverse()` only treats columns matching `wf_<number>` as
+  which factors, not every column starting with `wf`.
+* `generate_multiverse_report()`: the share of significant analyses uses all
+  analyses as the denominator and reports how many carry a p-value; removed
+  deprecated ggplot2 usage.
+* `generate_multiverse_report_text()`: publication-bias and consistency
+  bullets appear only when their statistics were supplied; two quoting
+  errors fixed.
 
 ---
 
-# metaMultiverse 0.1.0
-
-* Initial CRAN release
-* Core multiverse meta-analysis pipeline
-* Support for multiple meta-analytic methods
-* E/U/N decision type framework
-* Specification curve and VoE plots
