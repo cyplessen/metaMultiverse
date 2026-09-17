@@ -1,3 +1,7 @@
+# Tests for dev/metapsy-paper/decompose_variance.R. Not run by the package
+# suite: the decomposition is developed with the Metapsy multiverse paper.
+# Run with the package loaded and decompose_variance.R sourced.
+
 # Phase 5: hierarchical variance decomposition, warrant/fixed-decision
 # tables, grid report with anti-probabilistic defaults, prereg export,
 # two-layer plot.
@@ -74,51 +78,6 @@ test_that("marginal fork means report raw and common-subgrid-balanced values", {
   expect_setequal(mm$level, c("reml", "pm"))
   expect_true(all(!is.na(mm$balanced_mean)))
   expect_true(all(mm$n_common_combos >= 1))
-})
-
-test_that("warrant table covers forks, eligibility, and fixed decisions", {
-  wt <- warrant_table(cfg5)
-  expect_true(all(c("comparator", "model_type") %in% wt$name))
-  expect_true("effect_metric" %in% wt$name)
-  expect_equal(wt$decision[wt$name == "effect_metric"], "fixed")
-  expect_true(all(nzchar(wt$justification)))
-})
-
-test_that("grid report implements the anti-probabilistic defaults", {
-  rep_lines <- report_grid_result(res5)
-  txt <- paste(rep_lines, collapse = "\n")
-  expect_match(txt, "Purpose declaration")
-  expect_match(txt, "justified, converged specifications") # headline count
-  expect_match(txt, "NOT inferential")                     # labeled descriptives
-  expect_match(txt, "per estimand cell")
-  expect_match(txt, "Worst-universe audit")
-  expect_match(txt, "Warrant table")
-  expect_match(txt, "Bias-decomposition layer")
-  expect_match(txt, "Ranked fork drivers")
-  expect_match(txt, "analytic sensitivity")                # caveat present
-  # raw combinatorial size must not headline: converged count is stated
-  # before planned count
-  expect_true(regexpr("justified, converged", txt) <
-                regexpr("planned before viability", txt))
-})
-
-test_that("prereg export writes a time-stamped Quarto document", {
-  f <- tempfile(fileext = ".qmd")
-  export_prereg_config(cfg5, f)
-  txt <- readLines(f)
-  expect_match(txt[1], "^---$")
-  expect_true(any(grepl("Preregistered multiverse configuration", txt)))
-  expect_true(any(grepl("Estimand declaration", txt)))
-  expect_true(any(grepl("before any pipeline contact", txt)))
-  expect_true(any(grepl("min_studies", txt)))
-  unlink(f)
-})
-
-test_that("two-layer plot and grid spec curve build without error", {
-  p1 <- plot_two_layer(res5, "comparator=cau")
-  expect_s3_class(p1, "ggplot")
-  p2 <- plot_grid_spec_curve(res5)
-  expect_s3_class(p2, "ggplot")
 })
 
 test_that("decompose_variance records its estimator and announces the fallback", {

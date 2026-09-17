@@ -60,7 +60,7 @@ warrant_table <- function(config) {
 #' purpose declaration up front; the JUSTIFIED specification count as the
 #' headline number (never raw combinatorial size); per-cell effect
 #' summaries only; between-estimand divergence labeled as such; descriptive
-#' frequencies labeled descriptive and paired with the decomposition;
+#' frequencies labeled descriptive;
 #' worst-universe audit section; warrant and fixed-decision tables; full
 #' attrition. Returns a character vector of markdown lines
 #' (Quarto-renderable).
@@ -135,8 +135,7 @@ report_grid_result <- function(result,
     }
   }
 
-  # labeled descriptive frequencies, paired with decomposition
-  dec <- tryCatch(decompose_variance(result), error = function(e) NULL)
+  # labeled descriptive frequencies
   n_p <- sum(!is.na(inf$pval))
   lines <- c(
     lines, "",
@@ -145,33 +144,12 @@ report_grid_result <- function(result,
       paste("Share of specifications with p < .05: %.0f%% (%d of %d; %d",
             "specs carry no p-value). Share with g > %.2f (MID): %.0f%%.",
             "These are descriptive frequencies over non-independent",
-            "specifications of one dataset; they are not evidence rates and",
-            "must be read with the decomposition below."),
+            "specifications of one dataset; they are not evidence rates."),
       100 * sum(inf$pval < .05, na.rm = TRUE) / nrow(inf),
       sum(inf$pval < .05, na.rm = TRUE), nrow(inf), nrow(inf) - n_p,
       mid, 100 * mean(inf$b > mid)
     )
   )
-
-  if (!is.null(dec)) {
-    lines <- c(lines, "", "## Variance decomposition (what drives divergence)")
-    fs <- family_shares(dec)
-    for (i in seq_len(nrow(fs))) {
-      lines <- c(lines, sprintf("- %s/%s: %.1f%% (MoM %.1f%%)",
-                                fs$layer[i], fs$family[i],
-                                100 * fs$share[i], 100 * fs$mom_share[i]))
-    }
-    lines <- c(lines, "", paste0("*", attr(dec, "caveat"), "*"))
-    # deflation deliverable: ranked fork drivers
-    drivers <- dec[dec$term != "residual", ]
-    drivers <- drivers[order(-drivers$share), ]
-    lines <- c(lines, "",
-               "### Ranked fork drivers (empirical agenda for deflation)")
-    for (i in seq_len(nrow(drivers))) {
-      lines <- c(lines, sprintf("%d. %s (%.1f%%)", i, drivers$term[i],
-                                100 * drivers$share[i]))
-    }
-  }
 
   # worst-universe audit
   flagged <- audit[audit$n_flags > 0, , drop = FALSE]

@@ -28,6 +28,17 @@ itself is at `../../metaMultiverse-dev-vs-live.md`.
    no git history; this is a file-level port, as the stages already assume.
 6. Stage 0b runs dev's suite on a `git archive` export of dev HEAD in a
    scratch directory, so nothing is written into the dev folder.
+8. **The variance decomposition is not merged** (decided 2026-09-17,
+   after Stage 2). JOSS comes first with a finished surface; the
+   decomposition is developed with the Metapsy multiverse paper.
+   `R/decompose_variance.R` and its tests are parked in
+   `dev/metapsy-paper/` (outside the build), the "Variance decomposition"
+   section is removed from `report_grid_result()`,
+   `test-reporting-decomposition.R` is split into `test-reporting.R`, and the
+   vignette chunk is cut. This overrides "take all twelve files" and trap 3
+   below: the call in `reporting.R` was removed together with the file, so
+   nothing fails quietly. Stage 4 is unaffected: it compares grid results and
+   the attrition ledger only.
 7. Wider goal (see project memory): combine features, make the package
    submittable to JOSS, and develop the variance decomposition for the
    Metapsy multiverse paper. Ambiguous merge choices are made with those

@@ -32,7 +32,7 @@ e.g. estimator; alias \code{"how"}).}
 \code{"E"}, \code{"U"}, \code{"N"}, \code{"X"} accepted).}
 
 \item{family}{\code{"clinical"} or \code{"analytic"} (second taxonomy axis
-for the variance decomposition).}
+when attributing divergence to groups of forks).}
 
 \item{justification}{A list with elements \code{basis} (one of
 \code{"citation"}, \code{"empirical"}, \code{"convention-unresolved"}),

@@ -45,7 +45,7 @@
 #'   \code{"changes_question"}, \code{"indefensible"} (letter aliases
 #'   \code{"E"}, \code{"U"}, \code{"N"}, \code{"X"} accepted).
 #' @param family \code{"clinical"} or \code{"analytic"} (second taxonomy axis
-#'   for the variance decomposition).
+#'   when attributing divergence to groups of forks).
 #' @param justification A list with elements \code{basis} (one of
 #'   \code{"citation"}, \code{"empirical"}, \code{"convention-unresolved"}),
 #'   \code{text} (non-empty explanation), and optionally \code{citation}.

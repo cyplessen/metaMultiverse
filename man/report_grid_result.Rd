@@ -29,7 +29,7 @@ Markdown report implementing the reporting constraints:
 purpose declaration up front; the JUSTIFIED specification count as the
 headline number (never raw combinatorial size); per-cell effect
 summaries only; between-estimand divergence labeled as such; descriptive
-frequencies labeled descriptive and paired with the decomposition;
+frequencies labeled descriptive;
 worst-universe audit section; warrant and fixed-decision tables; full
 attrition. Returns a character vector of markdown lines
 (Quarto-renderable).
