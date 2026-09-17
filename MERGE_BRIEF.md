@@ -46,6 +46,20 @@ itself is at `../../metaMultiverse-dev-vs-live.md`.
 
 ---
 
+## Gate log (2026-09-17, branch `feature/fork-architecture`)
+
+| gate | result |
+|---|---|
+| 0 | clean tree, tag `v0.3.1-premerge`, `main` == `origin/main` at 0.3.1 |
+| 0b | dev suite 715 passed, 0 failed (dev HEAD `165696c`) |
+| 1 | 659 passed, 0 failed; `test-pre_post.R` 147/147, `test-create_multiverse_specifications.R` 7/7 |
+| 2 | 869 passed, 0 failed (715 dev + 154 live-only); NAMESPACE +43 exports, -0; man 53 -> 92 |
+| after amendment 8 | 854 passed, 0 failed; three decomposition exports removed; man 89 |
+| 3 | `R CMD check --as-cran` on a `git archive` export: tests, examples, vignettes OK; no undefined globals, missing imports or non-ASCII files. Remaining ERROR/WARNINGs are local tooling only: TinyTeX lacks the `courier` font (PDF manual), `qpdf` missing |
+| 4 | all 12 domains IDENTICAL for results and attrition (2,122 specifications, 1,325 ledger rows); dev folder untouched |
+
+---
+
 **Read this whole file before touching anything.** The dangerous failures
 here are silent, not loud.
 
