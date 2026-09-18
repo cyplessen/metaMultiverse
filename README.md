@@ -305,8 +305,8 @@ set up a development environment and propose changes, and the [code of conduct](
 ### Support and maintenance
 
 The package is maintained by Constantin Yves Plessen (University of Graz). Questions, bug reports and
-feature requests go to the [issue tracker](https://github.com/cyplessen/metaMultiverse/issues); issues are
-usually answered within two weeks. Design decisions are made by the maintainer and discussed in the open
+feature requests go to the [issue tracker](https://github.com/cyplessen/metaMultiverse/issues). Open issues
+are reviewed at least once per quarter; bug reports are handled sooner where possible. Design decisions are made by the maintainer and discussed in the open
 in issues and pull requests. Releases follow semantic versioning and are listed in the
 [changelog](NEWS.md).
 
