@@ -1,4 +1,4 @@
-# metaMultiverse 0.4.0 (development)
+# metaMultiverse 0.4.0 (2026-09-18)
 
 This release adds an estimand-aware architecture for declaring decisions as
 forks. Everything from 0.3.0 and 0.3.1 is kept, and the existing
